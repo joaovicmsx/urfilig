@@ -1,0 +1,229 @@
+// Consulte a nota "Migração para Banco de Dados Relacional" no Obsidian
+// pra contexto completo de por que cada modelo existe.
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------- Autenticação / multiusuário ----------
+
+model Usuario {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  nome                String?
+  senhaHash           String? // null se a conta só usa login via Google
+  googleId            String?  @unique
+  criadoEm            DateTime @default(now())
+
+  idade               Int?
+  localizacao         String?
+  profissao           String?
+  hobbies             String? // separado por vírgula
+  onboardingConcluido Boolean  @default(false)
+
+  leads               Lead[]
+  memorias            Memory[]
+  diretrizes          Diretriz[]
+  reflexoes           Reflexao[]
+  itensAgenda         AgendaItem[]
+  eventosCalendario   Evento[]
+  temperamentos       Temperamento[]
+  bordoes             Bordao[]
+  registrosEmocionais RegistroEmocional[]
+  estatisticasUso     EstatisticaUso[]
+  
+  pastas              Pasta[]
+  notas               Nota[]
+  contatos            Contato[]
+}
+
+// ---------- Calendário ----------
+
+model Evento {
+  id          String    @id @default(cuid())
+  usuarioId   String
+  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  titulo      String
+  descricao   String?
+  dataInicio  DateTime
+  dataFim     DateTime?
+  cor         String?   @default("#3b82f6")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ---------- Módulo de Vendas (CRM/leads) ----------
+
+model Lead {
+  id              String    @id @default(cuid())
+  usuarioId       String
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  nome            String
+  contato         String
+  nicho           String?
+  bio             String?
+  score           Int?
+  statusFunil     String    @default("AGUARDANDO_APROVACAO")
+  pitch           String?
+  ultimaInteracao DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([usuarioId, contato])
+}
+
+// ---------- Memória do usuário + grafo ----------
+
+model Memory {
+  id         String       @id @default(cuid())
+  usuarioId  String
+  usuario    Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoria  String
+  titulo     String
+  conteudo   String
+  tags       String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  linksSaida MemoryLink[] @relation("LinksDeOrigem")
+}
+
+model MemoryLink {
+  id        String @id @default(cuid())
+  origemId  String
+  destinoId String
+  origem    Memory @relation("LinksDeOrigem", fields: [origemId], references: [id])
+
+  @@unique([origemId, destinoId])
+}
+
+// ---------- Cofre-IA / RAG leve ----------
+
+model Diretriz {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  conteudo  String
+  tags      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Reflexao {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  conteudo  String
+  data      DateTime @default(now())
+}
+
+// ---------- Persona Agêntica (personalidade autônoma) ----------
+
+model Temperamento {
+  id           String   @id @default(cuid())
+  usuarioId    String
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  traco        String
+  intensidade  Int      @default(1)
+  evidencia    String
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Bordao {
+  id         String   @id @default(cuid())
+  usuarioId  String
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  situacao   String
+  texto      String
+  vezesUsado Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+model RegistroEmocional {
+  id                  String   @id @default(cuid())
+  usuarioId           String
+  usuario             Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  sentimentoDetectado String
+  contexto            String
+  respostaDada        String?
+  createdAt           DateTime @default(now())
+}
+
+model EstatisticaUso {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  tipo      String
+  detalhe   String?
+  createdAt DateTime @default(now())
+}
+
+// ---------- Agenda (alimenta a saudação diária) ----------
+
+model AgendaItem {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  titulo    String
+  horario   String?
+  data      DateTime @default(now())
+  concluido Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ---------- Notas do Cérebro (Pastas e Notas) ----------
+
+model Pasta {
+  id        Int      @id @default(autoincrement())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  nome      String
+  createdAt DateTime @default(now())
+  
+  notas     Nota[]
+}
+
+model Nota {
+  id          Int      @id @default(autoincrement())
+  pastaId     Int
+  pasta       Pasta    @relation(fields: [pastaId], references: [id], onDelete: Cascade)
+  usuarioId   String
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  titulo      String
+  conteudo    String
+  importante  Boolean  @default(false)
+  ordem       Int      @default(0)
+  dataCriacao DateTime @default(now())
+}
+
+// ---------- Módulo de Contatos (CRM / Consultoria Financeira) ----------
+
+model Contato {
+  id                 String    @id @default(cuid())
+  usuarioId          String
+  usuario            Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  nome               String
+  telefone           String?
+  email              String?
+  
+  // Gestão de Agendamento/Contato
+  dataContato        DateTime?
+  tipoData           String?   @default("PROXIMO_CONTATO") // "ULTIMO_CONTATO" ou "PROXIMO_CONTATO"
+  
+  // Informações para Consultoria Financeira
+  status             String?   @default("LEAD") // Lead, Reunião Agendada, Proposta Enviada, Cliente Ativo, Inativo
+  perfilInvestidor   String?   // Conservador, Moderado, Arrojado
+  patrimonioEstimado String?   // Ex: R$ 100k - 500k
+  objetivoFinanceiro String?   // Ex: Aposentadoria, Compra de Imóvel, Proteção
+  anotacoes          String?
+  
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}

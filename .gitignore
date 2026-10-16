@@ -1,0 +1,26 @@
+﻿node_modules/
+**/node_modules/
+target/
+**/target/
+target_build/
+dist/
+**/dist/
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Chaves e credenciais
+secrets/
+**/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+credentials*.json
+service-account*.json
+*.zip

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark" />
+  <title>Conte mais sobre você — Urfilig</title>
+</head>
+<body class="tela-centralizada">
+  <div class="cartao">
+    <h1>Antes de começar...</h1>
+    <p class="intro">
+      Esses dados ajudam a Urfilig a te conhecer melhor desde a primeira conversa,
+      formando o contexto que ela usa pra personalizar como te atende.
+    </p>
+
+    <form id="form-onboarding">
+      <div class="campo-grupo">
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" name="nome" autocomplete="name" required />
+      </div>
+
+      <div class="campo-grupo">
+        <label for="idade">Idade</label>
+        <input type="number" id="idade" name="idade" min="1" max="120" />
+      </div>
+
+      <div class="campo-grupo">
+        <label for="localizacao">Onde você mora (cidade/estado)</label>
+        <input type="text" id="localizacao" name="localizacao" placeholder="Ex: Contagem, MG" />
+      </div>
+
+      <div class="campo-grupo">
+        <label for="profissao">Profissão / o que você faz</label>
+        <input type="text" id="profissao" name="profissao" placeholder="Ex: Desenvolvedor freelancer" />
+      </div>
+
+      <div class="campo-grupo">
+        <label for="hobbies">Hobbies (separados por vírgula)</label>
+        <textarea id="hobbies" name="hobbies" placeholder="Ex: Blender, jogos, cuidar das plantas"></textarea>
+      </div>
+
+      <button type="submit" id="botao-enviar" class="bolha-btn">Concluir</button>
+      <div id="mensagem-erro" role="alert"></div>
+    </form>
+  </div>
+
+  <script type="module" src="./src/onboarding.js"></script>
+</body>
+</html>

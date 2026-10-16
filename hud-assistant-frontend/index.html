@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Urfilig</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <!-- Topo HUD Alinhado à Esquerda -->
+    <header id="top-hud-bar">
+      <button id="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" title="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+      </button>
+
+      <div class="hud-brand">
+        <span class="brand-title">URFILIG</span>
+        <span class="brand-sub">HUD</span>
+      </div>
+      
+      <nav class="hud-nav">
+        <button id="nav-cerebro" class="nav-item" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10s10-4.477 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
+          Cérebro
+        </button>
+        <button id="nav-calendario" class="nav-item" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Calendário
+        </button>
+        <button id="nav-emails" class="nav-item" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          E-mails
+        </button>
+        <button id="nav-contatos" class="nav-item" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1 0 7.75"/></svg>
+          Contatos
+        </button>
+      </nav>
+    </header>
+
+    <canvas id="hud-canvas" aria-label="Urfilig e sua esfera neural. Arraste para girar e selecione memórias." tabindex="0"></canvas>
+    <canvas id="labels-canvas"></canvas>
+
+    <div id="hud-response" aria-live="polite"></div>
+    <div id="memory-tooltip" role="tooltip" hidden></div>
+    <div id="memory-accessibility" aria-label="Memórias da personalidade"></div>
+    <div id="hud-live-status" class="visually-hidden" aria-live="polite"></div>
+
+    <div id="menu-backdrop" class="menu-backdrop"></div>
+    
+    <aside id="menu-lateral" aria-hidden="true">
+      <h2>Menu</h2>
+      <button id="menu-editar-perfil" type="button">Editar perfil</button>
+      <button id="menu-abrir-calendario" type="button">Calendário</button>
+      <button id="menu-abrir-contatos" type="button">Contatos</button>
+      <button id="menu-abrir-cerebro" type="button">Notas do cérebro</button>
+
+      <h2>Dados</h2>
+      <button id="btn-metricas" type="button">Extração de Métricas</button>
+      <button id="btn-resumo-inbox" type="button">Caixa de entrada</button>
+      <button id="btn-tendencias" type="button">Tendências</button>
+      <button id="btn-plano-hoje" type="button">Plano de Hoje</button>
+      <button id="btn-revisao-semanal" type="button">Resumo Semanal</button>
+      <button id="btn-insights" type="button">Insights & Recomendações</button>
+
+      <!-- A propriedade margin-top: auto empurra este botão para o rodapé do menu -->
+      <button id="menu-sair" type="button" style="color: #f87171; margin-top: auto;">Sair</button>
+    </aside>
+
+    <!-- PAINEL FLUTUANTE DO CALENDÁRIO -->
+    <div id="calendario-painel" class="painel-flutuante">
+      <div class="painel-header">
+        <h3>Calendário</h3>
+        <button type="button" id="calendario-fechar">✕</button>
+      </div>
+      <div id="calendario-conteudo"></div>
+    </div>
+
+    <div id="sidebar-notas" class="sidebar">
+      <div class="sidebar-header">
+        <div class="header-titulo">
+          <div class="ponto-glow"></div>
+          <h2>Notas</h2>
+        </div>
+        <button id="btn-fechar-sidebar" class="btn-texto">Fechar</button>
+      </div>
+      
+      <div class="criar-nota-container">
+        <input type="text" id="nota-titulo" placeholder="Título" />
+        <textarea id="nota-conteudo" placeholder="Escreva aqui..."></textarea>
+        
+        <div class="opcoes-container">
+          <button id="btn-salvar-nota" class="bolha-opcao principal">Salvar</button>
+          <button id="btn-limpar-nota" class="bolha-opcao secundaria">Limpar</button>
+        </div>
+      </div>
+
+      <div id="lista-notas" class="notas-list"></div>
+    </div>
+
+    <!-- CAIXA DO CHAT -->
+    <div id="chat-painel">
+      <div class="chat-historico-direita" id="chat-historico">
+        <div class="chat-historico-header">
+          <span>Conversa</span>
+          <button id="chat-minimizar" type="button" aria-label="Minimizar chat" title="Minimizar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+        <div id="chat-mensagens"></div>
+      </div>
+
+      <button id="chat-restaurar" type="button" aria-label="Abrir chat" title="Abrir Conversa" hidden>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      </button>
+
+      <form id="chat-form" class="chat-form-inferior">
+        <input id="chat-input" type="text" placeholder="Falar com a Urfilig..." autocomplete="off" />
+        <button type="submit" class="chat-btn-enviar">Enviar</button>
+      </form>
+    </div>
+
+    <div id="cerebro-painel" class="sidebar-cerebro">
+      <div class="sidebar-cerebro-header">
+        <span id="cerebro-titulo">Notas do Cérebro</span>
+        <button id="cerebro-fechar" type="button" aria-label="Fechar" title="Fechar painel">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div id="cerebro-view-pastas" class="cerebro-view">
+        <div id="cerebro-lista-pastas" class="cerebro-lista"></div>
+        <form id="cerebro-form-pasta" class="cerebro-form-fixo">
+          <input type="text" id="cerebro-nova-pasta" placeholder="Nome da nova pasta..." required />
+          <button type="submit">Criar Pasta</button>
+        </form>
+      </div>
+
+      <div id="cerebro-view-notas" class="cerebro-view" hidden>
+        <div class="cerebro-voltar-container">
+          <button id="cerebro-btn-voltar" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Voltar para Pastas
+          </button>
+        </div>
+        <div id="cerebro-lista-notas" class="cerebro-lista"></div>
+        <form id="cerebro-form-nota" class="cerebro-form-fixo">
+          <input type="text" id="cerebro-novo-titulo" placeholder="Título da nota..." required />
+          <textarea id="cerebro-novo-conteudo" placeholder="Assunto da nota..." required></textarea>
+          <button type="submit">Adicionar Nota</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="modal-backdrop"></div>
+    <div id="obsidian-modal">
+      <div class="obsidian-header">
+        <h2 class="obsidian-title" id="modal-titulo">Título</h2>
+        <button class="obsidian-close" id="modal-fechar">✕</button>
+      </div>
+      <div class="obsidian-content" id="modal-conteudo">
+        Carregando conteúdo...
+      </div>
+    </div>
+
+    <!-- MODAL DE INTELIGÊNCIA (ESTILO CÉREBRO) -->
+    <div id="intel-modal" class="intel-modal">
+      <div class="intel-modal-card">
+        <div class="intel-modal-header">
+          <h3 id="intel-modal-titulo">Análise do Sistema</h3>
+          <button id="intel-modal-fechar" type="button" aria-label="Fechar" title="Fechar">✕</button>
+        </div>
+        <div class="intel-modal-conteudo" id="intel-modal-corpo">
+          Carregando dados...
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

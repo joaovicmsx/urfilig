@@ -1,0 +1,20 @@
+{
+  "name": "hud-assistant-frontend",
+  "version": "0.1.0",
+  "description": "Fase 2 do HUD Assistente: mascote 3D estático com estados manuais",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-fs": "^2.6.0",
+    "socket.io-client": "^4.7.5",
+    "three": "^0.166.1"
+  },
+  "devDependencies": {
+    "vite": "^5.4.8"
+  }
+}

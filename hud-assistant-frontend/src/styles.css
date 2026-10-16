@@ -1,0 +1,739 @@
+/* ==========================================================================
+   1. BASE & RESET (Modern Dark / Clean)
+   ========================================================================== */
+/* Variável de cor primária sincronizada com a esfera */
+:root {
+  --accent-color: #1f6feb;
+}
+
+/* Botões dinâmicos que acompanham a cor da esfera */
+.btn-dinamico-esfera {
+  background: var(--accent-color, #1f6feb) !important;
+  color: #ffffff !important;
+  border: none !important;
+  transition: background 0.25s ease, opacity 0.2s ease;
+}
+
+.btn-dinamico-esfera:hover {
+  opacity: 0.88;
+}
+
+/* Padronização de menus de opções/listas: sem caixas, sem bordas, fundo transparente */
+.item-lista-limpo {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: background 0.15s ease;
+}
+
+.item-lista-limpo:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html, body { 
+  width: 100%; 
+  height: 100%; 
+  margin: 0; 
+  overflow: hidden; 
+  background-color: #000000;
+}
+
+/* ==========================================================================
+   2. ECRÃ DE LOGIN & ONBOARDING
+   ========================================================================== */
+body.tela-centralizada {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  background-color: #000000;
+  color: #e2e8f0;
+}
+
+.cartao {
+  background: #09090b;
+  border-radius: 16px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 440px;
+  position: relative;
+  z-index: 10;
+}
+
+.cartao h1, #titulo-form {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.cartao p.intro {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  line-height: 1.4;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+#form-login {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.campo-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.campo-grupo label, #form-login label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.campo-grupo input, .campo-grupo textarea, #form-login input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #121215;
+  border: none;
+  border-radius: 8px;
+  color: #f8fafc;
+  font-size: 0.95rem;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.bolha-btn {
+  width: 100%;
+  padding: 0.85rem;
+  background: #1e293b;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  margin-top: 0.5rem;
+}
+
+.bolha-btn:hover { background: #334155; }
+.bolha-btn:active { transform: scale(0.98); }
+
+.btn-texto-simples {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+.btn-texto-simples:hover { color: #f8fafc; }
+
+.separador {
+  text-align: center;
+  color: #475569;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+#mensagem-erro {
+  color: #f87171;
+  font-size: 0.85rem;
+  text-align: center;
+  min-height: 1rem;
+  margin-top: 0.5rem;
+}
+
+#google-signin-button {
+  display: flex;
+  justify-content: center;
+}
+
+/* ==========================================================================
+   3. HUD PRINCIPAL (Topo, Navbar e Canvas)
+   ========================================================================== */
+#top-hud-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; gap: 1.2rem;
+  padding: 1.2rem 2.2rem; background: transparent; pointer-events: auto;
+}
+
+#menu-toggle, .menu-toggle {
+  position: relative; z-index: 101; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; outline: none; color: #64748b; cursor: pointer; padding: 0;
+  transition: color 0.2s ease; pointer-events: auto !important;
+}
+#menu-toggle svg { stroke: #64748b; transition: stroke 0.2s ease; }
+#menu-toggle:hover { color: #ffffff; }
+#menu-toggle:hover svg { stroke: #ffffff; }
+
+.hud-brand { display: flex; align-items: baseline; gap: 0.4rem; }
+.brand-title { font-size: 0.95rem; font-weight: 700; letter-spacing: 2.5px; color: #ffffff; }
+.brand-sub { font-size: 0.65rem; font-weight: 500; letter-spacing: 3px; color: #475569; }
+
+.hud-nav { display: flex; align-items: center; gap: 2rem; margin-left: 320px; }
+.nav-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: none; border: none; outline: none; color: #64748b;
+  font-size: 0.85rem; font-weight: 400; cursor: pointer; padding: 0;
+  white-space: nowrap; transition: color 0.2s ease;
+}
+.nav-item svg { stroke: #64748b; transition: stroke 0.2s ease; }
+.nav-item:hover { color: #ffffff; }
+.nav-item:hover svg { stroke: #ffffff; }
+
+#hud-canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; z-index: 1; }
+#labels-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none !important; z-index: 5; }
+
+#hud-response {
+  position: fixed; top: 1.4rem; left: 1.4rem; z-index: 2;
+  max-width: min(30rem, calc(100vw - 5rem)); color: #ffffff;
+  font-size: clamp(0.86rem, 1.6vw, 1rem); line-height: 1.55;
+  opacity: 0; transform: translateY(-0.35rem);
+  transition: opacity 220ms ease, transform 220ms ease; pointer-events: none;
+}
+#hud-response.visible { opacity: 1; transform: translateY(0); }
+
+#memory-tooltip {
+  position: fixed; z-index: 15; max-width: 13rem; padding: 0.42rem 0.62rem;
+  border-radius: 0.45rem; background: rgba(9, 9, 11, 0.95);
+  color: #e0e0e0; font-size: 0.76rem; line-height: 1.35; pointer-events: none;
+}
+
+.visually-hidden {
+  position: fixed; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ==========================================================================
+   4. MENU LATERAL & CÉREBRO
+   ========================================================================== */
+#menu-backdrop, .menu-backdrop {
+  display: none; position: fixed; inset: 0; z-index: 9988;
+  background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px);
+}
+#menu-backdrop.visible, #menu-backdrop.aberto { display: block !important; }
+
+#menu-lateral, .menu-lateral, aside.menu-lateral {
+  position: fixed; top: 0; left: 0; bottom: 0; z-index: 9999; width: 260px;
+  background: #080808; padding: 5rem 1.8rem 2rem; transform: translateX(-100%);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column; gap: 0.4rem;
+  overflow-y: auto;
+}
+#menu-lateral.visible, #menu-lateral.aberto, #menu-lateral.active { transform: translateX(0) !important; display: flex !important; }
+
+#menu-lateral h2 { 
+  color: #334155; font-size: 0.75rem; text-transform: uppercase;
+  letter-spacing: 2px; font-weight: 600; margin: 1rem 0 0.6rem 0;
+}
+#menu-lateral h2:first-of-type { margin-top: 0; }
+
+#menu-lateral button {
+  text-align: left; padding: 0.75rem 1rem; border: none; border-radius: 8px;
+  background: transparent; color: #94a3b8; font-size: 0.9rem; font-weight: 500;
+  cursor: pointer; transition: all 0.2s ease;
+}
+#menu-lateral button:hover { background: #121212; color: #ffffff; }
+
+.sidebar-cerebro {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: min(360px, 90vw); background: #09090b;
+  z-index: 105; /* <-- Z-INDEX CORRIGIDO AQUI */
+  display: flex; flex-direction: column;
+  transform: translateX(-100%); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #cbd5e1;
+}
+.sidebar-cerebro.aberta { transform: translateX(0); }
+
+.sidebar-cerebro-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.5rem 1.4rem 1rem; font-size: 1rem; font-weight: 600; color: #ffffff;
+}
+.sidebar-cerebro-header button {
+  background: none; border: none; color: #64748b; cursor: pointer; 
+  display: flex; align-items: center; transition: color 0.2s;
+}
+.sidebar-cerebro-header button:hover { color: #fff; }
+
+.cerebro-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.cerebro-view[hidden] { display: none; }
+.cerebro-lista { flex: 1; overflow-y: auto; padding: 1rem 1.4rem; display: flex; flex-direction: column; gap: 0.6rem; }
+
+.cerebro-pasta, .cerebro-nota {
+  background: #121215; border-radius: 10px; padding: 0.9rem 1.1rem;
+  transition: background 0.2s; cursor: pointer;
+}
+.cerebro-pasta:hover, .cerebro-nota:hover { background: #1a1a1e; }
+.cerebro-pasta-nome { font-weight: 500; color: #f1f5f9; font-size: 0.9rem; }
+
+.cerebro-nota-titulo { font-weight: 600; color: #fff; font-size: 0.95rem; margin-bottom: 0.2rem;}
+.cerebro-nota-conteudo { color: #94a3b8; font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap; }
+
+.cerebro-acoes { display: flex; gap: 0.3rem; opacity: 0.4; transition: opacity 0.2s; }
+.cerebro-pasta:hover .cerebro-acoes, .cerebro-nota:hover .cerebro-acoes { opacity: 1; }
+.cerebro-btn-acao {
+  background: none; border: none; cursor: pointer; font-size: 0.8rem; 
+  color: #64748b; padding: 0.4rem; transition: all 0.2s;
+}
+.cerebro-btn-acao:hover { color: #fff; }
+
+.cerebro-form-fixo { display: flex; flex-direction: column; gap: 0.6rem; padding: 1.2rem 1.4rem; background: #000000; }
+.cerebro-form-fixo input, .cerebro-form-fixo textarea {
+  padding: 0.75rem 1rem; border-radius: 8px; border: none; background: #121215;
+  color: #ffffff; outline: none; font-size: 0.85rem;
+}
+.cerebro-form-fixo textarea { min-height: 4rem; resize: vertical; line-height: 1.4; }
+.cerebro-form-fixo button {
+  padding: 0.75rem; border-radius: 8px; border: none; background: #1e293b; 
+  color: #ffffff; font-weight: 500; cursor: pointer; transition: background 0.2s;
+}
+.cerebro-form-fixo button:hover { background: #334155; }
+
+.cerebro-voltar-container { padding: 1rem 1.4rem 0; }
+#cerebro-btn-voltar {
+  background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; gap: 0.4rem; transition: color 0.2s;
+}
+#cerebro-btn-voltar:hover { color: #ffffff; }
+
+/* ==========================================================================
+   5. SIDEBAR DE NOTAS
+   ========================================================================== */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: min(360px, 90vw); background: #09090b;
+  z-index: 105; /* <-- Z-INDEX CORRIGIDO AQUI */
+  display: flex; flex-direction: column;
+  transform: translateX(-100%); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #cbd5e1; padding: 1.5rem 1.4rem; gap: 1rem;
+}
+
+.sidebar.aberta { transform: translateX(0); }
+
+.sidebar-header { display: flex; justify-content: space-between; align-items: center; }
+.header-titulo { display: flex; align-items: center; gap: 0.6rem; }
+.header-titulo h2 { margin: 0; font-size: 1.1rem; color: #ffffff; font-weight: 600; }
+
+.ponto-glow {
+  width: 6px; height: 6px; background-color: #38bdf8; border-radius: 50%;
+}
+
+.btn-texto {
+  background: none; border: none; color: #64748b; cursor: pointer; font-size: 0.85rem; transition: color 0.2s;
+}
+.btn-texto:hover { color: #ffffff; }
+
+.criar-nota-container {
+  display: flex; flex-direction: column; gap: 0.8rem; background: #121215;
+  padding: 1rem; border-radius: 10px;
+}
+
+.criar-nota-container input, .criar-nota-container textarea {
+  width: 100%; background: #000000; border: none; border-radius: 6px;
+  padding: 0.7rem; color: #f8fafc; font-size: 0.85rem; outline: none; box-sizing: border-box;
+}
+
+.criar-nota-container textarea { min-height: 70px; resize: vertical; }
+
+.opcoes-container { display: flex; gap: 0.6rem; }
+
+.bolha-opcao {
+  flex: 1; padding: 0.6rem; border-radius: 6px; border: none;
+  font-weight: 500; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+}
+
+.bolha-opcao.principal { background: #1e293b; color: #ffffff; }
+.bolha-opcao.principal:hover { background: #334155; }
+.bolha-opcao.secundaria { background: #18181b; color: #64748b; }
+.bolha-opcao.secundaria:hover { color: #ffffff; }
+
+.notas-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* ==========================================================================
+   6. PAINEL FLUTUANTE DO CALENDÁRIO
+   ========================================================================== */
+.painel-flutuante {
+  display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 90%; max-width: 820px; height: 78vh; max-height: 620px;
+  background: #09090b; border-radius: 20px; padding: 1.8rem; z-index: 99;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9); flex-direction: column;
+}
+
+.painel-flutuante.aberto { display: flex !important; }
+
+.painel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+.painel-header h3 { margin: 0; font-size: 1.1rem; font-weight: 600; color: #f8fafc; }
+.painel-header button { background: none; border: none; color: #64748b; font-size: 1.1rem; cursor: pointer; }
+.painel-header button:hover { color: #ffffff; }
+
+#calendario-conteudo { flex: 1; overflow: hidden; }
+
+/* ==========================================================================
+   7. INTERFACE DE CHAT
+   ========================================================================== */
+#chat-painel { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
+#chat-painel[hidden] { display: none; }
+
+.chat-historico-direita {
+  position: absolute; top: 24px; right: 24px; bottom: 100px; width: 320px;
+  background: #09090b; border-radius: 16px; display: flex; flex-direction: column;
+  pointer-events: auto; overflow: hidden;
+}
+
+.chat-historico-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1.2rem 1.4rem; background: #09090b;
+}
+
+.chat-historico-header span { color: #f8fafc; font-weight: 600; font-size: 0.9rem; }
+
+#chat-minimizar {
+  background: none; border: none; color: #64748b; cursor: pointer;
+  display: flex; align-items: center; padding: 0; transition: color 0.2s;
+}
+#chat-minimizar:hover { color: #ffffff; }
+
+#chat-restaurar {
+  position: fixed; right: 2rem; bottom: 2rem; z-index: 22; width: 44px; height: 44px;
+  border-radius: 50%; background: #09090b; border: none; color: #64748b; cursor: pointer;
+  pointer-events: auto; display: flex; align-items: center; justify-content: center; transition: color 0.2s;
+}
+#chat-restaurar:hover { color: #ffffff; }
+#chat-restaurar[hidden] { display: none; }
+
+#chat-mensagens {
+  flex: 1; overflow-y: auto; padding: 0 1.4rem 1.4rem 1.4rem;
+  display: flex; flex-direction: column; gap: 0.8rem;
+}
+
+.chat-msg { padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; max-width: 88%; }
+.chat-msg.usuario { align-self: flex-end; background: #1e293b; color: #f8fafc; }
+.chat-msg.urfilig { align-self: flex-start; background: #121215; color: #cbd5e1; }
+
+.chat-form-inferior {
+  position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); width: min(580px, 90vw);
+  background: #09090b; border-radius: 40px; padding: 6px 6px 6px 20px;
+  display: flex; align-items: center; gap: 12px; pointer-events: auto;
+}
+
+#chat-input { flex: 1; background: transparent; border: none; color: #ffffff; font-size: 0.9rem; outline: none; }
+#chat-input::placeholder { color: #475569; }
+.chat-btn-enviar {
+  padding: 9px 20px; border-radius: 30px; border: none; background: #1e293b;
+  color: #ffffff; font-weight: 500; font-size: 0.85rem; cursor: pointer; transition: background 0.2s;
+}
+.chat-btn-enviar:hover { background: #334155; }
+
+/* MODAIS */
+#obsidian-modal {
+  display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: min(500px, 90%); background: #09090b; border-radius: 12px; z-index: 100;
+  color: #cbd5e1; padding: 24px;
+}
+#obsidian-modal.visible { display: block; }
+.obsidian-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 16px; }
+.obsidian-title { font-size: 1.1rem; font-weight: 600; color: #fff; margin: 0; }
+.obsidian-close { background: none; border: none; color: #64748b; font-size: 1.1rem; cursor: pointer; }
+.obsidian-close:hover { color: #fff; }
+.obsidian-content { font-size: 0.9rem; line-height: 1.6; color: #94a3b8; }
+
+#modal-backdrop { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px); z-index: 99; }
+#modal-backdrop.visible { display: block; }
+
+/* =========================================
+   8. MÓDULO DE EMAIL (CONSULTOR FINANCEIRO)
+   ========================================= */
+body:has(.email-container) {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000000;
+  overflow: hidden;
+}
+
+.email-container {
+  display: grid;
+  grid-template-columns: 220px 350px 1fr;
+  width: 95vw;
+  max-width: 1400px;
+  height: 85vh;
+  margin: auto;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.email-sidebar {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 24px;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.email-sidebar li {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  list-style: none;
+  font-weight: 500;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.email-sidebar li:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+}
+
+.email-sidebar li.ativo {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.email-list {
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.email-list::-webkit-scrollbar, .email-reader::-webkit-scrollbar {
+  width: 6px;
+}
+.email-list::-webkit-scrollbar-thumb, .email-reader::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
+}
+
+.email-item {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.email-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.email-reader {
+  padding: 32px;
+  overflow-y: auto;
+  background: transparent;
+}
+
+.btn-dossie {
+  background: #10b981;
+  color: white; 
+  padding: 10px 20px;
+  border: none; 
+  border-radius: 8px; 
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn-dossie:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.btn-dossie:disabled {
+  background: #334155;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   9. MODAL DE INTELIGÊNCIA & ANALYTICS (ESTILO NOTAS DO CÉREBRO)
+   ========================================================================== */
+.intel-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.intel-modal.visible {
+  display: flex;
+}
+
+.intel-modal-card {
+  background: #09090b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+}
+
+.intel-modal-header {
+  padding: 1.2rem 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.intel-modal-header h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.intel-modal-header button {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.intel-modal-header button:hover {
+  color: #ffffff;
+}
+
+.intel-modal-conteudo {
+  padding: 1.2rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* CAIXINHAS QUE IMITAM AS NOTAS DO CÉREBRO (#121215) */
+.intel-card-item {
+  background: #121215;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: background 0.2s;
+}
+
+.intel-card-item:hover {
+  background: #1a1a1e;
+}
+
+.intel-card-item.destaque {
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.intel-card-item.erro {
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+}
+
+.intel-card-item span.label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.intel-card-item span.label-destaque {
+  font-size: 0.75rem;
+  color: #d4af37;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.intel-card-item strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.intel-card-item p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.intel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.8rem;
+}
+
+.intel-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.intel-tag {
+  background: #18181b;
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.intel-insights-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+/* Cor dinâmica de destaque sincronizada com a esfera 3D */
+:root {
+  --accent-color: #1f6feb;
+}
+
+/* Botões dinâmicos que herdam a cor da esfera */
+.btn-dinamico-esfera {
+  background: var(--accent-color, #1f6feb) !important;
+  color: #ffffff !important;
+  border: none !important;
+  transition: background 0.25s ease, opacity 0.2s ease !important;
+}
+
+.btn-dinamico-esfera:hover {
+  opacity: 0.88 !important;
+}
+
+/* Esconde formulários antigos duplicados */
+.cerebro-form-fixo, #cerebro-painel form {
+  display: none !important;
+}
