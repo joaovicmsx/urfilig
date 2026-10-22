@@ -10,6 +10,11 @@
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
 
 /// Guarda os processos filhos (backend Node + servidor Python da wake
 /// word) pra poder encerrar os dois quando a janela do app fechar — sem
@@ -51,9 +56,13 @@ fn main() {
                 );
                 // No Windows, npm normalmente é exposto como npm.cmd. Inicie-o
                 // pelo interpretador de comandos para evitar falha ao abrir o app.
-                let backend = Command::new("cmd.exe")
+                let mut comando_backend = Command::new("cmd.exe");
+                comando_backend
                     .args(["/C", "npm.cmd", "start"])
-                    .current_dir(&caminho_backend)
+                    .current_dir(&caminho_backend);
+                #[cfg(windows)]
+                comando_backend.creation_flags(CREATE_NO_WINDOW);
+                let backend = comando_backend
                     .spawn()
                     .expect(
                         "Falha ao iniciar o backend Node. O Node.js está instalado \
@@ -61,9 +70,13 @@ fn main() {
                     );
 
                 println!("[urfilig] iniciando servidor Python da wake word...");
-                let wakeword = Command::new("python")
+                let mut comando_wakeword = Command::new("python");
+                comando_wakeword
                     .args(["wakeword_server.py", "../vosk-model"])
-                    .current_dir(&caminho_python)
+                    .current_dir(&caminho_python);
+                #[cfg(windows)]
+                comando_wakeword.creation_flags(CREATE_NO_WINDOW);
+                let wakeword = comando_wakeword
                     .spawn()
                     .ok(); // não trava o app se Python/Vosk não estiver configurado ainda
 

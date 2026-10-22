@@ -44,6 +44,8 @@ jobs:
       - name: Compilar instalador NSIS
         run: npm run build
         working-directory: hud-assistant-desktop
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
 
       - name: Guardar instalador
         uses: actions/upload-artifact@v4
