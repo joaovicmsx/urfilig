@@ -49,8 +49,10 @@ fn main() {
                     "[urfilig] iniciando backend Node em {:?}...",
                     caminho_backend
                 );
-                let backend = Command::new("npm")
-                    .args(["start"])
+                // No Windows, npm normalmente é exposto como npm.cmd. Inicie-o
+                // pelo interpretador de comandos para evitar falha ao abrir o app.
+                let backend = Command::new("cmd.exe")
+                    .args(["/C", "npm.cmd", "start"])
                     .current_dir(&caminho_backend)
                     .spawn()
                     .expect(
