@@ -10,6 +10,7 @@
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
+use tauri::Url;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 
@@ -29,6 +30,7 @@ struct ProcessosFilhos {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
+        .invoke_handler(tauri::generate_handler![abrir_url_externa])
         .manage(Mutex::new(ProcessosFilhos {
             backend: None,
             wakeword: None,
@@ -103,4 +105,27 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("erro ao rodar a aplicação Urfilig");
+}
+
+#[tauri::command]
+fn abrir_url_externa(url: String) -> Result<(), String> {
+    let url = Url::parse(&url).map_err(|erro| erro.to_string())?;
+    if url.scheme() != "https" || url.host_str() != Some("accounts.google.com") {
+        return Err("Somente URLs oficiais de autenticação do Google são permitidas".into());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let mut comando = Command::new("rundll32");
+        comando.args(["url.dll,FileProtocolHandler", url.as_str()]);
+        comando.creation_flags(CREATE_NO_WINDOW);
+        comando
+            .spawn()
+            .map(|_| ())
+            .map_err(|erro| format!("Não foi possível abrir o navegador: {erro}"))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Err("Este fluxo está configurado para Windows".into())
+    }
 }
