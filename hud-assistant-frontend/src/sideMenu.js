@@ -169,6 +169,27 @@ export function iniciarMenuLateral(socket) {
     }
   });
 
+  const painelCalendario = document.querySelector('#calendario-painel');
+  const alternarPainelCalendario = async () => {
+    const abrir = !painelCalendario?.classList.contains('aberta');
+    document.querySelectorAll('.sidebar-cerebro.aberta, .sidebar.aberta').forEach((painel) => {
+      if (painel !== painelCalendario) painel.classList.remove('aberta');
+    });
+    painelCalendario?.classList.toggle('aberta', abrir);
+    if (abrir && typeof window.carregarCalendarioUI === 'function') await window.carregarCalendarioUI();
+  };
+  document.querySelector('#nav-calendario')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    alternarPainelCalendario();
+  });
+  document.querySelector('#menu-abrir-calendario')?.addEventListener('click', () => {
+    fecharMenu();
+    alternarPainelCalendario();
+  });
+  document.querySelector('#calendario-fechar')?.addEventListener('click', () => painelCalendario?.classList.remove('aberta'));
+  document.querySelector('#nav-emails')?.addEventListener('click', () => {
+    window.location.href = new URL('./email.html', window.location.href).href;
+  });
   // Menu de Contexto
   let contextMenu = document.getElementById('urfilig-context-menu');
   if (!contextMenu) {
@@ -380,6 +401,9 @@ export function iniciarMenuLateral(socket) {
     if (cerebroPainel) {
       const estaAberta = cerebroPainel.classList.toggle('aberta');
       if (estaAberta) {
+        document.querySelectorAll('.sidebar-cerebro.aberta, .sidebar.aberta').forEach((painel) => {
+          if (painel !== cerebroPainel) painel.classList.remove('aberta');
+        });
         carregarPastasDoBackend(true);
       }
     }

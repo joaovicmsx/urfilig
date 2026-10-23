@@ -69,12 +69,12 @@
     </aside>
 
     <!-- PAINEL FLUTUANTE DO CALENDÁRIO -->
-    <div id="calendario-painel" class="painel-flutuante">
-      <div class="painel-header">
+    <div id="calendario-painel" class="sidebar-cerebro painel-calendario">
+      <div class="sidebar-cerebro-header">
         <h3>Calendário</h3>
-        <button type="button" id="calendario-fechar">✕</button>
+        <button type="button" id="calendario-fechar" aria-label="Fechar" title="Fechar painel"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
-      <div id="calendario-conteudo"></div>
+      <div id="calendario-conteudo" class="calendario-conteudo"></div>
     </div>
 
     <div id="sidebar-notas" class="sidebar">
@@ -177,6 +177,13 @@
       </div>
     </div>
 
+    <div id="microfone-modal" class="microfone-modal" role="dialog" aria-modal="true" aria-labelledby="microfone-modal-titulo" hidden>
+      <div class="microfone-modal-card">
+        <div class="microfone-modal-header"><span class="microfone-modal-indicador" aria-hidden="true"></span><h2 id="microfone-modal-titulo">Permitir microfone do Urfilig</h2></div>
+        <p>O Urfilig usa o microfone para reconhecer sua fala e responder por voz. Você pode continuar usando o chat sem ativá-lo.</p>
+        <div class="microfone-modal-acoes"><button id="microfone-negar" type="button" class="microfone-btn-secundario">Agora não</button><button id="microfone-permitir" type="button" class="microfone-btn-principal">Permitir microfone</button></div>
+      </div>
+    </div>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

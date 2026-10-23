@@ -38,9 +38,10 @@ function responderCallback(res, mensagem, status = 200) {
 
 /** Inicia OAuth nativo: navegador externo + callback loopback + PKCE. */
 authRouter.post('/auth/google/desktop/start', async (req, res) => {
-  const { clientId } = req.body;
-  if (!clientId || !/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
-    return res.status(400).json({ erro: 'ID do cliente Google Desktop inválido' });
+  const { clientId, clientSecret: clientSecretBody } = req.body;
+  const clientSecret = process.env.GOOGLE_DESKTOP_CLIENT_SECRET || clientSecretBody;
+  if (!clientId || !clientSecret || !/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
+    return res.status(400).json({ erro: 'ID ou segredo do cliente Google Desktop ausente ou inválido' });
   }
 
   const estado = randomBytes(32).toString('hex');
@@ -68,7 +69,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       const code = callbackUrl.searchParams.get('code');
       if (!code) throw new Error('O Google não retornou o código de autorização.');
       const redirectUri = `http://127.0.0.1:${callbackServer.address().port}/oauth2callback`;
-      const oauthClient = new OAuth2Client(clientId, undefined, redirectUri);
+      const oauthClient = new OAuth2Client({ clientId, clientSecret, redirectUri });
       const { tokens } = await oauthClient.getToken({ code, codeVerifier, redirect_uri: redirectUri });
       if (!tokens.id_token) throw new Error('O Google não retornou um ID token.');
       const ticket = await oauthClient.verifyIdToken({ idToken: tokens.id_token, audience: clientId });
@@ -78,7 +79,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       sessao.status = 'complete';
       responderCallback(resCallback, 'Login concluído! Volte ao Urfilig.');
     } catch (erro) {
-      console.error('[auth] falha no OAuth Desktop:', erro.message);
+      console.error('[auth] falha no OAuth Desktop:', erro.message, erro.response?.data || '');
       sessao.status = 'error';
       sessao.erro = 'Não foi possível concluir o login com Google.';
       responderCallback(resCallback, 'Não foi possível concluir o login. Volte ao Urfilig.', 400);
@@ -95,7 +96,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
   callbackServer.listen(0, '127.0.0.1', () => {
     const redirectUri = `http://127.0.0.1:${callbackServer.address().port}/oauth2callback`;
     sessao.server = callbackServer;
-    const oauthClient = new OAuth2Client(clientId, undefined, redirectUri);
+    const oauthClient = new OAuth2Client({ clientId, clientSecret, redirectUri });
     const authUrl = oauthClient.generateAuthUrl({
       response_type: 'code',
       redirect_uri: redirectUri,

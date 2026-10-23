@@ -3,6 +3,7 @@ import { BACKEND_URL } from './authGuard.js';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const GOOGLE_DESKTOP_CLIENT_ID = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID;
+const GOOGLE_DESKTOP_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_SECRET;
 
 const form = document.querySelector('#form-login');
 const mensagemErro = document.querySelector('#mensagem-erro');
@@ -176,7 +177,7 @@ function inicializarGoogle(tentativas = 0) {
         const inicio = await fetch(`${BACKEND_URL}/api/auth/google/desktop/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ clientId: GOOGLE_DESKTOP_CLIENT_ID }),
+          body: JSON.stringify({ clientId: GOOGLE_DESKTOP_CLIENT_ID, clientSecret: GOOGLE_DESKTOP_CLIENT_SECRET || undefined }),
         });
         const sessao = await inicio.json();
         if (!inicio.ok) throw new Error(sessao.erro || 'Não foi possível iniciar o login Google.');

@@ -1,4 +1,5 @@
 import './styles.css';
+import { invoke, isTauri } from '@tauri-apps/api/core';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -487,10 +488,51 @@ socket.on('connect', () => {
   carregarMemoriasECerebro();
 });
 
+let solicitacaoMicrofone;
+let microfoneAtivo = false;
+let microfoneRecusado = false;
+function pedirConsentimentoMicrofone() {
+  const modal = document.querySelector('#microfone-modal');
+  if (!modal) return Promise.resolve(false);
+  modal.hidden = false;
+  return new Promise((resolve) => {
+    const permitir = modal.querySelector('#microfone-permitir');
+    const negar = modal.querySelector('#microfone-negar');
+    const finalizar = (autorizado) => {
+      modal.hidden = true;
+      permitir.removeEventListener('click', permitirMicrofone);
+      negar.removeEventListener('click', negarMicrofone);
+      resolve(autorizado);
+    };
+    const permitirMicrofone = () => finalizar(true);
+    const negarMicrofone = () => finalizar(false);
+    permitir.addEventListener('click', permitirMicrofone, { once: true });
+    negar.addEventListener('click', negarMicrofone, { once: true });
+  });
+}
+
 async function iniciarMicrofoneLocal() {
+  if (solicitacaoMicrofone) return solicitacaoMicrofone;
+  solicitacaoMicrofone = iniciarMicrofoneComConsentimento();
   try {
+    await solicitacaoMicrofone;
+  } finally {
+    solicitacaoMicrofone = null;
+  }
+}
+
+async function iniciarMicrofoneComConsentimento() {
+  try {
+    const autorizado = await pedirConsentimentoMicrofone();
+    if (!autorizado) {
+      microfoneRecusado = true;
+      setLiveStatus('Microfone desativado. O chat continua disponível.');
+      return;
+    }
+    if (isTauri()) await invoke('autorizar_microfone');
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     const audioCtx = new AudioContext();
+    microfoneAtivo = true;
     const source = audioCtx.createMediaStreamSource(stream);
     const processor = audioCtx.createScriptProcessor(4096, 1, 1);
 
@@ -511,7 +553,8 @@ async function iniciarMicrofoneLocal() {
 
     setLiveStatus('Microfone ativo.');
   } catch (erro) {
-    setLiveStatus('Microfone indisponivel.');
+    console.error('[microfone] Não foi possível iniciar:', erro);
+    setLiveStatus('Microfone indisponível.');
   }
 }
 

@@ -10,6 +10,7 @@
 use std::process::{Child, Command};
 use std::sync::Mutex;
 use tauri::Manager;
+use tauri::webview::{PermissionKind, PermissionResponse};
 use tauri::Url;
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -22,6 +23,8 @@ const CREATE_NO_WINDOW: u32 = 0x08000000;
 /// isso, eles ficam "órfãos" rodando em segundo plano depois de fechar a
 /// Urfilig, e a próxima vez que abrir o app a porta 3000 já vai estar em
 /// uso pelo processo antigo.
+struct PermissaoMicrofone(Mutex<bool>);
+
 struct ProcessosFilhos {
     backend: Option<Child>,
     wakeword: Option<Child>,
@@ -30,11 +33,30 @@ struct ProcessosFilhos {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
-        .invoke_handler(tauri::generate_handler![abrir_url_externa])
+        .invoke_handler(tauri::generate_handler![abrir_url_externa, autorizar_microfone])
+        .manage(PermissaoMicrofone(Mutex::new(false)))
         .manage(Mutex::new(ProcessosFilhos {
             backend: None,
             wakeword: None,
         }))
+        .on_permission_request(|webview, kind| {
+            if kind != PermissionKind::Microphone {
+                return PermissionResponse::Default;
+            }
+            let origem_urfilig = webview.url().map(|url| {
+                matches!(url.host_str(), Some("tauri.localhost" | "localhost" | "127.0.0.1"))
+                    && matches!(url.scheme(), "http" | "https" | "tauri")
+            }).unwrap_or(false);
+            if !origem_urfilig {
+                return PermissionResponse::Deny;
+            }
+            let consentimento = webview.state::<PermissaoMicrofone>();
+            if *consentimento.0.lock().unwrap_or_else(|erro| erro.into_inner()) {
+                PermissionResponse::Allow
+            } else {
+                PermissionResponse::Deny
+            }
+        })
         .setup(|app| {
             // Em desenvolvimento (`cargo tauri dev`), o mais simples é você
             // já ter o backend/Python rodando manualmente em terminais
@@ -107,6 +129,11 @@ fn main() {
         .expect("erro ao rodar a aplicação Urfilig");
 }
 
+#[tauri::command]
+fn autorizar_microfone(consentimento: tauri::State<'_, PermissaoMicrofone>) -> Result<(), String> {
+    *consentimento.0.lock().map_err(|erro| erro.to_string())? = true;
+    Ok(())
+}
 #[tauri::command]
 fn abrir_url_externa(url: String) -> Result<(), String> {
     let url = Url::parse(&url).map_err(|erro| erro.to_string())?;

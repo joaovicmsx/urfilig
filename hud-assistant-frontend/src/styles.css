@@ -263,6 +263,43 @@ body.tela-centralizada {
   display: flex; align-items: center; transition: color 0.2s;
 }
 .sidebar-cerebro-header button:hover { color: #fff; }
+.sidebar-cerebro-header h3 { margin: 0; font-size: 1rem; font-weight: 600; color: #fff; }
+.painel-calendario #calendario-conteudo { flex: 1; overflow: hidden; padding: 0 1.4rem 1.4rem; }
+.contatos-busca-container { padding: 0 1.4rem 1rem; }
+.contatos-busca-container input {
+  width: 100%; padding: 0.75rem 1rem; border: 0; border-radius: 8px;
+  background: #121215; color: #f8fafc; font: inherit; font-size: 0.85rem;
+  outline: none; box-sizing: border-box;
+}
+.contatos-busca-container input:focus { box-shadow: 0 0 0 1px rgba(255,255,255,.16); }
+.contatos-lista { padding: 0 1.4rem 1rem; }
+.contatos-rodape { padding: 1.2rem 1.4rem; background: #000; margin-top: auto; }
+.contatos-btn-novo {
+  width: 100%; padding: 0.75rem; border: 0; border-radius: 8px;
+  background: #1e293b; color: #fff; font: inherit; font-size: 0.85rem;
+  font-weight: 500; cursor: pointer; transition: background .2s ease;
+}
+.contatos-btn-novo:hover { background: #334155; }
+
+.microfone-modal[hidden] { display: none; }
+.microfone-modal {
+  position: fixed; inset: 0; z-index: 10001; display: flex; align-items: center;
+  justify-content: center; padding: 1.25rem; background: rgba(0,0,0,.72); backdrop-filter: blur(8px);
+}
+.microfone-modal-card {
+  width: min(100%, 440px); padding: 1.5rem; border-radius: 14px;
+  background: #09090b; border: 1px solid rgba(255,255,255,.08); color: #cbd5e1;
+  box-shadow: 0 25px 50px rgba(0,0,0,.55);
+}
+.microfone-modal-header { display: flex; align-items: center; gap: .7rem; }
+.microfone-modal-header h2 { margin: 0; color: #f8fafc; font-size: 1rem; font-weight: 600; }
+.microfone-modal-indicador { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: #fbbf24; box-shadow: 0 0 12px rgba(251,191,36,.6); }
+.microfone-modal-card p { margin: 1rem 0 1.3rem; color: #94a3b8; font-size: .88rem; line-height: 1.55; }
+.microfone-modal-acoes { display: flex; justify-content: flex-end; gap: .6rem; }
+.microfone-modal-acoes button { padding: .65rem .9rem; border-radius: 8px; font: inherit; font-size: .84rem; cursor: pointer; }
+.microfone-btn-secundario { border: 1px solid #30363d; background: transparent; color: #cbd5e1; }
+.microfone-btn-principal { border: 0; background: #1e293b; color: #fff; font-weight: 600 !important; }
+.microfone-btn-principal:hover { background: #334155; }
 
 .cerebro-view { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
 .cerebro-view[hidden] { display: none; }

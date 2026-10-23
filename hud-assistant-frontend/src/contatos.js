@@ -128,21 +128,21 @@ export function iniciarModuloContatos() {
     painelContatos.className = 'sidebar-cerebro';
 
     painelContatos.innerHTML = `
-      <div class="sidebar-cerebro-header" style="display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.4rem; border-bottom: 1px solid rgba(255, 255, 255, 0.08);">
-        <span id="contatos-titulo" style="font-weight: 600; color: #f0f6fc; font-size: 1rem;">Carteira de Contatos</span>
-        <button id="contatos-fechar" type="button" aria-label="Fechar" title="Fechar painel" style="background: none; border: none; cursor: pointer; display: flex; align-items: center;">
+      <div class="sidebar-cerebro-header">
+        <span id="contatos-titulo">Carteira de Contatos</span>
+        <button id="contatos-fechar" type="button" aria-label="Fechar" title="Fechar painel">
           ${iconeFechar}
         </button>
       </div>
 
-      <div style="padding: 1rem 1.4rem;">
-        <input id="contatos-busca" type="text" placeholder="Buscar contato..." style="width: 100%; padding: 0.7rem 0.9rem; border-radius: 6px; border: 1px solid #21262d; background: #0d1117; color: #f0f6fc; font-family: inherit; outline: none; font-size: 0.85rem; box-sizing: border-box;" />
+      <div class="contatos-busca-container">
+        <input id="contatos-busca" type="text" placeholder="Buscar contato..." />
       </div>
 
-      <div id="contatos-lista" class="cerebro-lista" style="padding: 0 1rem; overflow-y: auto; flex: 1;"></div>
+      <div id="contatos-lista" class="cerebro-lista contatos-lista"></div>
 
-      <div style="padding: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); background: #0d1117; margin-top: auto;">
-        <button id="btn-novo-contato-rodape" type="button" class="btn-dinamico-esfera" style="width: 100%; padding: 9px 12px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 0.8rem;">
+      <div class="contatos-rodape">
+        <button id="btn-novo-contato-rodape" type="button" class="contatos-btn-novo">
           + Novo Contato
         </button>
       </div>
@@ -405,6 +405,9 @@ export function iniciarModuloContatos() {
     if (estaAberto) {
       painelContatos.classList.remove('aberta');
     } else {
+      document.querySelectorAll('.sidebar-cerebro.aberta, .sidebar.aberta').forEach((painel) => {
+        if (painel !== painelContatos) painel.classList.remove('aberta');
+      });
       painelContatos.classList.add('aberta');
       carregarContatos();
     }
