@@ -38,7 +38,7 @@ function responderCallback(res, mensagem, status = 200) {
 
 /** Inicia OAuth nativo: navegador externo + callback loopback + PKCE. */
 authRouter.post('/auth/google/desktop/start', async (req, res) => {
-  const { clientId, clientSecret: clientSecretBody, emailAccess = false } = req.body;
+  const { clientId, clientSecret: clientSecretBody, emailAccess = false, loginHint } = req.body;
   const clientSecret = process.env.GOOGLE_DESKTOP_CLIENT_SECRET || clientSecretBody;
   if (!clientId || !clientSecret || !/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
     return res.status(400).json({ erro: 'ID ou segredo do cliente Google Desktop ausente ou inválido' });
@@ -46,7 +46,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
 
   const estado = randomBytes(32).toString('hex');
   const { codeVerifier, codeChallenge } = await new OAuth2Client().generateCodeVerifierAsync();
-  const sessao = { status: 'pending', criadoEm: Date.now(), server: null, emailAccess: emailAccess === true };
+  const sessao = { status: 'pending', criadoEm: Date.now(), server: null, emailAccess: emailAccess === true, loginHint: typeof loginHint === 'string' ? loginHint.trim().toLowerCase() : null };
   loginsDesktop.set(estado, sessao);
 
   const callbackServer = createServer(async (reqCallback, resCallback) => {
@@ -76,6 +76,9 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       const payload = ticket.getPayload();
       if (!payload?.email || !payload.email_verified || !payload.sub) throw new Error('A conta Google não pôde ser validada.');
       if (sessao.emailAccess) {
+        if (sessao.loginHint && payload.email.toLowerCase() !== sessao.loginHint) {
+          throw new Error('A autorização foi feita com outra conta Google. Entre novamente com a conta usada no Urfilig.');
+        }
         if (!tokens.access_token) throw new Error('O Google não retornou um token de acesso ao Gmail.');
         sessao.resultado = { accessToken: tokens.access_token, email: payload.email };
       } else {
@@ -86,7 +89,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
     } catch (erro) {
       console.error('[auth] falha no OAuth Desktop:', erro.message, erro.response?.data || '');
       sessao.status = 'error';
-      sessao.erro = 'Não foi possível concluir o login com Google.';
+      sessao.erro = erro.message?.includes('outra conta Google') ? erro.message : 'Não foi possível concluir o login com Google.';
       responderCallback(resCallback, 'Não foi possível concluir o login. Volte ao Urfilig.', 400);
     } finally {
       setTimeout(() => callbackServer.close(), 250);
@@ -102,7 +105,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
     const redirectUri = `http://127.0.0.1:${callbackServer.address().port}/oauth2callback`;
     sessao.server = callbackServer;
     const oauthClient = new OAuth2Client({ clientId, clientSecret, redirectUri });
-    const authUrl = oauthClient.generateAuthUrl({
+    const opcoesOAuth = {
       response_type: 'code',
       redirect_uri: redirectUri,
       scope: [
@@ -113,8 +116,14 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       access_type: 'online',
-      prompt: 'select_account',
-    });
+    };
+    if (sessao.emailAccess) {
+      opcoesOAuth.include_granted_scopes = true;
+      if (sessao.loginHint) opcoesOAuth.login_hint = sessao.loginHint;
+    } else {
+      opcoesOAuth.prompt = 'select_account';
+    }
+    const authUrl = oauthClient.generateAuthUrl(opcoesOAuth);
     res.json({ state: estado, authUrl });
   });
 
