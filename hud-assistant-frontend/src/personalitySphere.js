@@ -46,6 +46,7 @@ export class PersonalitySphere {
     this.hoverIndex = null;
     this.nodeArrastado = null;
     this.velocidadeRotacao = { x: 0, y: 0 };
+    this.corHorario = new THREE.Color(0x9c8a58);
 
     this.grupo = new THREE.Group();
     scene.add(this.grupo);
@@ -406,6 +407,10 @@ export class PersonalitySphere {
     this.reducedMotion = valor;
   }
 
+  setTimeColor(color) {
+    this.corHorario.copy(color);
+  }
+
   update(delta) {
     this.grupo.rotation.y += this.velocidadeRotacao.y;
     this.grupo.rotation.x += this.velocidadeRotacao.x;
@@ -415,23 +420,14 @@ export class PersonalitySphere {
     const matriz = new THREE.Matrix4();
     const tempo = performance.now() / 1000;
 
-    const tempoCiclo = (tempo % 24) / 24;
-    let fatorGlobal = 0;
-
-    if (tempoCiclo < 0.40) {
-      fatorGlobal = 0;
-    } else if (tempoCiclo < 0.50) {
-      const t = (tempoCiclo - 0.40) / 0.10;
-      fatorGlobal = t * t * (3 - 2 * t);
-    } else if (tempoCiclo < 0.90) {
-      fatorGlobal = 1;
-    } else {
-      const t = (tempoCiclo - 0.90) / 0.10;
-      fatorGlobal = 1 - t * t * (3 - 2 * t);
-    }
+    const agora = new Date();
+    const hora = agora.getHours() + agora.getMinutes() / 60;
+    const dia = hora >= 6 && hora < 18;
+    const transicao = hora >= 16 && hora < 20 ? (hora - 16) / 4 : (hora >= 6 && hora < 8 ? (8 - hora) / 2 : 0);
+    const fatorGlobal = dia ? 0.25 : Math.max(0, Math.min(1, transicao));
 
     if (this.linhasConstelacao && this.linhasConstelacao.material) {
-      const corLinha = new THREE.Color(0xaaaaaa).lerp(new THREE.Color(0xb0b0b0), fatorGlobal);
+      const corLinha = this.corHorario.clone().multiplyScalar(0.42 + fatorGlobal * 0.2);
       this.linhasConstelacao.material.color.copy(corLinha);
     }
 
@@ -467,7 +463,7 @@ export class PersonalitySphere {
         }
       }
 
-      p.corAtual.copy(p.corAzul).lerp(p.corAmarelo, fatorGlobal);
+      p.corAtual.copy(this.corHorario).multiplyScalar(0.88 + (i % 4) * 0.045);
 
       const corRender = p.corAtual.clone().multiplyScalar(1.05);
       if (this.hoverIndex === i || this.nodeArrastado === p) {

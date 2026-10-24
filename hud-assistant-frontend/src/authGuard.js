@@ -22,6 +22,9 @@ export function exigirLogin() {
 
   const token = localStorage.getItem('urfilig_token');
   if (!token) {
+    if (window.location.pathname.toLowerCase().endsWith('/email.html')) {
+      localStorage.setItem('redirect_after_login', 'email.html');
+    }
     window.location.href = './login.html';
     throw new Error('[authGuard] sem sessão — redirecionando pro login');
   }
@@ -36,7 +39,11 @@ export async function obterUsuarioAtual() {
   const resposta = await fetch(`${BACKEND_URL}/api/auth/me`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!resposta.ok) throw new Error('sessão inválida');
+  if (!resposta.ok) {
+    const erro = new Error(resposta.status === 401 || resposta.status === 403 ? 'sessão inválida' : 'backend indisponível');
+    erro.status = resposta.status;
+    throw erro;
+  }
   const { usuario } = await resposta.json();
   localStorage.setItem('urfilig_usuario', JSON.stringify(usuario));
   return usuario;
@@ -51,7 +58,9 @@ export async function validarSessao() {
     if (!usuario.onboardingConcluido) {
       window.location.href = './onboarding.html';
     }
-  } catch {
+  } catch (erro) {
+    // Preserve a sessão local se a API estiver temporariamente fora do ar.
+    if (!erro.status || (erro.status !== 401 && erro.status !== 403)) return;
     sair();
   }
 }

@@ -1,5 +1,7 @@
 import './windowChrome.js';
+import './timeTheme.js';
 import './styles.css';
+import './theme.css';
 import { BACKEND_URL } from './authGuard.js';
 
 document.addEventListener('DOMContentLoaded', () => {

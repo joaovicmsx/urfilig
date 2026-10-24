@@ -1,6 +1,11 @@
+import './timeTheme.js';
 import './windowChrome.js';
 import './styles.css';
-import { BACKEND_URL } from './authGuard.js';
+import './theme.css';
+import { BACKEND_URL, exigirLogin, validarSessao } from './authGuard.js';
+
+exigirLogin();
+void validarSessao();
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const GOOGLE_DESKTOP_CLIENT_ID = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID;
@@ -49,19 +54,9 @@ function inicializarBotoesAcao() {
   if (!btnSalvarCerebro && btnSalvarTxt && btnSalvarTxt.parentElement) {
     btnSalvarCerebro = document.createElement('button');
     btnSalvarCerebro.id = 'btn-salvar-cerebro';
+    btnSalvarCerebro.className = 'btn-salvar-cerebro';
     btnSalvarCerebro.textContent = 'Salvar no Cérebro da Urfilig';
     btnSalvarCerebro.disabled = true;
-    btnSalvarCerebro.style.cssText = `
-      background: rgba(56, 189, 248, 0.15);
-      color: #38bdf8;
-      border: 1px solid #38bdf8;
-      padding: 0.5rem 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 500;
-      margin-left: 8px;
-    `;
     btnSalvarTxt.parentElement.appendChild(btnSalvarCerebro);
   }
 
@@ -175,15 +170,18 @@ function extrairCorpoEmail(payload) {
 function exibirEstadoSemConexao(mensagemErro = 'Sessão do Gmail não encontrada ou expirada.') {
   if (txtContaAtiva) txtContaAtiva.textContent = 'Não conectada';
   if (listaEmailsEl) {
-    listaEmailsEl.innerHTML = `
-      <div class="email-vazio-msg" style="padding: 2rem 1rem;">
-        <p style="margin-bottom: 1rem; color: #f87171; font-size: 0.85rem;">${mensagemErro}</p>
-        <button id="btn-reconectar-google" style="background: #1e293b; color: #38bdf8; border: 1px solid #38bdf8; padding: 0.6rem 1rem; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 500;">
-          Conectar Conta Google
-        </button>
-      </div>
-    `;
-    document.getElementById('btn-reconectar-google')?.addEventListener('click', conectarContaGoogle);
+    const estado = document.createElement('div');
+    estado.className = 'email-vazio-msg email-estado-conexao';
+    const mensagem = document.createElement('p');
+    mensagem.className = 'email-erro-msg';
+    mensagem.textContent = mensagemErro;
+    const conectar = document.createElement('button');
+    conectar.id = 'btn-reconectar-google';
+    conectar.className = 'email-btn-conectar';
+    conectar.textContent = 'Autorizar acesso ao Gmail';
+    conectar.addEventListener('click', conectarContaGoogle);
+    estado.append(mensagem, conectar);
+    listaEmailsEl.replaceChildren(estado);
   }
 }
 
@@ -271,7 +269,7 @@ async function carregarEmails(pasta = 'INBOX') {
     }
   } catch (erro) {
     console.error(erro);
-    listaEmailsEl.innerHTML = '<div class="email-vazio-msg" style="color: #f87171;">Erro ao carregar mensagens. Tente recarregar a página.</div>';
+    listaEmailsEl.innerHTML = '<div class="email-vazio-msg email-erro-msg">Erro ao carregar mensagens. Tente recarregar a página.</div>';
   }
 }
 

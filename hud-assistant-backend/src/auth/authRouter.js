@@ -115,9 +115,10 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       state: estado,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
-      access_type: 'online',
+      access_type: sessao.emailAccess ? 'offline' : 'online',
     };
     if (sessao.emailAccess) {
+      opcoesOAuth.prompt = 'consent';
       opcoesOAuth.include_granted_scopes = true;
       if (sessao.loginHint) opcoesOAuth.login_hint = sessao.loginHint;
     } else {

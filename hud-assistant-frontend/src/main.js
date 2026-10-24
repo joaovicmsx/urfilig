@@ -1,5 +1,7 @@
 import './windowChrome.js';
+import { getTimeColor } from './timeTheme.js';
 import './styles.css';
+import './theme.css';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -44,8 +46,9 @@ const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
 const dpr = Math.min(window.devicePixelRatio, 2);
 
 const scene = new THREE.Scene();
-scene.add(criarFundoEtereo());
-scene.fog = new THREE.FogExp2(0x15141a, 0.02);
+const fundoEtereo = criarFundoEtereo();
+scene.add(fundoEtereo);
+scene.fog = new THREE.FogExp2(0x050506, 0.02);
 
 // Câmara fixa
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -216,6 +219,21 @@ const memorySphere = new PersonalitySphere(scene, {
     syncAccessibleParticles(particles);
   },
 });
+
+function atualizarTemaPorHorario() {
+  const rgb = getTimeColor();
+  const cor = new THREE.Color(`rgb(${rgb.join(',')})`);
+  const base = cor.clone().multiplyScalar(0.075);
+  const uniforms = fundoEtereo.material.uniforms;
+  uniforms.corTopo.value.copy(base.clone().multiplyScalar(1.3));
+  uniforms.corMeio.value.copy(base);
+  uniforms.corBase.value.copy(base.clone().multiplyScalar(0.72));
+  uniforms.corVazio.value.set(0x050506);
+  memorySphere.setTimeColor(cor);
+  document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
+}
+atualizarTemaPorHorario();
+setInterval(atualizarTemaPorHorario, 60_000);
 
 // CAPTURA DO BOTÃO DIREITO NO CANVAS
 canvas.addEventListener('contextmenu', (event) => {
@@ -913,25 +931,17 @@ function renderizarRotulosObsidian() {
       const px = (tempVec.x * 0.5 + 0.5) * window.innerWidth * currentDpr;
       const py = (tempVec.y * -0.5 + 0.5) * window.innerHeight * currentDpr;
 
-      ctx2d.font = `700 ${11 * currentDpr}px "Segoe Print", "Comic Sans MS", sans-serif`;
+      ctx2d.font = `600 ${11 * currentDpr}px "Segoe UI", Arial, sans-serif`;
 
       const textWidth = ctx2d.measureText(labelText).width;
       const boxHeight = 22 * currentDpr;
       const boxY = py + 26 * currentDpr;
 
-      ctx2d.fillStyle = `rgba(248, 248, 248, ${0.96 * alphaLabel})`;
+      ctx2d.fillStyle = `rgba(24, 24, 27, ${0.94 * alphaLabel})`;
       ctx2d.beginPath();
       ctx2d.roundRect(px - textWidth / 2 - 8 * currentDpr, boxY, textWidth + 16 * currentDpr, boxHeight, 4 * currentDpr);
       ctx2d.fill();
-      ctx2d.lineWidth = 1.5 * currentDpr;
-      ctx2d.strokeStyle = "rgba(35, 35, 35, " + (0.72 * alphaLabel) + ")";
-      ctx2d.stroke();
-
-      if (p.corAtual) {
-        ctx2d.fillStyle = `rgba(35, 35, 35, ${alphaLabel})`;
-      } else {
-        ctx2d.fillStyle = `rgba(35, 35, 35, ${alphaLabel})`;
-      }
+      ctx2d.fillStyle = `rgba(232, 232, 236, ${alphaLabel})`;
 
       ctx2d.textAlign = 'center';
       ctx2d.textBaseline = 'middle';
