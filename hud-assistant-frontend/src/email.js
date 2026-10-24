@@ -5,14 +5,16 @@ import { BACKEND_URL } from './authGuard.js';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 let writeTextFile, BaseDirectory;
-try {
-  const pkg = '@tauri-apps/plugin-fs';
-  const tauriFs = await import(/* @vite-ignore */ pkg);
-  writeTextFile = tauriFs.writeTextFile;
-  BaseDirectory = tauriFs.BaseDirectory;
-} catch (e) {
-  console.warn('[Email] Módulo Tauri FS indisponível no navegador web.');
-}
+void (async () => {
+  try {
+    const pkg = '@tauri-apps/plugin-fs';
+    const tauriFs = await import(/* @vite-ignore */ pkg);
+    writeTextFile = tauriFs.writeTextFile;
+    BaseDirectory = tauriFs.BaseDirectory;
+  } catch (e) {
+    console.warn('[Email] Módulo Tauri FS indisponível no navegador web.');
+  }
+})();
 
 const listaEmailsEl = document.getElementById('lista-emails');
 const leitorAssunto = document.getElementById('leitor-assunto');

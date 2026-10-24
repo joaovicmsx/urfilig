@@ -1201,3 +1201,29 @@ body:has(#hud-canvas)::after { opacity:0 !important; }
 .cerebro-pasta-nome,.cerebro-nota-titulo,.cerebro-pasta span,.cerebro-nota span,#lista-notas,#lista-notas * { color:#34323b !important; opacity:1 !important; }
 #hud-weather { color:#d4cdb9 !important; }
 .painel-calendario,.painel-flutuante,#obsidian-modal,.intel-modal-card,.microfone-modal-card,#modal-evento-overlay > div,.modal-card { box-shadow:0 5px 18px rgba(0,0,0,.2) !important; }
+
+/* Tema monocromático com linhas finas de lápis. */
+:root { --toon-ink:#202020; --toon-paper:#f3f1e9; --toon-paper-light:#fbfaf6; --toon-sun:#dedbd2; --toon-coral:#c9c7c1; --toon-sky:#d4d4d0; --toon-lilac:#c9c7c4; --toon-shadow:rgba(0,0,0,.16); --accent-color:#777 !important; }
+body:has(#hud-canvas) { background:#101010 !important; background-image:radial-gradient(rgba(255,255,255,.025) .6px,transparent .9px) !important; background-size:15px 15px !important; }
+body:has(#hud-canvas)::after { display:none !important; }
+#cerebro-painel,#cerebro-painel * { color:#242424 !important; text-shadow:none !important; }
+#cerebro-painel { background:#f3f1e9 !important; border:1px solid #424242 !important; box-shadow:2px 2px 5px rgba(0,0,0,.14) !important; }
+#cerebro-painel .cerebro-pasta,#cerebro-painel .cerebro-nota,#cerebro-painel .cerebro-nota-item { color:#242424 !important; background:#fbfaf6 !important; border:1px solid #b8b6af !important; box-shadow:0 1px 1px rgba(0,0,0,.08) !important; }
+#cerebro-painel .cerebro-pasta span,#cerebro-painel .cerebro-nota span,#cerebro-painel .cerebro-nota-item span,#cerebro-painel h3,#cerebro-painel h4 { color:#242424 !important; opacity:1 !important; }
+#cerebro-painel input,#cerebro-painel textarea,#cerebro-painel select { color:#242424 !important; background:#fbfaf6 !important; border-color:#777 !important; }
+#cerebro-painel input::placeholder,#cerebro-painel textarea::placeholder { color:#696969 !important; opacity:1 !important; }
+.pasta-destino-arrasto { outline:2px dashed #333 !important; outline-offset:2px; background:#e4e2dc !important; }
+#memory-tooltip { display:none !important; }
+#top-hud-bar button,#top-hud-bar a,.hud-nav,.nav-item { color:#222 !important; }
+.hud-nav { background:#f3f1e9 !important; border:1px solid #555 !important; box-shadow:1px 2px 5px rgba(0,0,0,.18) !important; }
+.nav-item:hover,.nav-item.active { color:#111 !important; background:#dedbd2 !important; border-color:#777 !important; }
+.sidebar-cerebro,.sidebar,#menu-lateral,.menu-lateral,.chat-historico-direita,.email-container,.email-caixas-card,.email-lista-card,.email-leitor-card,.email-reader { color:#242424 !important; background:#f3f1e9 !important; border-color:#777 !important; }
+.sidebar-cerebro *, .sidebar *, .chat-historico-direita *, .email-container * { text-shadow:none !important; }
+.chat-historico-header,.email-topbar,.email-sidebar,.email-list { background:#e8e6df !important; }
+.chat-msg,.email-item,.email-caixas-card,.email-lista-card,.email-leitor-card,.cerebro-pasta,.cerebro-nota,.criar-nota-container,.intel-card-item { color:#242424 !important; background:#fbfaf6 !important; border:1px solid #aaa8a2 !important; box-shadow:none !important; }
+button,.bolha-opcao,.chat-btn-enviar,.contatos-btn-novo,.btn-dinamico-esfera { color:#222 !important; background:#dedbd2 !important; border:1px solid #666 !important; box-shadow:none !important; }
+.chat-form-inferior { background:#f3f1e9 !important; border:1px solid #555 !important; box-shadow:1px 2px 5px rgba(0,0,0,.14) !important; }
+.cartoon-windowbar { background:#f3f1e9 !important; border-color:#555 !important; box-shadow:none !important; }
+#cerebro-painel { background-image:repeating-linear-gradient(178deg,transparent 0 23px,rgba(20,20,20,.018) 23px 24px) !important; }
+#cerebro-painel .sidebar-cerebro-header { border-bottom:1px dashed #777 !important; }
+#cerebro-painel h3,#cerebro-painel h4 { font-family:"Segoe Print","Comic Sans MS",sans-serif !important; }

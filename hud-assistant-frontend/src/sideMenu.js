@@ -590,8 +590,10 @@ export function iniciarMenuLateral(socket) {
   // ======================================================================================
   // TRUQUE MESTRE COM ROTA DIRETA E REFRESH SEGURO
   // ======================================================================================
-  async function moverNotaParaPasta(nota) {
-    const novaPastaId = await pedirSelecaoPastaModal(pastas);
+  async function moverNotaParaPasta(nota, pastaDestinoDireto) {
+    const novaPastaId = pastaDestinoDireto === undefined
+      ? await pedirSelecaoPastaModal(pastas)
+      : pastaDestinoDireto;
     if (novaPastaId === undefined) return;
 
     const targetPastaId = novaPastaId ? String(novaPastaId) : null;
@@ -662,6 +664,11 @@ export function iniciarMenuLateral(socket) {
 
   function criarNotaTextoPuroUI(nota) {
     const div = document.createElement('div');
+    div.draggable = !String(nota.id).startsWith('hobby-');
+    div.addEventListener('dragstart', (event) => {
+      event.dataTransfer?.setData('text/plain', String(nota.id));
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+    });
     div.className = 'cerebro-nota-item item-lista-limpo';
     div.style.cssText = `
       cursor: pointer; padding: 5px 8px 5px 22px; margin: 2px 0; border-radius: 6px;
@@ -751,6 +758,20 @@ export function iniciarMenuLateral(socket) {
         renderizarInterfaceTextoPuro();
       });
 
+      pastaHeader.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+        pastaHeader.classList.add('pasta-destino-arrasto');
+      });
+      pastaHeader.addEventListener('dragleave', () => pastaHeader.classList.remove('pasta-destino-arrasto'));
+      pastaHeader.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        pastaHeader.classList.remove('pasta-destino-arrasto');
+        const notaId = event.dataTransfer?.getData('text/plain');
+        const notaArrastada = [...notasSoltas, ...pastas.flatMap((item) => item.notas || [])]
+          .find((item) => String(item.id) === String(notaId));
+        if (notaArrastada) await moverNotaParaPasta(notaArrastada, String(pasta.id));
+      });
       pastaHeader.addEventListener('contextmenu', (e) => {
         mostrarContextMenu(e, [
           { label: 'Adicionar nota', action: () => abrirModalCriarNota(pasta.id) },

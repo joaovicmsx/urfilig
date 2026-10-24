@@ -2,20 +2,20 @@ import * as THREE from 'three';
 
 // Paleta Azul Frio Bioluminescente
 const PALETA_AZUL_FRIO = [
-  new THREE.Color(0x9aaab0),
-  new THREE.Color(0x9eabb0),
-  new THREE.Color(0x94a4aa),
-  new THREE.Color(0x8799a0),
-  new THREE.Color(0xb5bdbe),
+  new THREE.Color(0xaaaaaa),
+  new THREE.Color(0xaaaaaa),
+  new THREE.Color(0x9c9c9c),
+  new THREE.Color(0x888888),
+  new THREE.Color(0xc2c2c2),
 ];
 
 // Paleta Amarelo Dourado Quente
 const PALETA_AMARELO_QUENTE = [
-  new THREE.Color(0xb8ab86),
-  new THREE.Color(0xb8aa86),
-  new THREE.Color(0xb5a680),
-  new THREE.Color(0xb7a77e),
-  new THREE.Color(0xb2a582),
+  new THREE.Color(0xb0b0b0),
+  new THREE.Color(0xb0b0b0),
+  new THREE.Color(0xa5a5a5),
+  new THREE.Color(0x999999),
+  new THREE.Color(0xb8b8b8),
 ];
 
 function pontoFibonacci(indice, total, raio) {
@@ -67,62 +67,10 @@ export class PersonalitySphere {
   }
 
   // ==========================================
-  // SOM MANTIDO COMO VOCÊ PREFERIU
+  // Sons das bolinhas desativados
   // ==========================================
-  playParticleSound(tipo = 'explode') {
-    try {
-      if (!this.audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        this.audioCtx = new AudioContext();
-      }
-      
-      if (this.audioCtx.state === 'suspended') this.audioCtx.resume();
-
-      const ctx = this.audioCtx;
-      const osc = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-      const delayNode = ctx.createDelay();
-      const feedbackNode = ctx.createGain();
-
-      delayNode.delayTime.value = 0.12; 
-      feedbackNode.gain.value = 0.25;
-
-      osc.connect(gainNode);
-      gainNode.connect(ctx.destination);
-      
-      gainNode.connect(delayNode);
-      delayNode.connect(feedbackNode);
-      feedbackNode.connect(delayNode);
-      delayNode.connect(ctx.destination);
-
-      const agora = ctx.currentTime;
-      
-      if (tipo === 'implode') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(400, agora);
-        osc.frequency.exponentialRampToValueAtTime(1200, agora + 0.1);
-        gainNode.gain.setValueAtTime(0.0, agora);
-        gainNode.gain.linearRampToValueAtTime(0.08, agora + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, agora + 0.2);
-        osc.start(agora);
-        osc.stop(agora + 0.2);
-      } else if (tipo === 'explode' || tipo === 'move') {
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(1500 + Math.random() * 500, agora);
-        osc.frequency.exponentialRampToValueAtTime(300, agora + 0.15);
-        gainNode.gain.setValueAtTime(0.1, agora);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, agora + 0.15);
-        osc.start(agora);
-        osc.stop(agora + 0.15);
-      } else if (tipo === 'drag') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(2000 + Math.random() * 1000, agora);
-        gainNode.gain.setValueAtTime(0.01, agora);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, agora + 0.05);
-        osc.start(agora);
-        osc.stop(agora + 0.05);
-      }
-    } catch (e) {}
+  playParticleSound() {
+    // Sons das partículas desativados a pedido do usuário.
   }
 
   // ==========================================
@@ -161,7 +109,7 @@ export class PersonalitySphere {
   }
 
   emitDust(pos, colorBase, count, mode = 'explode') {
-    const c = colorBase || new THREE.Color(0x9eabb0);
+    const c = colorBase || new THREE.Color(0xaaaaaa);
     
     for (let i = 0; i < count; i++) {
       let idx = this.dustIndex % this.maxDust;
@@ -375,7 +323,7 @@ export class PersonalitySphere {
       geo.setAttribute('position', new THREE.BufferAttribute(posicoes, 3));
 
       const mat = new THREE.LineDashedMaterial({
-        color: 0x9eabb0,
+        color: 0xaaaaaa,
         transparent: true,
         opacity: 0.35,
         dashSize: 0.08,
@@ -483,7 +431,7 @@ export class PersonalitySphere {
     }
 
     if (this.linhasConstelacao && this.linhasConstelacao.material) {
-      const corLinha = new THREE.Color(0x9eabb0).lerp(new THREE.Color(0xb8aa86), fatorGlobal);
+      const corLinha = new THREE.Color(0xaaaaaa).lerp(new THREE.Color(0xb0b0b0), fatorGlobal);
       this.linhasConstelacao.material.color.copy(corLinha);
     }
 

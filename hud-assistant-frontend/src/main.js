@@ -913,24 +913,24 @@ function renderizarRotulosObsidian() {
       const px = (tempVec.x * 0.5 + 0.5) * window.innerWidth * currentDpr;
       const py = (tempVec.y * -0.5 + 0.5) * window.innerHeight * currentDpr;
 
-      ctx2d.font = `700 ${11 * currentDpr}px "Comic Sans MS", "Segoe Print", sans-serif`;
+      ctx2d.font = `700 ${11 * currentDpr}px "Segoe Print", "Comic Sans MS", sans-serif`;
 
       const textWidth = ctx2d.measureText(labelText).width;
       const boxHeight = 22 * currentDpr;
       const boxY = py + 26 * currentDpr;
 
-      ctx2d.fillStyle = `rgba(255, 246, 220, ${0.96 * alphaLabel})`;
+      ctx2d.fillStyle = `rgba(248, 248, 248, ${0.96 * alphaLabel})`;
       ctx2d.beginPath();
       ctx2d.roundRect(px - textWidth / 2 - 8 * currentDpr, boxY, textWidth + 16 * currentDpr, boxHeight, 4 * currentDpr);
       ctx2d.fill();
       ctx2d.lineWidth = 1.5 * currentDpr;
-      ctx2d.strokeStyle = "rgba(33, 29, 53, " + (0.9 * alphaLabel) + ")";
+      ctx2d.strokeStyle = "rgba(35, 35, 35, " + (0.72 * alphaLabel) + ")";
       ctx2d.stroke();
 
       if (p.corAtual) {
-        ctx2d.fillStyle = `rgba(33, 29, 53, ${alphaLabel})`;
+        ctx2d.fillStyle = `rgba(35, 35, 35, ${alphaLabel})`;
       } else {
-        ctx2d.fillStyle = `rgba(33, 29, 53, ${alphaLabel})`;
+        ctx2d.fillStyle = `rgba(35, 35, 35, ${alphaLabel})`;
       }
 
       ctx2d.textAlign = 'center';
