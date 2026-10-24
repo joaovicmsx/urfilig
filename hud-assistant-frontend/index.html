@@ -3,9 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
+    <meta name="color-scheme" content="dark" />
     <title>Urfilig</title>
     <link rel="stylesheet" href="./src/styles.css" />
+    <link rel="stylesheet" href="./src/theme.css" />
+    <style>html{visibility:hidden}html.auth-ready{visibility:visible}</style>
+    <script>
+      (() => {
+        let token = localStorage.getItem("urfilig_token");
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+          if (!payload.exp || payload.exp * 1000 <= Date.now() + 30000) token = null;
+        } catch { token = null; }
+        if (!token) {
+          localStorage.removeItem("urfilig_token");
+          localStorage.removeItem("urfilig_usuario");
+          location.replace("./login.html");
+          return;
+        }
+        document.documentElement.classList.add("auth-ready");
+      })();
+    </script>
   </head>
   <body>
     <!-- Topo HUD Alinhado à Esquerda -->

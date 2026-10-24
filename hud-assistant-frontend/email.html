@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Urfilig — E-mails</title>
   <link rel="stylesheet" href="./src/styles.css">
+  <link rel="stylesheet" href="./src/theme.css">
+  <style>html{visibility:hidden}html.auth-ready{visibility:visible}</style>
+  <script>
+    (() => {
+      let token = localStorage.getItem("urfilig_token");
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+        if (!payload.exp || payload.exp * 1000 <= Date.now() + 30000) token = null;
+      } catch { token = null; }
+      if (!token) {
+        localStorage.removeItem("urfilig_token");
+        localStorage.setItem("redirect_after_login", "email.html");
+        location.replace("./login.html");
+        return;
+      }
+      document.documentElement.classList.add("auth-ready");
+    })();
+  </script>
   <style>
     body {
       background-color: #000000 !important;

@@ -1,7 +1,5 @@
 import './timeTheme.js';
 import './windowChrome.js';
-import './styles.css';
-import './theme.css';
 import { BACKEND_URL } from './authGuard.js';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;

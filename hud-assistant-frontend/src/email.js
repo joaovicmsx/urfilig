@@ -1,7 +1,5 @@
 import './timeTheme.js';
 import './windowChrome.js';
-import './styles.css';
-import './theme.css';
 import { BACKEND_URL, exigirLogin, validarSessao } from './authGuard.js';
 
 exigirLogin();
@@ -227,49 +225,63 @@ async function carregarEmails(pasta = 'INBOX') {
       headers: { Authorization: `Bearer ${googleAccessToken}` }
     });
     
-    if (resLista.status === 401) {
-      exibirEstadoSemConexao('Sessão expirada. Por favor, conecte novamente.');
-      return;
-    }
-    
     const dadosLista = await resLista.json();
-    listaEmailsEl.innerHTML = '';
-    
-    if (!dadosLista.messages || dadosLista.messages.length === 0) {
+    if (!resLista.ok) {
+      if (resLista.status === 401 || resLista.status === 403) {
+        localStorage.removeItem('google_access_token');
+        googleAccessToken = null;
+        exibirEstadoSemConexao(dadosLista.error?.message || 'A autorização do Gmail expirou. Autorize novamente para carregar as mensagens.');
+        return;
+      }
+      throw new Error(dadosLista.error?.message || `O Gmail respondeu com erro ${resLista.status}.`);
+    }
+    listaEmailsEl.replaceChildren();
+    if (!dadosLista.messages?.length) {
       listaEmailsEl.innerHTML = '<div class="email-vazio-msg">Nenhum e-mail encontrado nesta pasta.</div>';
       return;
     }
 
-    for (const msg of dadosLista.messages) {
-      const resDetalhe = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`, {
+    const mensagens = await Promise.all(dadosLista.messages.map(async (msg) => {
+      const resposta = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`, {
         headers: { Authorization: `Bearer ${googleAccessToken}` }
       });
-      const detalhe = await resDetalhe.json();
-      
-      const headers = detalhe.payload.headers || [];
-      const assunto = headers.find(h => h.name.toLowerCase() === 'subject')?.value || 'Sem Assunto';
-      const de = headers.find(h => h.name.toLowerCase() === 'from')?.value || 'Desconhecido';
-      const dataStr = headers.find(h => h.name.toLowerCase() === 'date')?.value || '';
-      
+      const detalhe = await resposta.json();
+      if (!resposta.ok) throw new Error(detalhe.error?.message || `Não foi possível ler uma mensagem (${resposta.status}).`);
+      const headers = detalhe.payload?.headers || [];
+      return {
+        id: msg.id,
+        assunto: headers.find(h => h.name.toLowerCase() === 'subject')?.value || 'Sem Assunto',
+        de: headers.find(h => h.name.toLowerCase() === 'from')?.value || 'Desconhecido',
+        dataStr: headers.find(h => h.name.toLowerCase() === 'date')?.value || '',
+      };
+    }));
+
+    for (const { id, assunto, de, dataStr } of mensagens) {
       const div = document.createElement('div');
       div.className = 'email-item';
-      div.innerHTML = `
-        <div class="email-item-remetente">${de.split('<')[0].replace(/"/g, '')}</div>
-        <div class="email-item-assunto">${assunto}</div>
-        <div class="email-item-data">${dataStr ? new Date(dataStr).toLocaleDateString('pt-BR') : ''}</div>
-      `;
-      
-      div.onclick = () => {
+      const remetenteEl = document.createElement('div');
+      remetenteEl.className = 'email-item-remetente';
+      remetenteEl.textContent = de.split('<')[0].replace(/"/g, '').trim();
+      const assuntoEl = document.createElement('div');
+      assuntoEl.className = 'email-item-assunto';
+      assuntoEl.textContent = assunto;
+      const dataEl = document.createElement('div');
+      dataEl.className = 'email-item-data';
+      dataEl.textContent = dataStr ? new Date(dataStr).toLocaleDateString('pt-BR') : '';
+      div.append(remetenteEl, assuntoEl, dataEl);
+      div.addEventListener('click', () => {
         document.querySelectorAll('.email-item').forEach(el => el.classList.remove('selecionado'));
         div.classList.add('selecionado');
-        abrirEmail(msg.id, assunto, de, dataStr);
-      };
-      
+        abrirEmail(id, assunto, de, dataStr);
+      });
       listaEmailsEl.appendChild(div);
     }
   } catch (erro) {
-    console.error(erro);
-    listaEmailsEl.innerHTML = '<div class="email-vazio-msg email-erro-msg">Erro ao carregar mensagens. Tente recarregar a página.</div>';
+    console.error('[Email] Falha ao carregar mensagens:', erro);
+    const estado = document.createElement('div');
+    estado.className = 'email-vazio-msg email-erro-msg';
+    estado.textContent = erro.message || 'Erro ao carregar mensagens. Tente novamente.';
+    listaEmailsEl.replaceChildren(estado);
   }
 }
 

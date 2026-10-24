@@ -144,3 +144,47 @@ body.tela-centralizada::before {
 .email-btn-conectar, #btn-salvar-cerebro { background: #222225 !important; color: #ededee !important; border: 0 !important; border-radius: 7px !important; padding: .65rem .9rem !important; }
 .email-item { animation: option-in .22s ease both; }
 @keyframes option-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Final cascade guard: beats the older high-specificity overrides in styles.css. */
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) html,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(#hud-canvas) {
+  background-color: #050506 !important;
+  color: #e8e8e8 !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body * {
+  color: #e8e8e8 !important;
+  text-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .hud-nav,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #menu-lateral,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #sidebar-notas,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .painel-calendario,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-caixas-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-lista-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-card {
+  color: #e8e8e8 !important;
+  background: #101012 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) button,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .nav-item {
+  color: #e8e8e8 !important;
+  background: #1b1b1e !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #sidebar-notas *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-container * {
+  color: #e8e8e8 !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-item-assunto,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-item-data,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-remetente-txt,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-data-txt,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-corpo-txt { color: #c7c7cc !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartoon-windowbar { background: #080809 !important; border: 0 !important; box-shadow: none !important; }

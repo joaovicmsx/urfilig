@@ -1,7 +1,5 @@
 import './windowChrome.js';
 import { getTimeColor } from './timeTheme.js';
-import './styles.css';
-import './theme.css';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -223,7 +221,7 @@ const memorySphere = new PersonalitySphere(scene, {
 function atualizarTemaPorHorario() {
   const rgb = getTimeColor();
   const cor = new THREE.Color(`rgb(${rgb.join(',')})`);
-  const base = cor.clone().multiplyScalar(0.075);
+  const base = cor.clone().multiplyScalar(0.24);
   const uniforms = fundoEtereo.material.uniforms;
   uniforms.corTopo.value.copy(base.clone().multiplyScalar(1.3));
   uniforms.corMeio.value.copy(base);
