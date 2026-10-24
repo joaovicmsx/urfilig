@@ -221,12 +221,12 @@ const memorySphere = new PersonalitySphere(scene, {
 function atualizarTemaPorHorario() {
   const rgb = getTimeColor();
   const cor = new THREE.Color(`rgb(${rgb.join(',')})`);
-  const base = cor.clone().multiplyScalar(0.24);
+  const base = cor.clone().multiplyScalar(0.36);
   const uniforms = fundoEtereo.material.uniforms;
   uniforms.corTopo.value.copy(base.clone().multiplyScalar(1.3));
   uniforms.corMeio.value.copy(base);
   uniforms.corBase.value.copy(base.clone().multiplyScalar(0.72));
-  uniforms.corVazio.value.set(0x050506);
+  uniforms.corVazio.value.copy(cor.clone().multiplyScalar(0.055));
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
 }
@@ -935,11 +935,11 @@ function renderizarRotulosObsidian() {
       const boxHeight = 22 * currentDpr;
       const boxY = py + 26 * currentDpr;
 
-      ctx2d.fillStyle = `rgba(24, 24, 27, ${0.94 * alphaLabel})`;
+      ctx2d.fillStyle = `rgba(232, 226, 208, ${0.96 * alphaLabel})`;
       ctx2d.beginPath();
       ctx2d.roundRect(px - textWidth / 2 - 8 * currentDpr, boxY, textWidth + 16 * currentDpr, boxHeight, 4 * currentDpr);
       ctx2d.fill();
-      ctx2d.fillStyle = `rgba(232, 232, 236, ${alphaLabel})`;
+      ctx2d.fillStyle = `rgba(24, 24, 26, ${alphaLabel})`;
 
       ctx2d.textAlign = 'center';
       ctx2d.textBaseline = 'middle';

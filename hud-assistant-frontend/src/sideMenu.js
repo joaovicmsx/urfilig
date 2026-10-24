@@ -252,6 +252,7 @@ export function iniciarMenuLateral(socket) {
   if (!modalNota) {
     modalNota = document.createElement('div');
     modalNota.id = 'modal-nota-detalhes';
+    modalNota.classList.add('urfilig-note-modal');
     modalNota.style.cssText = `
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);
@@ -260,7 +261,7 @@ export function iniciarMenuLateral(socket) {
     `;
 
     modalNota.innerHTML = `
-      <div style="background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; width: 100%; max-width: 480px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.9); box-sizing: border-box;">
+      <div class="urfilig-note-card" style="background: #171719; backdrop-filter: blur(16px); border: 1px solid #555; border-radius: 12px; width: 100%; max-width: 480px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55); box-sizing: border-box;">
         <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: space-between; align-items: center;">
           <h3 id="modal-nota-header-txt" style="font-size: 0.95rem; font-weight: 600; color: #f0f6fc; margin: 0; letter-spacing: 0.3px;">Nota</h3>
           <button id="modal-nota-fechar" type="button" style="background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; color: #8b949e;" title="Fechar">

@@ -197,3 +197,43 @@ body.tela-centralizada::before {
 :not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-data-txt,
 :not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-corpo-txt { color: #c7c7cc !important; }
 :not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartoon-windowbar { background: #080809 !important; border: 0 !important; box-shadow: none !important; }
+
+
+/* Fixes for readable notes, subdued daytime hues, and collapsed chat on startup. */
+:root { --time-halo-visible: rgba(225, 190, 112, .22); }
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(#hud-canvas) {
+  background-color: #090909 !important;
+  background-image: radial-gradient(var(--time-halo-visible) .8px, transparent 1.4px) !important;
+  background-size: 18px 18px !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes {
+  background: rgba(0, 0, 0, .78) !important;
+  color: #f0efec !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes > .urfilig-note-card {
+  background: #171719 !important;
+  color: #f0efec !important;
+  border: 1px solid #555 !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .55) !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes .urfilig-note-card * {
+  color: #e9e8e5 !important;
+  text-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes label { color: #b9b8b3 !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes input,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes textarea,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes select {
+  color: #f0efec !important; caret-color: #f0efec !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes option { background: #171719 !important; color: #f0efec !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita {
+  top: 62px !important; right: 22px !important; bottom: 104px !important;
+  background: #111 !important; color: #e8e8e5 !important; border: 1px solid #444 !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-header {
+  background: #151515 !important; border-bottom: 1px dashed #555 !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #chat-restaurar {
+  background: #171717 !important; color: #eee !important; border: 1px solid #555 !important;
+}

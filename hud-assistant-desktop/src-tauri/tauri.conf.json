@@ -18,7 +18,7 @@
         "height": 800,
         "minWidth": 900,
         "minHeight": 600,
-        "url": "login.html"
+        "url": "index.html"
       }
     ],
     "security": {
