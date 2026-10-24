@@ -138,14 +138,24 @@ export function iniciarMenuLateral(socket) {
   const menuLateral = document.querySelector('#menu-lateral');
   const menuBackdrop = document.querySelector('#menu-backdrop');
 
+  // O menu sempre inicia fechado, inclusive se a WebView restaurar o estado anterior.
+  menuLateral?.classList.remove('visible', 'aberto', 'active');
+  menuBackdrop?.classList.remove('visible', 'aberto');
+  menuLateral?.setAttribute('aria-hidden', 'true');
+  menuToggle?.setAttribute('aria-expanded', 'false');
+
   function abrirMenu() {
     menuLateral?.classList.add('visible');
     menuBackdrop?.classList.add('visible');
+    menuLateral?.setAttribute('aria-hidden', 'false');
+    menuToggle?.setAttribute('aria-expanded', 'true');
   }
 
   function fecharMenu() {
     menuLateral?.classList.remove('visible');
     menuBackdrop?.classList.remove('visible');
+    menuLateral?.setAttribute('aria-hidden', 'true');
+    menuToggle?.setAttribute('aria-expanded', 'false');
   }
 
   menuToggle?.addEventListener('click', () => {
@@ -153,6 +163,9 @@ export function iniciarMenuLateral(socket) {
   });
 
   menuBackdrop?.addEventListener('click', fecharMenu);
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') fecharMenu();
+  });
 
   document.querySelector('#menu-editar-perfil')?.addEventListener('click', () => {
     window.location.href = '/onboarding.html?editar=1';
