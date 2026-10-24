@@ -1299,3 +1299,124 @@ button, .nav-item, .bolha-opcao, .chat-btn-enviar, .contatos-btn-novo, .btn-dina
 input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible {
   outline:2px solid #6d6a62 !important; outline-offset:2px;
 }
+
+/* Precedência final do tema sobre estilos antigos incorporados nas páginas. */:not(#urfilig-theme-boost#urfilig-theme-boost) body * { color: #e7e6e2 !important; font-family: "Segoe UI", Arial, sans-serif !important; text-shadow: none !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) html,
+:not(#urfilig-theme-boost#urfilig-theme-boost) body {
+  background-color: #050505 !important;
+  color: #e7e6e2 !important;
+  font-family: "Segoe UI", Arial, sans-serif !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) body:has(#hud-canvas) {
+  background: #050505 !important;
+  background-image: radial-gradient(rgba(220,220,220,.035) .65px, transparent .9px) !important;
+  background-size: 16px 16px !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro,
+:not(#urfilig-theme-boost#urfilig-theme-boost) #menu-lateral,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .painel-calendario,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .painel-flutuante,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .modal-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .cartao,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .hud-nav,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .chat-form-inferior {
+  color: #e7e6e2 !important;
+  background: #111 !important;
+  border: 1px solid #414141 !important;
+  box-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel *,
+:not(#urfilig-theme-boost#urfilig-theme-boost) #sidebar-notas *,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-container *,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-topbar *,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .cartao *,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita * {
+  color: #e7e6e2 !important;
+  font-family: "Segoe UI", Arial, sans-serif !important;
+  text-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel .cerebro-pasta,
+:not(#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel .cerebro-nota,
+:not(#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel .cerebro-nota-item,
+:not(#urfilig-theme-boost#urfilig-theme-boost) #sidebar-notas .cerebro-pasta,
+:not(#urfilig-theme-boost#urfilig-theme-boost) #sidebar-notas .cerebro-nota,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .chat-msg,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-item,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .conta-conectada-box {
+  color: #e7e6e2 !important;
+  background: #171717 !important;
+  border: 1px solid #454545 !important;
+  box-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-topbar,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-wrapper,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-sidebar,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-list { background: transparent !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-topbar { padding: .8rem 1.25rem !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-wrapper { padding: 0 1.25rem 1.25rem !important; gap: .75rem !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-caixas-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-lista-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-container {
+  color: #e7e6e2 !important;
+  background: #111 !important;
+  border: 1px solid #414141 !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-caixas-card { width: 230px !important; padding: 1.2rem .9rem !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-lista-card { width: 310px !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-secao-titulo,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-lista-header,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-assunto { color: #f0efeb !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-brand .brand-title,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-brand .brand-sub,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-item-remetente,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-item-assunto,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-item-data,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-remetente-txt,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-data-txt,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-corpo-txt,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-vazio-msg,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-pasta-item,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .btn-voltar-hub,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .conta-email-txt { color: #deddd8 !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-lista-header,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-header,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-item,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro-header { border-bottom: 1px dashed #494949 !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) button,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .nav-item,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-container button,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .cartao button {
+  color: #e7e6e2 !important;
+  background: #1b1b1b !important;
+  border: 1px solid #555 !important;
+  border-radius: 5px !important;
+  box-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) input,
+:not(#urfilig-theme-boost#urfilig-theme-boost) textarea,
+:not(#urfilig-theme-boost#urfilig-theme-boost) select {
+  color: #efeeeb !important;
+  background: #0b0b0b !important;
+  border: 1px solid #484848 !important;
+  box-shadow: none !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost) input::placeholder,
+:not(#urfilig-theme-boost#urfilig-theme-boost) textarea::placeholder { color: #aaa8a2 !important; opacity: 1 !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) input:focus-visible,
+:not(#urfilig-theme-boost#urfilig-theme-boost) textarea:focus-visible,
+:not(#urfilig-theme-boost#urfilig-theme-boost) select:focus-visible,
+:not(#urfilig-theme-boost#urfilig-theme-boost) button:focus-visible,
+:not(#urfilig-theme-boost#urfilig-theme-boost) a:focus-visible { outline: 2px solid #aaa8a2 !important; outline-offset: 2px; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-pasta-item.ativo,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-pasta-item:hover,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-item.selecionado,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .email-item:hover,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .nav-item.active,
+:not(#urfilig-theme-boost#urfilig-theme-boost) .nav-item:hover { background: #292929 !important; border-color: #666 !important; }
+:not(#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel h3,
+:not(#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel h4 { font-family: "Segoe UI", Arial, sans-serif !important; }
