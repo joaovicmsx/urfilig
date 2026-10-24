@@ -1,3 +1,4 @@
+import './windowChrome.js';
 import './styles.css';
 import { BACKEND_URL } from './authGuard.js';
 

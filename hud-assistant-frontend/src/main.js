@@ -1,3 +1,4 @@
+import './windowChrome.js';
 import './styles.css';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import * as THREE from 'three';
@@ -44,7 +45,7 @@ const dpr = Math.min(window.devicePixelRatio, 2);
 
 const scene = new THREE.Scene();
 scene.add(criarFundoEtereo());
-scene.fog = new THREE.FogExp2(0x040a0d, 0.02);
+scene.fog = new THREE.FogExp2(0x211d39, 0.02);
 
 // Câmara fixa
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -125,10 +126,10 @@ function criarFundoEtereo() {
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     uniforms: {
-      corTopo: { value: new THREE.Color(0x081216) },
-      corMeio: { value: new THREE.Color(0x0a181e) },
-      corBase: { value: new THREE.Color(0x050d11) },
-      corVazio: { value: new THREE.Color(0x020608) },
+      corTopo: { value: new THREE.Color(0x44336f) },
+      corMeio: { value: new THREE.Color(0x292044) },
+      corBase: { value: new THREE.Color(0x211d39) },
+      corVazio: { value: new THREE.Color(0x111024) },
     },
     vertexShader: `
       varying vec3 vPosicao;
@@ -913,24 +914,24 @@ function renderizarRotulosObsidian() {
       const px = (tempVec.x * 0.5 + 0.5) * window.innerWidth * currentDpr;
       const py = (tempVec.y * -0.5 + 0.5) * window.innerHeight * currentDpr;
 
-      ctx2d.font = `500 ${11 * currentDpr}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+      ctx2d.font = `700 ${11 * currentDpr}px "Comic Sans MS", "Segoe Print", sans-serif`;
 
       const textWidth = ctx2d.measureText(labelText).width;
       const boxHeight = 22 * currentDpr;
       const boxY = py + 26 * currentDpr;
 
-      ctx2d.fillStyle = `rgba(8, 18, 22, ${0.85 * alphaLabel})`;
+      ctx2d.fillStyle = `rgba(255, 246, 220, ${0.96 * alphaLabel})`;
       ctx2d.beginPath();
       ctx2d.roundRect(px - textWidth / 2 - 8 * currentDpr, boxY, textWidth + 16 * currentDpr, boxHeight, 4 * currentDpr);
       ctx2d.fill();
+      ctx2d.lineWidth = 1.5 * currentDpr;
+      ctx2d.strokeStyle = "rgba(33, 29, 53, " + (0.9 * alphaLabel) + ")";
+      ctx2d.stroke();
 
       if (p.corAtual) {
-        const r = Math.min(255, Math.round(p.corAtual.r * 255));
-        const g = Math.min(255, Math.round(p.corAtual.g * 255));
-        const b = Math.min(255, Math.round(p.corAtual.b * 255));
-        ctx2d.fillStyle = `rgba(${r}, ${g}, ${b}, ${alphaLabel})`;
+        ctx2d.fillStyle = `rgba(33, 29, 53, ${alphaLabel})`;
       } else {
-        ctx2d.fillStyle = `rgba(56, 189, 248, ${alphaLabel})`;
+        ctx2d.fillStyle = `rgba(33, 29, 53, ${alphaLabel})`;
       }
 
       ctx2d.textAlign = 'center';
