@@ -1227,3 +1227,75 @@ button,.bolha-opcao,.chat-btn-enviar,.contatos-btn-novo,.btn-dinamico-esfera { c
 #cerebro-painel { background-image:repeating-linear-gradient(178deg,transparent 0 23px,rgba(20,20,20,.018) 23px 24px) !important; }
 #cerebro-painel .sidebar-cerebro-header { border-bottom:1px dashed #777 !important; }
 #cerebro-painel h3,#cerebro-painel h4 { font-family:"Segoe Print","Comic Sans MS",sans-serif !important; }
+/* Superfícies limpas: hierarquia por espaçamento e tons, sem cartões contornados. */
+:root { --toon-ink:#282725; --toon-paper:#f1efe7; --toon-paper-light:#f8f7f2; --toon-sun:#d9d5c8; }
+#cerebro-painel,
+.sidebar-cerebro,
+.sidebar,
+#menu-lateral,
+.menu-lateral,
+.chat-historico-direita,
+.email-container,
+.email-caixas-card,
+.email-lista-card,
+.email-leitor-card,
+.email-reader,
+.painel-calendario,
+.painel-flutuante,
+#obsidian-modal,
+.intel-modal-card,
+.microfone-modal-card,
+#modal-evento-overlay > div,
+.modal-card,
+.cartoon-windowbar,
+.hud-nav,
+.chat-form-inferior {
+  border:0 !important;
+  outline:0;
+  box-shadow:none !important;
+}
+#sidebar-notas .cerebro-pasta,
+#sidebar-notas .cerebro-nota,
+#cerebro-painel .cerebro-pasta,
+#cerebro-painel .cerebro-nota,
+#cerebro-painel .cerebro-nota-item,
+.cerebro-pasta,
+.cerebro-nota,
+.criar-nota-container,
+.intel-card-item,
+.chat-msg,
+.email-item,
+.email-caixas-card,
+.email-lista-card,
+.email-leitor-card,
+#calendario-conteudo [data-data],
+#calendario-conteudo .item-evento {
+  border:0 !important;
+  outline:0;
+  box-shadow:none !important;
+}
+#sidebar-notas .cerebro-pasta,
+#sidebar-notas .cerebro-nota,
+#cerebro-painel .cerebro-pasta,
+#cerebro-painel .cerebro-nota,
+#cerebro-painel .cerebro-nota-item,
+.cerebro-pasta,
+.cerebro-nota,
+.criar-nota-container,
+.intel-card-item,
+.chat-msg,
+.email-item { border-radius:6px !important; }
+button, .nav-item, .bolha-opcao, .chat-btn-enviar, .contatos-btn-novo, .btn-dinamico-esfera {
+  border:0 !important;
+  box-shadow:none !important;
+}
+.hud-nav { background:#f1efe7 !important; }
+.nav-item:hover,.nav-item.active { border:0 !important; background:#e4e1d8 !important; }
+#cerebro-painel .cerebro-pasta,#cerebro-painel .cerebro-nota,#cerebro-painel .cerebro-nota-item,
+#sidebar-notas .cerebro-pasta,#sidebar-notas .cerebro-nota { background:#f8f7f2 !important; }
+.email-container,.email-caixas-card,.email-lista-card,.email-leitor-card,.chat-historico-direita,
+.sidebar-cerebro,.sidebar,#menu-lateral,.menu-lateral { background:#f1efe7 !important; }
+#cerebro-painel .sidebar-cerebro-header { border-bottom:1px solid #d8d5cc !important; }
+input:focus-visible,textarea:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible {
+  outline:2px solid #6d6a62 !important; outline-offset:2px;
+}

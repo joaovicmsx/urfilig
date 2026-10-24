@@ -3,6 +3,8 @@ import './styles.css';
 import { BACKEND_URL } from './authGuard.js';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const GOOGLE_DESKTOP_CLIENT_ID = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID;
+const GOOGLE_DESKTOP_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_SECRET;
 
 let writeTextFile, BaseDirectory;
 void (async () => {
@@ -83,16 +85,46 @@ function verificarTokenNaUrl() {
   }
 }
 
-function conectarContaGoogle() {
-  localStorage.setItem('redirect_after_login', 'email.html');
-
-  const redirectUri = window.location.origin + '/login.html';
-  const scopes = 'openid email profile https://www.googleapis.com/auth/gmail.readonly';
-  const urlGoogle = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&prompt=select_account`;
-
-  window.location.href = urlGoogle;
+async function conectarContaGoogle() {
+  const tauri = window.__TAURI_INTERNALS__ !== undefined || window.__TAURI__ !== undefined;
+  if (tauri) {
+    if (!GOOGLE_DESKTOP_CLIENT_ID) { exibirEstadoSemConexao('Esta versão não tem o cliente Google Desktop configurado.'); return; }
+    try {
+      const inicio = await fetch(`${BACKEND_URL}/api/auth/google/desktop/start`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ clientId:GOOGLE_DESKTOP_CLIENT_ID, clientSecret:GOOGLE_DESKTOP_CLIENT_SECRET || undefined, emailAccess:true }) });
+      const sessao = await inicio.json();
+      if (!inicio.ok) throw new Error(sessao.erro || 'Não foi possível iniciar a conexão com o Google.');
+      const { invoke } = await import('@tauri-apps/api/core');
+      await invoke('abrir_url_externa', { url:sessao.authUrl });
+      if (listaEmailsEl) listaEmailsEl.innerHTML = '<div class="email-vazio-msg">Conclua a autorização no navegador. Esta tela voltará automaticamente.</div>';
+      const limite = Date.now() + 5 * 60 * 1000;
+      while (Date.now() < limite) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const resposta = await fetch(`${BACKEND_URL}/api/auth/google/desktop/status?state=${encodeURIComponent(sessao.state)}`);
+        const resultado = await resposta.json();
+        if (resultado.status === 'complete') {
+          if (!resultado.accessToken) throw new Error('O Google não retornou permissão para ler o Gmail.');
+          localStorage.setItem('google_access_token', resultado.accessToken); googleAccessToken = resultado.accessToken;
+          await verificarPerfilConta(); return;
+        }
+        if (resultado.status === 'error') throw new Error(resultado.erro || 'Não foi possível conectar a conta Google.');
+      }
+      throw new Error('O tempo para autorizar expirou. Clique em conectar e tente novamente.');
+    } catch (erro) {
+      console.error('[Email] Falha ao conectar Google:', erro);
+      exibirEstadoSemConexao(erro.message || 'Não foi possível conectar a conta Google.');
+    }
+    return;
+  }
+  if (!GOOGLE_CLIENT_ID) { exibirEstadoSemConexao('O login Google para navegador não está configurado.'); return; }
+  try {
+    if (!window.google?.accounts?.oauth2) await new Promise((resolve,reject)=>{ const script=document.createElement('script'); script.src='https://accounts.google.com/gsi/client'; script.onload=resolve; script.onerror=()=>reject(new Error('Não foi possível carregar o serviço de login do Google.')); document.head.appendChild(script); });
+    const tokenClient = window.google.accounts.oauth2.initTokenClient({ client_id:GOOGLE_CLIENT_ID, scope:'https://www.googleapis.com/auth/gmail.readonly', callback:async resultado=>{
+      if (resultado.error || !resultado.access_token) { exibirEstadoSemConexao(resultado.error_description || resultado.error || 'Autorização do Gmail cancelada.'); return; }
+      localStorage.setItem('google_access_token',resultado.access_token); googleAccessToken=resultado.access_token; await verificarPerfilConta();
+    }, error_callback:erro=>exibirEstadoSemConexao(erro?.message || 'O Google bloqueou a janela de autorização. Permita pop-ups e tente novamente.') });
+    tokenClient.requestAccessToken({prompt:'consent'});
+  } catch (erro) { exibirEstadoSemConexao(erro.message || 'Não foi possível iniciar a autorização do Gmail.'); }
 }
-
 function decodeBase64URL(str) {
   if (!str) return '';
   try {

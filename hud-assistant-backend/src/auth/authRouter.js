@@ -38,7 +38,7 @@ function responderCallback(res, mensagem, status = 200) {
 
 /** Inicia OAuth nativo: navegador externo + callback loopback + PKCE. */
 authRouter.post('/auth/google/desktop/start', async (req, res) => {
-  const { clientId, clientSecret: clientSecretBody } = req.body;
+  const { clientId, clientSecret: clientSecretBody, emailAccess = false } = req.body;
   const clientSecret = process.env.GOOGLE_DESKTOP_CLIENT_SECRET || clientSecretBody;
   if (!clientId || !clientSecret || !/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
     return res.status(400).json({ erro: 'ID ou segredo do cliente Google Desktop ausente ou inválido' });
@@ -46,7 +46,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
 
   const estado = randomBytes(32).toString('hex');
   const { codeVerifier, codeChallenge } = await new OAuth2Client().generateCodeVerifierAsync();
-  const sessao = { status: 'pending', criadoEm: Date.now(), server: null };
+  const sessao = { status: 'pending', criadoEm: Date.now(), server: null, emailAccess: emailAccess === true };
   loginsDesktop.set(estado, sessao);
 
   const callbackServer = createServer(async (reqCallback, resCallback) => {
@@ -75,9 +75,14 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       const ticket = await oauthClient.verifyIdToken({ idToken: tokens.id_token, audience: clientId });
       const payload = ticket.getPayload();
       if (!payload?.email || !payload.email_verified || !payload.sub) throw new Error('A conta Google não pôde ser validada.');
-      sessao.resultado = await sincronizarUsuarioGoogle({ email: payload.email, nome: payload.name, googleSub: payload.sub });
+      if (sessao.emailAccess) {
+        if (!tokens.access_token) throw new Error('O Google não retornou um token de acesso ao Gmail.');
+        sessao.resultado = { accessToken: tokens.access_token, email: payload.email };
+      } else {
+        sessao.resultado = await sincronizarUsuarioGoogle({ email: payload.email, nome: payload.name, googleSub: payload.sub });
+      }
       sessao.status = 'complete';
-      responderCallback(resCallback, 'Login concluído! Volte ao Urfilig.');
+      responderCallback(resCallback, sessao.emailAccess ? 'Conta conectada! Volte ao Urfilig e feche esta aba.' : 'Login concluído! Volte ao Urfilig.');
     } catch (erro) {
       console.error('[auth] falha no OAuth Desktop:', erro.message, erro.response?.data || '');
       sessao.status = 'error';
@@ -100,7 +105,10 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
     const authUrl = oauthClient.generateAuthUrl({
       response_type: 'code',
       redirect_uri: redirectUri,
-      scope: ['openid', 'email', 'profile'],
+      scope: [
+        'openid', 'email', 'profile',
+        ...(sessao.emailAccess ? ['https://www.googleapis.com/auth/gmail.readonly'] : []),
+      ],
       state: estado,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
