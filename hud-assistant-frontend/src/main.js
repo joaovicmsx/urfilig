@@ -112,9 +112,9 @@ composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.55,
-  0.45,
-  1.00
+  0.08,
+  0.15,
+  0.98
 );
 composer.addPass(bloomPass);
 
@@ -485,7 +485,6 @@ function adicionarMensagemChat(autor, texto) {
 }
 
 socket.on('connect', () => {
-  iniciarMicrofoneLocal();
   carregarMemoriasECerebro();
 });
 

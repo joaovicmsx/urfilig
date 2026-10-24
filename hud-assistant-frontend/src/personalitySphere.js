@@ -2,20 +2,20 @@ import * as THREE from 'three';
 
 // Paleta Azul Frio Bioluminescente
 const PALETA_AZUL_FRIO = [
-  new THREE.Color(0x00f0ff),
-  new THREE.Color(0x38bdf8),
-  new THREE.Color(0x00bfff),
-  new THREE.Color(0x0284c7),
-  new THREE.Color(0x7dd3fc),
+  new THREE.Color(0x9aaab0),
+  new THREE.Color(0x9eabb0),
+  new THREE.Color(0x94a4aa),
+  new THREE.Color(0x8799a0),
+  new THREE.Color(0xb5bdbe),
 ];
 
 // Paleta Amarelo Dourado Quente
 const PALETA_AMARELO_QUENTE = [
-  new THREE.Color(0xffea00),
-  new THREE.Color(0xffd700),
-  new THREE.Color(0xffe600),
-  new THREE.Color(0xffc107),
-  new THREE.Color(0xffb700),
+  new THREE.Color(0xb8ab86),
+  new THREE.Color(0xb8aa86),
+  new THREE.Color(0xb5a680),
+  new THREE.Color(0xb7a77e),
+  new THREE.Color(0xb2a582),
 ];
 
 function pontoFibonacci(indice, total, raio) {
@@ -148,11 +148,11 @@ export class PersonalitySphere {
 
     // Aumentei o tamanho das partículas (de 0.04 para 0.08) para serem mais visíveis
     const material = new THREE.PointsMaterial({
-      size: 0.08,
+      size: 0.045,
       vertexColors: true,
       transparent: true,
-      opacity: 0.9,
-      blending: THREE.AdditiveBlending,
+      opacity: 0.48,
+      blending: THREE.NormalBlending,
       depthWrite: false
     });
 
@@ -161,7 +161,7 @@ export class PersonalitySphere {
   }
 
   emitDust(pos, colorBase, count, mode = 'explode') {
-    const c = colorBase || new THREE.Color(0x38bdf8);
+    const c = colorBase || new THREE.Color(0x9eabb0);
     
     for (let i = 0; i < count; i++) {
       let idx = this.dustIndex % this.maxDust;
@@ -375,13 +375,13 @@ export class PersonalitySphere {
       geo.setAttribute('position', new THREE.BufferAttribute(posicoes, 3));
 
       const mat = new THREE.LineDashedMaterial({
-        color: 0x38bdf8,
+        color: 0x9eabb0,
         transparent: true,
         opacity: 0.35,
         dashSize: 0.08,
         gapSize: 0.06,
         scale: 1,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
       });
 
       this.linhasConstelacao = new THREE.LineSegments(geo, mat);
@@ -483,7 +483,7 @@ export class PersonalitySphere {
     }
 
     if (this.linhasConstelacao && this.linhasConstelacao.material) {
-      const corLinha = new THREE.Color(0x38bdf8).lerp(new THREE.Color(0xffd700), fatorGlobal);
+      const corLinha = new THREE.Color(0x9eabb0).lerp(new THREE.Color(0xb8aa86), fatorGlobal);
       this.linhasConstelacao.material.color.copy(corLinha);
     }
 
@@ -521,9 +521,9 @@ export class PersonalitySphere {
 
       p.corAtual.copy(p.corAzul).lerp(p.corAmarelo, fatorGlobal);
 
-      const corRender = p.corAtual.clone().multiplyScalar(2.8);
+      const corRender = p.corAtual.clone().multiplyScalar(1.05);
       if (this.hoverIndex === i || this.nodeArrastado === p) {
-        corRender.multiplyScalar(1.6);
+        corRender.multiplyScalar(1.12);
       }
 
       this.instancedMesh.setColorAt(i, corRender);

@@ -1186,3 +1186,18 @@ button:active { transform: none !important; box-shadow: none !important; }
 }
 #menu-lateral { top: 38px !important; bottom: 0 !important; height: calc(100vh - 38px) !important; box-sizing: border-box !important; }
 .nav-item { text-decoration: none !important; }
+
+/* Estilo editorial discreto, com traços finos e contraste legível. */
+:root { --toon-ink:#292832; --toon-paper:#f0ecdf; --toon-paper-light:#faf8f1; --toon-sun:#c8b781; --toon-coral:#b88e88; --toon-sky:#b1bfbd; --toon-lilac:#b9b4bf; --toon-shadow:rgba(8,8,14,.22); }
+body:has(#hud-canvas) { background:#101014 !important; background-image:radial-gradient(rgba(220,216,202,.025) .7px,transparent 1px) !important; background-size:18px 18px !important; }
+body:has(#hud-canvas)::after { opacity:0 !important; }
+.hud-nav { background:#f0ecdf !important; border:1px solid #5a5760 !important; box-shadow:0 2px 7px rgba(0,0,0,.16) !important; }
+.nav-item,.nav-item span,.nav-item svg { color:#292832 !important; opacity:1 !important; }
+.nav-item:hover,.nav-item.active { background:#e4dfd2 !important; border-color:#a39d90 !important; }
+#sidebar-notas,#sidebar-notas * { color:#34323b !important; }
+#sidebar-notas .sidebar-header h2,#sidebar-notas .header-titulo h2,#sidebar-notas .cerebro-pasta-nome,#sidebar-notas .cerebro-nota-titulo,#sidebar-notas .cerebro-pasta span,#sidebar-notas .cerebro-nota span,#sidebar-notas .notas-list,#sidebar-notas .notas-list * { color:#34323b !important; opacity:1 !important; }
+#sidebar-notas .cerebro-pasta,#sidebar-notas .cerebro-nota { background:#faf8f1 !important; border:1px solid #c9c4b8 !important; box-shadow:0 1px 2px rgba(20,18,25,.06) !important; }
+#sidebar-notas .cerebro-btn-acao { color:#5d5962 !important; }
+.cerebro-pasta-nome,.cerebro-nota-titulo,.cerebro-pasta span,.cerebro-nota span,#lista-notas,#lista-notas * { color:#34323b !important; opacity:1 !important; }
+#hud-weather { color:#d4cdb9 !important; }
+.painel-calendario,.painel-flutuante,#obsidian-modal,.intel-modal-card,.microfone-modal-card,#modal-evento-overlay > div,.modal-card { box-shadow:0 5px 18px rgba(0,0,0,.2) !important; }
