@@ -187,9 +187,6 @@ export function iniciarMenuLateral(socket) {
     alternarPainelCalendario();
   });
   document.querySelector('#calendario-fechar')?.addEventListener('click', () => painelCalendario?.classList.remove('aberta'));
-  document.querySelector('#nav-emails')?.addEventListener('click', () => {
-    window.location.href = new URL('./email.html', window.location.href).href;
-  });
   // Menu de Contexto
   let contextMenu = document.getElementById('urfilig-context-menu');
   if (!contextMenu) {

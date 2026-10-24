@@ -1089,3 +1089,100 @@ body > div[style*="position: fixed"] button {
   border: 2px solid var(--toon-ink) !important; border-radius: 10px 7px 11px 8px !important;
   font-family: var(--toon-font) !important; font-weight: 900 !important; box-shadow: 3px 3px 0 var(--toon-ink) !important;
 }
+/* Ajustes de usabilidade: ilustração discreta, contraste e painéis no lugar certo. */
+:root {
+  --toon-ink: #262530;
+  --toon-paper: #f1eddf;
+  --toon-paper-light: #faf8f1;
+  --toon-sun: #d4bb79;
+  --toon-coral: #bd7775;
+  --toon-sky: #9bb3b1;
+  --toon-lilac: #a7a2b2;
+  --toon-shadow: rgba(8, 8, 14, .3);
+  --accent-color: #b6a16e;
+  --toon-font: "Segoe UI", "Trebuchet MS", sans-serif;
+}
+html, body { font-family: var(--toon-font) !important; }
+body:has(#hud-canvas) {
+  background-color: #15141a !important;
+  background-image: radial-gradient(rgba(225,220,205,.08) 1px, transparent 1.4px), linear-gradient(145deg, #191820, #15141a 62%, #1c1a22) !important;
+  background-size: 20px 20px, auto !important;
+}
+body:has(#hud-canvas)::after { opacity: .035 !important; }
+body.tela-centralizada { background: #101014 !important; color: #262530 !important; }
+body.tela-centralizada::before { display: none !important; }
+.cartao { background: var(--toon-paper) !important; border: 1px solid #45424b !important; border-radius: 14px 11px 15px 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,.24) !important; }
+.cartao h1, #titulo-form, .cartao h2 { text-shadow: none !important; }
+.campo-grupo input, .campo-grupo textarea, #form-login input, .cartao input, .cartao textarea, .contatos-busca-container input {
+  border: 1px solid #77737a !important; border-radius: 8px !important; box-shadow: none !important;
+}
+input:focus, textarea:focus, select:focus { outline: 2px solid #9bb3b1 !important; }
+button { font-family: var(--toon-font) !important; }
+.bolha-btn, .microfone-btn-principal, .contatos-btn-novo, .chat-btn-enviar, .btn-dossie, .btn-modal-confirmar, .btn-modal-usar, #btn-salvar-nota, .cerebro-form-fixo button, #urfilig-acoes-criacao .btn-dinamico-esfera, #btn-salvar-ev, .btn-dinamico-esfera, #google-signin-button > button {
+  background: #d4bb79 !important; color: #262530 !important; border: 1px solid #514c43 !important; border-radius: 9px !important; box-shadow: 0 2px 0 rgba(38,37,48,.22) !important; font-weight: 650 !important;
+}
+button:active { transform: none !important; box-shadow: none !important; }
+#top-hud-bar { top: 42px !important; }
+.hud-nav {
+  position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; margin: 0 !important;
+  gap: .25rem !important; padding: 5px !important; background: #f1eddf !important; border: 1px solid #494650 !important;
+  border-radius: 12px !important; box-shadow: 0 3px 10px rgba(0,0,0,.2) !important;
+}
+.nav-item { color: #34323b !important; border: 1px solid transparent !important; border-radius: 8px !important; font-family: var(--toon-font) !important; font-weight: 600 !important; }
+.nav-item:hover, .nav-item.active { background: #e4ddc9 !important; border-color: #8f8878 !important; color: #262530 !important; }
+.brand-title { color: #f1eddf !important; text-shadow: none !important; }
+.brand-sub { color: #c3bdcf !important; }
+#menu-lateral, .menu-lateral, aside.menu-lateral, .sidebar-cerebro, .sidebar, .chat-historico-direita {
+  color: #292832 !important; background: #f1eddf !important; border: 1px solid #514e56 !important; box-shadow: 3px 3px 10px rgba(0,0,0,.2) !important; border-radius: 0 12px 12px 0 !important;
+}
+.sidebar-cerebro, .sidebar { top: 38px !important; bottom: 0 !important; height: calc(100vh - 38px) !important; box-sizing: border-box !important; }
+.sidebar-cerebro-header, .sidebar-cerebro-header h3, .sidebar-header .header-titulo h2 { color: #292832 !important; font-family: var(--toon-font) !important; font-weight: 650 !important; }
+#menu-lateral h2 { color: #66616d !important; font-weight: 650 !important; }
+#menu-lateral button { color: #292832 !important; font-weight: 500 !important; }
+#menu-lateral button:hover { background: #e6e0d1 !important; border-color: #a49d8e !important; }
+#contatos-lista, #contatos-lista * { color: #34323b !important; }
+#contatos-lista [style*="background"] { background: #faf8f1 !important; }
+.painel-calendario {
+  display: none !important; position: fixed !important; left: 50% !important; top: calc(50% + 19px) !important; right: auto !important; bottom: auto !important;
+  width: min(900px, calc(100vw - 48px)) !important; height: min(720px, calc(100vh - 96px)) !important; max-height: calc(100vh - 96px) !important;
+  transform: translate(-50%, -50%) !important; z-index: 150 !important; border-radius: 12px !important; overflow: hidden !important;
+}
+.painel-calendario.aberta { display: flex !important; transform: translate(-50%, -50%) !important; }
+.painel-calendario #calendario-conteudo { overflow: auto !important; min-height: 0 !important; }
+#calendario-conteudo [data-data] { background: #faf8f1 !important; border: 1px solid #c5c0b5 !important; border-radius: 7px !important; box-shadow: none !important; }
+#calendario-conteudo .item-evento { background: #dce5e2 !important; border: 1px solid #9eaaa6 !important; border-radius: 5px !important; }
+#calendario-conteudo .btn-add-evento, #btn-mes-anterior, #btn-proximo-mes, #modal-evento-overlay #btn-fechar-modal, #modal-evento-overlay #btn-apagar-ev { box-shadow: none !important; border-radius: 7px !important; }
+#modal-evento-overlay > div, .painel-flutuante, #obsidian-modal, .intel-modal-card, .microfone-modal-card, .modal-card { border: 1px solid #514e56 !important; border-radius: 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,.22) !important; }
+.intel-modal, .microfone-modal, #modal-backdrop, #modal-evento-overlay, .modal-overlay { align-items: center !important; justify-content: center !important; }
+.email-caixas-card, .email-lista-card, .email-leitor-card, .conta-conectada-box, .email-item, .cerebro-nota-item, .cerebro-pasta, .cerebro-nota, .criar-nota-container, .intel-card-item {
+  color: #292832 !important; background: #faf8f1 !important; border: 1px solid #d0cbbc !important; border-radius: 8px !important; box-shadow: 0 1px 3px rgba(20,18,25,.08) !important;
+}
+.cerebro-nota-conteudo, .intel-card-item p, .obsidian-content, .email-corpo-txt, .email-remetente-txt, .email-data-txt { color: #4e4b56 !important; }
+.email-leitor-assunto, .email-meta-info, .email-corpo-txt, .email-vazio-msg, .email-item-remetente, .email-item-assunto, .email-item-data { color: #292832 !important; }
+.email-sidebar li { color: #34323b !important; border: 1px solid transparent !important; box-shadow: none !important; }
+.email-sidebar li.ativo { background: #e4ddc9 !important; border: 1px solid #aaa394 !important; box-shadow: none !important; }
+.email-topbar { margin-top: 38px !important; }
+.email-container { border: 1px solid #514e56 !important; border-radius: 12px !important; box-shadow: 0 8px 24px rgba(0,0,0,.2) !important; }
+.email-sidebar, .email-list { background: #eeeadf !important; }
+.email-reader { background: #faf8f1 !important; }
+.email-container input, .email-container button, .email-container textarea { font-family: var(--toon-font) !important; }
+.email-container button { box-shadow: none !important; border-radius: 7px !important; }
+#chat-input::placeholder { color: #6a6671 !important; }
+.chat-msg { font-family: var(--toon-font) !important; font-weight: 400 !important; border: 1px solid #aaa5ae !important; border-radius: 10px !important; }
+.chat-msg.usuario { background: #dce5e2 !important; box-shadow: none !important; }
+.chat-msg.urfilig { background: #faf8f1 !important; box-shadow: none !important; }
+.chat-form-inferior { background: #f1eddf !important; border: 1px solid #514e56 !important; border-radius: 12px !important; box-shadow: 0 3px 10px rgba(0,0,0,.18) !important; }
+.chat-historico-direita { top: 62px !important; right: 22px !important; bottom: 104px !important; }
+.chat-historico-header { background: #e9e4d8 !important; }
+.cartoon-windowbar { background: #f1eddf !important; border-bottom: 1px solid #514e56 !important; box-shadow: 0 1px 4px rgba(0,0,0,.18) !important; }
+.cartoon-windowbar-acoes button { border-radius: 6px !important; font-weight: 500 !important; }
+.cartoon-windowbar-acoes button:hover { background: #e4ddc9 !important; border-color: #aaa394 !important; }
+.cartoon-windowbar-acoes .fechar:hover { background: #d8a6a2 !important; }
+#hud-weather { color: #e3d9b8 !important; text-shadow: none !important; }
+@media (max-width: 760px) {
+  #top-hud-bar { top: 42px !important; }
+  .hud-nav { position: static !important; transform: none !important; margin: 0 auto !important; }
+  .painel-calendario { width: calc(100vw - 24px) !important; height: calc(100vh - 84px) !important; top: calc(50% + 19px) !important; }
+}
+#menu-lateral { top: 38px !important; bottom: 0 !important; height: calc(100vh - 38px) !important; box-sizing: border-box !important; }
+.nav-item { text-decoration: none !important; }

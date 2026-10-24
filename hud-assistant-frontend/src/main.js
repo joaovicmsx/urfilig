@@ -45,7 +45,7 @@ const dpr = Math.min(window.devicePixelRatio, 2);
 
 const scene = new THREE.Scene();
 scene.add(criarFundoEtereo());
-scene.fog = new THREE.FogExp2(0x211d39, 0.02);
+scene.fog = new THREE.FogExp2(0x15141a, 0.02);
 
 // Câmara fixa
 const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -126,10 +126,10 @@ function criarFundoEtereo() {
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     uniforms: {
-      corTopo: { value: new THREE.Color(0x44336f) },
-      corMeio: { value: new THREE.Color(0x292044) },
-      corBase: { value: new THREE.Color(0x211d39) },
-      corVazio: { value: new THREE.Color(0x111024) },
+      corTopo: { value: new THREE.Color(0x24212a) },
+      corMeio: { value: new THREE.Color(0x1c1b22) },
+      corBase: { value: new THREE.Color(0x15141a) },
+      corVazio: { value: new THREE.Color(0x101015) },
     },
     vertexShader: `
       varying vec3 vPosicao;
