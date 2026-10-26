@@ -1,239 +1,462 @@
-/* Urfilig — interface escura, limpa e com acento circadiano discreto */
+/* Urfilig shared glass interface. Time colors stay controlled by timeTheme.js. */
 :root {
-  --time-accent: #9c8a58;
-  --time-halo: rgba(156,138,88,.1);
   color-scheme: dark;
+  --glass-base: rgba(18, 19, 23, .68);
+  --glass-raised: rgba(30, 31, 36, .68);
+  --glass-strong: rgba(13, 14, 17, .86);
+  --text-primary: #f2f2f3;
+  --text-secondary: #b8b9bf;
+  --text-muted: #8c8e95;
+  --time-accent: #c8a66c;
+  --time-halo: rgba(200, 166, 108, .12);
+  --time-halo-visible: rgba(200, 166, 108, .2);
+  --glass-blur: 24px;
 }
-html, body { background: #050506 !important; color: #e8e8e8 !important; }
-body { font-family: "Segoe UI", Inter, system-ui, sans-serif !important; }
-body * { color: #e8e8e8 !important; font-family: "Segoe UI", Inter, system-ui, sans-serif !important; text-shadow: none !important; }
+html, body {
+  min-height: 100%;
+  background-color: #08090b !important;
+  color: var(--text-primary) !important;
+}
+body, body * {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  text-shadow: none !important;
+}
+body {
+  background-image: radial-gradient(ellipse at 50% 0%, var(--time-halo), transparent 62%) !important;
+  background-attachment: fixed !important;
+}
 button, input, textarea, select { font: inherit; }
-button, a, .nav-item, .email-pasta-item, .email-item, .cerebro-pasta, .cerebro-nota {
-  transition: color .18s ease, background-color .18s ease, opacity .18s ease, transform .18s ease;
+a { color: inherit; }
+button, a, input, textarea, select, .nav-item, .email-pasta-item, .email-item,
+.cerebro-pasta, .cerebro-nota, #menu-lateral, .sidebar-cerebro, .sidebar,
+.chat-historico-direita, .chat-form-inferior {
+  transition: color .2s ease, background-color .2s ease, opacity .22s ease,
+    transform .28s cubic-bezier(.2,.75,.25,1), box-shadow .2s ease;
 }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--time-accent), white 20%) !important;
-  outline-offset: 3px;
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible,
+select:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--time-accent) 56%, transparent) !important;
+  outline-offset: 2px;
 }
-#top-hud-bar { padding: 1rem 1.25rem !important; }
+::selection { background: color-mix(in srgb, var(--time-accent) 38%, #23242a); color: #fff; }
+
+/* Floating glass bar navigation */
+#top-hud-bar {
+  position: fixed !important;
+  inset: 0 0 auto 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  z-index: 150 !important;
+  background: transparent !important;
+  pointer-events: none !important;
+}
+#menu-toggle {
+  position: fixed !important;
+  top: 18px !important;
+  left: 18px !important;
+  pointer-events: auto !important;
+  color: var(--text-primary) !important;
+  background: var(--glass-base) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+}
 .hud-nav {
-  position: fixed !important; top: 14px !important; left: 50% !important;
-  transform: translateX(-50%) !important; margin: 0 !important; gap: .35rem !important;
-  padding: .4rem !important; border: 0 !important; border-radius: 12px !important;
-  background: rgba(12,12,14,.88) !important; backdrop-filter: blur(14px);
-  z-index: 100 !important;
+  position: fixed !important;
+  top: 16px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  margin: 0 !important;
+  padding: 7px !important;
+  gap: 4px !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: var(--glass-base) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  box-shadow: 0 12px 42px rgba(0,0,0,.2) !important;
+  pointer-events: auto !important;
+  z-index: 151 !important;
 }
-.nav-item { border: 0 !important; border-radius: 8px !important; padding: .55rem .8rem !important; color: #b8b8bd !important; }
+.nav-item {
+  border: 0 !important;
+  border-radius: 12px !important;
+  padding: .6rem .82rem !important;
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+}
+.nav-item:hover, .nav-item.active {
+  color: var(--text-primary) !important;
+  background: color-mix(in srgb, var(--time-accent) 15%, rgba(255,255,255,.06)) !important;
+}
 .nav-item svg { stroke: currentColor !important; }
-.nav-item:hover, .nav-item.active { background: #202024 !important; color: #f4f4f5 !important; }
 #hud-canvas { background: transparent !important; }
 #labels-canvas { pointer-events: none !important; }
-.sidebar-cerebro, .sidebar, #menu-lateral, .menu-lateral, .chat-historico-direita,
-.painel-flutuante, #obsidian-modal, .intel-modal-card, .microfone-modal-card,
-#modal-evento-overlay > div, .modal-card, .cartao {
-  background: #101012 !important; color: #e8e8e8 !important;
-  border: 0 !important; box-shadow: 0 18px 50px rgba(0,0,0,.34) !important;
-}
-.sidebar-cerebro.aberta, .sidebar.aberta { animation: panel-slide-in .22s ease both; }
-#menu-lateral:not(.visible) { transform: translateX(-110%) !important; visibility: hidden !important; pointer-events: none !important; }
-#menu-lateral.visible { transform: translateX(0) !important; visibility: visible !important; pointer-events: auto !important; animation: menu-slide-in .22s ease both; }
-#menu-backdrop, .menu-backdrop { display: none !important; opacity: 0; }
-#menu-backdrop.visible, .menu-backdrop.visible { display: block !important; opacity: 1; animation: backdrop-in .18s ease both; }
-.sidebar-cerebro:not(.aberta), .sidebar:not(.aberta) { visibility: hidden; pointer-events: none; }
-.sidebar-cerebro.aberta, .sidebar.aberta { visibility: visible; pointer-events: auto; }
-.cerebro-pasta, .cerebro-nota, .cerebro-nota-item, .chat-msg, .email-item,
-.conta-conectada-box { background: #171719 !important; border: 0 !important; box-shadow: none !important; }
-.cerebro-pasta:hover, .cerebro-nota:hover, .email-item:hover { background: #222225 !important; }
-.cerebro-pasta-nome, .cerebro-nota-titulo, .sidebar-cerebro-header h3,
-.sidebar-cerebro-header, .chat-historico-header span { color: #f1f1f2 !important; }
-.cerebro-nota-conteudo, .email-remetente-txt, .email-data-txt { color: #bcbcc2 !important; }
-input, textarea, select, #chat-input {
-  background: #171719 !important; color: #ededee !important; border: 0 !important;
-  border-radius: 8px !important; box-shadow: none !important;
-}
-input::placeholder, textarea::placeholder, #chat-input::placeholder { color: #88888f !important; opacity: 1; }
-button, .bolha-opcao, .chat-btn-enviar, .contatos-btn-novo, .btn-dinamico-esfera,
-.cerebro-form-fixo button, .microfone-modal-acoes button {
-  background: #202023 !important; color: #ededee !important; border: 0 !important;
-  border-radius: 8px !important; box-shadow: none !important;
-}
-button:hover:not(:disabled) { background: #2a2a2e !important; }
-button:disabled { opacity: .45; }
-#menu-backdrop, .menu-backdrop { background: rgba(0,0,0,.55) !important; backdrop-filter: blur(5px); }
-#memory-tooltip { background: #171719 !important; color: #f2f2f3 !important; border: 0 !important; }
-.microfone-modal-indicador, .ponto-glow { background: var(--time-accent) !important; box-shadow: none !important; }
 
-/* E-mails: três colunas consistentes, sem contornos ou painéis coloridos */
-body:has(.email-wrapper) {
-  display: flex !important; flex-direction: column !important; align-items: stretch !important;
-  justify-content: flex-start !important; overflow: hidden !important; background: #050506 !important;
-  color: #e8e8e8 !important;
+/* Glass panels: menus, notes, calendar, contacts and conversation */
+.sidebar-cerebro, .sidebar, #menu-lateral, .menu-lateral,
+.chat-historico-direita, .painel-flutuante, #obsidian-modal,
+.intel-modal-card, .microfone-modal-card, .painel-calendario,
+#modal-evento-overlay > div, .modal-card, .cartao,
+.email-caixas-card, .email-lista-card, .email-leitor-card,
+.conta-conectada-box, .criar-nota-container, .contatos-card {
+  color: var(--text-primary) !important;
+  background: var(--glass-base) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 18px 56px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.035) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(115%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%);
 }
+#menu-lateral {
+  background: rgba(18,19,23,.76) !important;
+  padding-top: 70px !important;
+  border-radius: 0 22px 22px 0 !important;
+  transform: translateX(-105%) !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: transform .3s cubic-bezier(.2,.75,.25,1), visibility .3s !important;
+}
+#menu-lateral.visible, #menu-lateral.aberto, #menu-lateral.active {
+  transform: translateX(0) !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  animation: glass-menu-in .34s cubic-bezier(.2,.75,.25,1) both;
+}
+#menu-backdrop, .menu-backdrop {
+  background: rgba(3,4,7,.28) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+#menu-lateral h2 { color: var(--text-muted) !important; }
+#menu-lateral button {
+  color: var(--text-secondary) !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+}
+#menu-lateral button:hover {
+  color: var(--text-primary) !important;
+  background: rgba(255,255,255,.07) !important;
+}
+.sidebar-cerebro, .sidebar { background: rgba(20,21,25,.74) !important; }
+.sidebar-cerebro.aberta, .sidebar.aberta {
+  visibility: visible !important;
+  pointer-events: auto !important;
+  animation: glass-panel-in .32s cubic-bezier(.2,.75,.25,1) both;
+}
+.sidebar-cerebro:not(.aberta), .sidebar:not(.aberta) {
+  visibility: hidden;
+  pointer-events: none;
+}
+.sidebar-cerebro-header, .chat-historico-header, .email-lista-header {
+  color: var(--text-primary) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.sidebar-cerebro-header h3, .sidebar-cerebro-header span,
+.chat-historico-header span { color: var(--text-primary) !important; }
+.cerebro-pasta, .cerebro-nota, .cerebro-nota-item, .chat-msg,
+.email-item, .email-pasta-item, .conta-conectada-box {
+  color: var(--text-secondary) !important;
+  background: rgba(255,255,255,.045) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.cerebro-pasta:hover, .cerebro-nota:hover, .email-item:hover,
+.email-pasta-item:hover, .email-pasta-item.ativo {
+  color: var(--text-primary) !important;
+  background: color-mix(in srgb, var(--time-accent) 14%, rgba(255,255,255,.06)) !important;
+}
+.cerebro-pasta-nome, .cerebro-nota-titulo, .cerebro-nota-conteudo,
+.email-item-remetente, .email-item-assunto, .email-item-data,
+.email-corpo-txt, .email-remetente-txt, .email-data-txt,
+.email-vazio-msg, .email-secao-titulo, .contatos-lista, .painel-calendario {
+  color: var(--text-secondary) !important;
+}
+.cerebro-nota-titulo, .email-item-remetente, .email-leitor-assunto { color: var(--text-primary) !important; }
+input, textarea, select, #chat-input {
+  color: var(--text-primary) !important;
+  background: rgba(255,255,255,.055) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  caret-color: var(--time-accent);
+}
+input::placeholder, textarea::placeholder, #chat-input::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 1;
+}
+button, .bolha-opcao, .chat-btn-enviar, .contatos-btn-novo,
+.btn-dinamico-esfera, .cerebro-form-fixo button, .microfone-modal-acoes button,
+.email-container button, .btn-salvar-txt, .btn-modal-confirmar, .btn-modal-trocar {
+  color: var(--text-primary) !important;
+  background: rgba(255,255,255,.075) !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--time-accent) 16%, rgba(255,255,255,.08)) !important;
+}
+button:disabled { opacity: .45; }
+#memory-tooltip {
+  color: var(--text-primary) !important;
+  background: var(--glass-strong) !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(16px);
+}
+.microfone-modal, .modal-overlay {
+  background: rgba(3,4,7,.55) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.microfone-modal-indicador, .ponto-glow { background: var(--time-accent) !important; box-shadow: 0 0 18px var(--time-halo) !important; }
+
+/* Conversation starts minimized; opening it fades and rises into view. */
+#chat-painel { z-index: 90 !important; }
+.chat-historico-direita {
+  background: rgba(19,20,24,.74) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(115%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%);
+  box-shadow: 0 18px 56px rgba(0,0,0,.24) !important;
+}
+.chat-historico-header { box-shadow: inset 0 -1px rgba(255,255,255,.06) !important; }
+#chat-restaurar { background: var(--glass-base) !important; backdrop-filter: blur(var(--glass-blur)); }
+#chat-form, .chat-form-inferior {
+  background: var(--glass-base) !important;
+  border: 0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.2) !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+#chat-input { background: rgba(255,255,255,.055) !important; }
+
+/* The mail view uses the same translucent surfaces and shared system font. */
+body:has(.email-wrapper) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  overflow: hidden !important;
+  background: radial-gradient(ellipse at 50% 0%, var(--time-halo), transparent 62%), #08090b !important;
+}
+.email-brand { display: none !important; }
 .email-topbar {
-  flex: 0 0 48px !important; min-height: 48px !important; box-sizing: border-box;
-  justify-content: flex-end !important; padding: .4rem 1.25rem !important; background: #09090b !important;
+  flex: 0 0 54px !important;
+  min-height: 54px !important;
+  box-sizing: border-box;
+  justify-content: flex-end !important;
+  padding: .6rem 1.25rem !important;
+  background: transparent !important;
 }
 .email-topbar-spacer { display: none !important; }
-.btn-voltar-hub { color: #c7c7cc !important; text-decoration: none !important; }
-.btn-voltar-hub:hover { color: white !important; }
+.btn-voltar-hub { color: var(--text-secondary) !important; text-decoration: none !important; }
 .email-wrapper {
-  display: grid !important; grid-template-columns: minmax(170px, 220px) minmax(250px, 330px) minmax(0,1fr) !important;
-  flex: 1 1 auto !important; min-height: 0 !important; width: auto !important; max-width: none !important;
-  height: auto !important; margin: 0 !important; padding: 0 1rem 1rem !important; gap: .65rem !important;
+  display: grid !important;
+  grid-template-columns: minmax(170px,220px) minmax(250px,330px) minmax(0,1fr) !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 1rem 1rem !important;
+  gap: .8rem !important;
 }
 .email-caixas-card, .email-lista-card, .email-leitor-card {
-  min-width: 0 !important; width: auto !important; height: auto !important; min-height: 0 !important;
-  background: #101012 !important; color: #e8e8e8 !important; border: 0 !important;
-  border-radius: 10px !important; box-shadow: none !important; animation: panel-in .3s ease both;
+  min-width: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  background: rgba(20,21,25,.72) !important;
+  color: var(--text-primary) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 18px 56px rgba(0,0,0,.22) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(115%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%);
+  animation: glass-panel-in .34s ease both;
 }
 .email-caixas-card { padding: 1rem .8rem !important; }
 .email-lista-card { display: flex !important; overflow: hidden !important; }
-.email-lista-header { padding: 1rem !important; color: #f1f1f2 !important; border: 0 !important; }
+.email-lista-header { padding: 1rem !important; color: var(--text-primary) !important; }
 .email-lista-scroll { min-height: 0 !important; }
-.email-item { padding: .9rem 1rem !important; border: 0 !important; border-radius: 7px !important; margin: 0 .4rem .25rem !important; }
-.email-item.selecionado { background: #27272a !important; box-shadow: inset 2px 0 var(--time-accent) !important; }
-.email-item-remetente, .email-item-assunto, .email-item-data { color: #c9c9ce !important; }
-.email-item-remetente { color: #f0f0f1 !important; }
-.email-secao-titulo { color: #a7a7ae !important; }
-.email-pasta-item { color: #c3c3c9 !important; border: 0 !important; border-radius: 7px !important; }
-.email-pasta-item:hover, .email-pasta-item.ativo { color: #f4f4f5 !important; background: #242427 !important; }
-.conta-conectada-box { padding: .7rem !important; background: #171719 !important; border: 0 !important; }
-.conta-email-txt { color: #dddde1 !important; }
-.btn-trocar-conta { color: #c9c9ce !important; }
+.email-item { padding: .9rem 1rem !important; border-radius: 10px !important; margin: 0 .4rem .25rem !important; }
+.email-item.selecionado { background: color-mix(in srgb, var(--time-accent) 16%, rgba(255,255,255,.06)) !important; }
 .email-leitor-card { padding: 1.25rem !important; }
-.email-leitor-header { align-items: center !important; flex-wrap: wrap; padding-bottom: .85rem !important; border: 0 !important; box-shadow: inset 0 -1px rgba(255,255,255,.08); }
-.email-leitor-assunto { color: #f1f1f2 !important; }
-.email-corpo-txt, .email-remetente-txt, .email-data-txt, .email-vazio-msg { color: #c5c5ca !important; }
-.email-container button, .btn-salvar-txt, .btn-modal-confirmar, .btn-modal-trocar {
-  background: #222225 !important; color: #ededee !important; border: 0 !important; border-radius: 7px !important;
+.email-leitor-header {
+  align-items: center !important;
+  flex-wrap: wrap;
+  padding-bottom: .85rem !important;
+  border: 0 !important;
+  box-shadow: inset 0 -1px rgba(255,255,255,.07);
 }
-.modal-overlay { background: rgba(0,0,0,.72) !important; backdrop-filter: blur(8px); }
-.modal-card { color: #ededee !important; border: 0 !important; }
-.modal-email-preview { background: #1b1b1e !important; color: #e3e3e6 !important; border: 0 !important; }
-.email-vazio-msg p[style] { color: #c5c5ca !important; }
+.email-leitor-assunto { color: var(--text-primary) !important; }
+.email-corpo-txt, .email-remetente-txt, .email-data-txt,
+.email-vazio-msg, .email-estado-conexao, .email-erro-msg { color: var(--text-secondary) !important; }
+.conta-conectada-box { background: rgba(255,255,255,.05) !important; }
+.email-vazio-msg p[style] { color: var(--text-secondary) !important; }
 
-/* Login: mesmo acento horário em um fundo preto sem ilustração */
+/* Login and onboarding share the application's ambient color, with a quiet glass card. */
 body.tela-centralizada {
-  background: #050506 !important; color: #ededee !important; position: relative; isolation: isolate;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
+  background: radial-gradient(ellipse at 50% 5%, var(--time-halo), transparent 58%), #08090b !important;
+  color: var(--text-primary) !important;
+  isolation: isolate;
 }
-body.tela-centralizada::before {
-  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 42%, var(--time-halo), transparent 58%);
-  transition: background 1s ease;
+body.tela-centralizada::before { content: none !important; }
+.cartao {
+  width: min(420px, calc(100vw - 40px)) !important;
+  padding: 2rem !important;
+  background: rgba(18,19,23,.72) !important;
+  border: 0 !important;
+  border-radius: 22px !important;
+  box-shadow: 0 24px 72px rgba(0,0,0,.34) !important;
+  animation: glass-panel-in .4s cubic-bezier(.2,.75,.25,1) both;
 }
-.cartao { width: min(420px, calc(100vw - 40px)) !important; padding: 2rem !important; background: #101012 !important; border: 0 !important; border-radius: 14px !important; box-shadow: 0 20px 55px rgba(0,0,0,.32) !important; animation: panel-in .35s ease both; }
-.cartao h1, #titulo-form { color: #f1f1f2 !important; }
-.cartao p.intro, .campo-grupo label, #form-login label { color: #c4c4ca !important; }
-#form-login input, .campo-grupo input { background: #1a1a1d !important; color: #f1f1f2 !important; border: 0 !important; }
-.bolha-btn { background: #242427 !important; color: #f1f1f2 !important; border: 0 !important; }
-.btn-texto-simples { color: #c4c4ca !important; }
-.separador { color: #8f8f96 !important; }
-#mensagem-erro { color: #d9a6a6 !important; }
+.cartao h1, #titulo-form { color: var(--text-primary) !important; }
+.cartao p.intro, .campo-grupo label, #form-login label { color: var(--text-secondary) !important; }
+#form-login input, .campo-grupo input, .campo-grupo textarea {
+  background: rgba(255,255,255,.06) !important;
+  color: var(--text-primary) !important;
+  border: 0 !important;
+}
+.bolha-btn { background: rgba(255,255,255,.09) !important; color: var(--text-primary) !important; border: 0 !important; }
+.btn-texto-simples { color: var(--text-secondary) !important; }
+.separador { color: var(--text-muted) !important; }
+#mensagem-erro { color: #e0a5a5 !important; }
+#modal-nota-detalhes { background: rgba(3,4,7,.58) !important; backdrop-filter: blur(12px); }
+#modal-nota-detalhes > .urfilig-note-card {
+  background: rgba(24,25,29,.84) !important;
+  color: var(--text-primary) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 72px rgba(0,0,0,.4) !important;
+  backdrop-filter: blur(var(--glass-blur));
+}
+#modal-nota-detalhes .urfilig-note-card *,
+#modal-nota-detalhes label { color: var(--text-secondary) !important; }
+#modal-nota-detalhes input, #modal-nota-detalhes textarea,
+#modal-nota-detalhes select { color: var(--text-primary) !important; caret-color: var(--time-accent); }
+#modal-nota-detalhes option { background: #17181c !important; color: var(--text-primary) !important; }
 
-@keyframes panel-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes panel-slide-in { from { opacity: .85; translate: -10px 0; } to { opacity: 1; translate: 0 0; } }
-@keyframes menu-slide-in { from { translate: -12px 0; } to { translate: 0 0; } }
-@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes glass-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes glass-menu-in {
+  from { opacity: .75; translate: -12px 0; }
+  to { opacity: 1; translate: 0 0; }
+}
 @media (max-width: 850px) {
-  .email-wrapper { grid-template-columns: minmax(145px, 190px) minmax(210px, 280px) minmax(0,1fr) !important; padding: 0 .6rem .6rem !important; gap: .45rem !important; }
+  .email-wrapper { grid-template-columns: minmax(145px,190px) minmax(210px,280px) minmax(0,1fr) !important; padding: 0 .6rem .6rem !important; gap: .5rem !important; }
   .email-leitor-card { padding: .85rem !important; }
 }
 @media (max-width: 650px) {
   .hud-nav { top: auto !important; bottom: 12px !important; max-width: calc(100vw - 24px); overflow-x: auto; }
-  .email-wrapper { grid-template-columns: 1fr !important; grid-template-rows: auto minmax(150px, 32vh) minmax(0,1fr) !important; overflow-y: auto !important; }
+  .email-wrapper { grid-template-columns: 1fr !important; grid-template-rows: auto minmax(150px,32vh) minmax(0,1fr) !important; overflow-y: auto !important; }
   .email-caixas-card { min-height: 150px !important; }
   .email-lista-card { min-height: 220px !important; }
 }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
-
-.email-estado-conexao { padding: 2rem 1rem !important; color: #c5c5ca !important; }
-.email-erro-msg { margin: 0 0 1rem !important; color: #c5c5ca !important; font-size: .88rem !important; }
-.email-secao-titulo, .email-item-assunto, .email-item-data, .email-remetente-txt, .email-data-txt, .email-vazio-msg { color: #bcbcc2 !important; }
-.email-item-remetente { color: #f0f0f1 !important; }
-.email-btn-conectar, #btn-salvar-cerebro { background: #222225 !important; color: #ededee !important; border: 0 !important; border-radius: 7px !important; padding: .65rem .9rem !important; }
-.email-item { animation: option-in .22s ease both; }
-@keyframes option-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-
-/* Final cascade guard: beats the older high-specificity overrides in styles.css. */
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) html,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(#hud-canvas) {
-  background-color: #050506 !important;
-  color: #e8e8e8 !important;
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body * {
-  color: #e8e8e8 !important;
+
+
+/* Higher-specificity finish: neutralize legacy CSS from older visual iterations. */
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body * {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
   text-shadow: none !important;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .hud-nav,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #menu-lateral,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #sidebar-notas,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .painel-calendario,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-caixas-card,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-lista-card,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-card {
-  color: #e8e8e8 !important;
-  background: #101012 !important;
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(#hud-canvas),
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(.email-wrapper),
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body.tela-centralizada {
+  background-color: #08090b !important;
+  color: var(--text-primary) !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #menu-lateral,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .painel-calendario,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .hud-nav,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-form-inferior,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-caixas-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-lista-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-card,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .modal-card {
+  color: var(--text-primary) !important;
+  background-color: var(--glass-base) !important;
+  border: 0 !important;
+  box-shadow: 0 18px 56px rgba(0,0,0,.24) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(115%) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%) !important;
+}
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) button,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .nav-item,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) input,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) textarea,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) select {
+  color: var(--text-primary) !important;
   border: 0 !important;
   box-shadow: none !important;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) button,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .nav-item {
-  color: #e8e8e8 !important;
-  background: #1b1b1e !important;
-  border: 0 !important;
-  box-shadow: none !important;
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartoon-windowbar {
+  display: none !important;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #cerebro-painel *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #sidebar-notas *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-container * {
-  color: #e8e8e8 !important;
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-brand {
+  display: none !important;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-item-assunto,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-item-data,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-remetente-txt,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-data-txt,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-corpo-txt { color: #c7c7cc !important; }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartoon-windowbar { background: #080809 !important; border: 0 !important; box-shadow: none !important; }
 
 
-/* Fixes for readable notes, subdued daytime hues, and collapsed chat on startup. */
-:root { --time-halo-visible: rgba(225, 190, 112, .22); }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(#hud-canvas) {
-  background-color: #090909 !important;
-  background-image: radial-gradient(var(--time-halo-visible) .8px, transparent 1.4px) !important;
-  background-size: 18px 18px !important;
+/* Keep secondary and primary text readable despite legacy inline-priority rules. */
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #menu-lateral *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-wrapper *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao * {
+  color: var(--text-secondary) !important;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes {
-  background: rgba(0, 0, 0, .78) !important;
-  color: #f0efec !important;
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro h2,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro h3,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro-header *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #chat-historico .chat-historico-header *,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-assunto,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-item-remetente,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao h1,
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao h2 {
+  color: var(--text-primary) !important;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes > .urfilig-note-card {
-  background: #171719 !important;
-  color: #f0efec !important;
-  border: 1px solid #555 !important;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .55) !important;
+:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #chat-historico[style*="display: flex"] {
+  animation: glass-panel-in .34s cubic-bezier(.2,.75,.25,1) both;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes .urfilig-note-card * {
-  color: #e9e8e5 !important;
-  text-shadow: none !important;
+
+/* Frameless Tauri windows: keep controls without restoring a title strip. */
+.window-chrome-minimal { position: fixed; inset: 0; z-index: 20000; pointer-events: none; }
+.window-drag-zone { position: absolute; inset: 0 92px auto 0; height: 8px; pointer-events: auto; cursor: grab; }
+.window-chrome-actions {
+  position: absolute; top: 7px; right: 9px; display: flex; gap: 3px; padding: 3px;
+  border-radius: 12px; background: rgba(24,25,29,.62);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); pointer-events: auto;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes label { color: #b9b8b3 !important; }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes input,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes textarea,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes select {
-  color: #f0efec !important; caret-color: #f0efec !important;
+.window-chrome-actions button {
+  width: 28px; height: 24px; padding: 0; border: 0 !important; border-radius: 8px;
+  color: var(--text-secondary) !important; background: transparent !important;
+  font: 500 15px/1 ui-sans-serif, system-ui, sans-serif !important; cursor: pointer;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #modal-nota-detalhes option { background: #171719 !important; color: #f0efec !important; }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita {
-  top: 62px !important; right: 22px !important; bottom: 104px !important;
-  background: #111 !important; color: #e8e8e5 !important; border: 1px solid #444 !important;
+.window-chrome-actions button:hover { color: var(--text-primary) !important; background: rgba(255,255,255,.1) !important; }
+.window-chrome-actions [data-window-action="close"]:hover {
+  background: color-mix(in srgb, var(--time-accent) 38%, rgba(255,255,255,.1)) !important;
 }
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-header {
-  background: #151515 !important; border-bottom: 1px dashed #555 !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #chat-restaurar {
-  background: #171717 !important; color: #eee !important; border: 1px solid #555 !important;
-}
+.email-topbar { margin-top: 0 !important; }

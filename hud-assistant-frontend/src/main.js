@@ -929,7 +929,7 @@ function renderizarRotulosObsidian() {
       const px = (tempVec.x * 0.5 + 0.5) * window.innerWidth * currentDpr;
       const py = (tempVec.y * -0.5 + 0.5) * window.innerHeight * currentDpr;
 
-      ctx2d.font = `600 ${11 * currentDpr}px "Segoe UI", Arial, sans-serif`;
+      ctx2d.font = `600 ${11 * currentDpr}px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
 
       const textWidth = ctx2d.measureText(labelText).width;
       const boxHeight = 22 * currentDpr;

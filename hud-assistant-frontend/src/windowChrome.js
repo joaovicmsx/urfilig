@@ -3,33 +3,30 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 
 if (isTauri()) {
   const appWindow = getCurrentWindow();
-  const titlebar = document.createElement('header');
-  titlebar.className = 'cartoon-windowbar';
-  titlebar.innerHTML =
-    '<div class="cartoon-windowbar-titulo" data-tauri-drag-region>' +
-      '<span class="cartoon-windowbar-selo" aria-hidden="true">✦</span><span>Urfilig</span>' +
-    '</div><div class="cartoon-windowbar-acoes">' +
-      '<button type="button" class="minimizar" aria-label="Minimizar janela" title="Minimizar">−</button>' +
-      '<button type="button" class="maximizar" aria-label="Maximizar janela" title="Maximizar">□</button>' +
-      '<button type="button" class="fechar" aria-label="Fechar janela" title="Fechar">×</button>' +
-    '</div>';
+  const chrome = document.createElement('div');
+  chrome.className = 'window-chrome-minimal';
+  chrome.setAttribute('aria-label', 'Controles da janela');
+  chrome.innerHTML = `
+    <div class="window-drag-zone" aria-hidden="true"></div>
+    <div class="window-chrome-actions">
+      <button type="button" data-window-action="minimize" aria-label="Minimizar" title="Minimizar">−</button>
+      <button type="button" data-window-action="maximize" aria-label="Maximizar" title="Maximizar">□</button>
+      <button type="button" data-window-action="close" aria-label="Fechar" title="Fechar">×</button>
+    </div>`;
 
-  document.body.prepend(titlebar);
-  titlebar.querySelector('.minimizar').addEventListener('click', () => appWindow.minimize());
-  titlebar.querySelector('.maximizar').addEventListener('click', async () => {
+  document.body.append(chrome);
+  chrome.querySelector('[data-window-action="minimize"]').addEventListener('click', () => appWindow.minimize());
+  chrome.querySelector('[data-window-action="maximize"]').addEventListener('click', async (event) => {
     await appWindow.toggleMaximize();
-    const maximizada = await appWindow.isMaximized();
-    const botao = titlebar.querySelector('.maximizar');
-    botao.textContent = maximizada ? '❐' : '□';
-    botao.title = maximizada ? 'Restaurar' : 'Maximizar';
-    botao.setAttribute('aria-label', botao.title + ' janela');
+    const button = event.currentTarget;
+    const maximized = await appWindow.isMaximized();
+    button.textContent = maximized ? '❐' : '□';
+    button.title = maximized ? 'Restaurar' : 'Maximizar';
+    button.setAttribute('aria-label', button.title);
   });
-  titlebar.querySelector('.fechar').addEventListener('click', () => appWindow.close());
-  titlebar.addEventListener('mousedown', (event) => {
-    if (event.button === 0 && !event.target.closest('button')) appWindow.startDragging();
+  chrome.querySelector('[data-window-action="close"]').addEventListener('click', () => appWindow.close());
+  chrome.querySelector('.window-drag-zone').addEventListener('mousedown', (event) => {
+    if (event.button === 0) appWindow.startDragging();
   });
-  titlebar.addEventListener('dblclick', (event) => {
-    if (!event.target.closest('button')) appWindow.toggleMaximize();
-  });
+  chrome.querySelector('.window-drag-zone').addEventListener('dblclick', () => appWindow.toggleMaximize());
 }
-
