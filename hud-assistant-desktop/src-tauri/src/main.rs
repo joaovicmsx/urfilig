@@ -7,7 +7,10 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::process::{Child, Command};
+use std::fs::{self, OpenOptions};
+use std::io::Write;
+use std::path::PathBuf;
+use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
 use tauri::Manager;
 use tauri::webview::{PermissionKind, PermissionResponse};
@@ -73,6 +76,21 @@ fn main() {
 
                 let caminho_backend = diretorio_recursos.join("hud-assistant-backend");
                 let caminho_python = caminho_backend.join("python");
+                // O app empacotado inicia o backend sem janela de console.
+                // Grave stdout/stderr em AppData para diagnosticar falhas sem terminal.
+                let arquivo_log_backend = std::env::var_os("APPDATA")
+                    .map(PathBuf::from)
+                    .map(|appdata| appdata.join("Urfilig").join("logs").join("backend.log"));
+                let saida_backend = arquivo_log_backend.and_then(|caminho| {
+                    if let Some(pasta) = caminho.parent() {
+                        fs::create_dir_all(pasta).ok()?;
+                    }
+                    OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(caminho)
+                        .ok()
+                });
 
                 println!(
                     "[urfilig] iniciando backend Node em {:?}...",
@@ -84,6 +102,13 @@ fn main() {
                 comando_backend
                     .args(["/C", "npm.cmd", "start"])
                     .current_dir(&caminho_backend);
+                if let Some(mut arquivo_log) = saida_backend {
+                    let _ = writeln!(arquivo_log, "\n=== Urfilig backend iniciado ===");
+                    if let Ok(stdout_log) = arquivo_log.try_clone() {
+                        comando_backend.stdout(Stdio::from(stdout_log));
+                    }
+                    comando_backend.stderr(Stdio::from(arquivo_log));
+                }
                 #[cfg(windows)]
                 comando_backend.creation_flags(CREATE_NO_WINDOW);
                 let backend = comando_backend
