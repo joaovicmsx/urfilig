@@ -1,6 +1,6 @@
 const stops = [
-  [0, [61, 76, 112]], [4, [82, 98, 137]], [6, [178, 155, 105]],
-  [10, [218, 194, 132]], [14, [230, 190, 112]], [18, [213, 150, 91]],
+  [0, [61, 76, 112]], [4, [82, 98, 137]], [6, [164, 158, 120]],
+  [10, [205, 194, 128]], [14, [220, 207, 145]], [18, [197, 157, 111]],
   [20, [116, 139, 185]], [23, [75, 96, 145]], [24, [61, 76, 112]],
 ];
 
@@ -18,8 +18,8 @@ export function applyTimeTheme() {
   const rgb = getTimeColor();
   const root = document.documentElement;
   root.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
-  root.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .12)`);
-  root.style.setProperty('--time-halo-visible', `rgba(${rgb.join(',')}, .22)`);
+  root.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .045)`);
+  root.style.setProperty('--time-halo-visible', `rgba(${rgb.join(',')}, .12)`);
   return rgb;
 }
 

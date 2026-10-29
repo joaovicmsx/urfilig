@@ -1,624 +1,279 @@
-/* Urfilig shared glass interface. Time colors stay controlled by timeTheme.js. */
 :root {
   color-scheme: dark;
-  --glass-base: rgba(18, 19, 23, .68);
-  --glass-raised: rgba(30, 31, 36, .68);
-  --glass-strong: rgba(13, 14, 17, .86);
-  --text-primary: #f2f2f3;
-  --text-secondary: #b8b9bf;
-  --text-muted: #8c8e95;
-  --time-accent: #c8a66c;
-  --time-halo: rgba(200, 166, 108, .12);
-  --time-halo-visible: rgba(200, 166, 108, .2);
-  --glass-blur: 24px;
+  --rail-width: 76px;
+  --surface: rgba(20, 22, 26, .76);
+  --surface-raised: rgba(31, 33, 38, .82);
+  --surface-input: rgba(255, 255, 255, .065);
+  --text-primary: #f0f1f3;
+  --text-secondary: #c0c3ca;
+  --text-muted: #9297a1;
+  --time-accent: #d3c37e;
+  --time-halo: rgba(211, 195, 126, .07);
+  --blur: 24px;
 }
-html, body {
-  min-height: 100%;
-  background-color: #08090b !important;
-  color: var(--text-primary) !important;
-}
-body, body * {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-  text-shadow: none !important;
-}
-body {
-  background-image: radial-gradient(ellipse at 50% 0%, var(--time-halo), transparent 62%) !important;
-  background-attachment: fixed !important;
-}
-button, input, textarea, select { font: inherit; }
-a { color: inherit; }
-button, a, input, textarea, select, .nav-item, .email-pasta-item, .email-item,
-.cerebro-pasta, .cerebro-nota, #menu-lateral, .sidebar-cerebro, .sidebar,
-.chat-historico-direita, .chat-form-inferior {
-  transition: color .2s ease, background-color .2s ease, opacity .22s ease,
-    transform .28s cubic-bezier(.2,.75,.25,1), box-shadow .2s ease;
-}
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible,
-select:focus-visible {
-  outline: 1px solid color-mix(in srgb, var(--time-accent) 56%, transparent) !important;
-  outline-offset: 2px;
-}
-::selection { background: color-mix(in srgb, var(--time-accent) 38%, #23242a); color: #fff; }
 
-/* Floating glass bar navigation */
+html, body { width: 100%; height: 100%; margin: 0; color: var(--text-primary); background: #0b0c0f; }
+body, body * { box-sizing: border-box; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; text-shadow: none !important; }
+body:has(#hud-canvas) { background: #0b0c0f !important; }
+body:has(.email-wrapper) { background: #0b0c0f !important; color: var(--text-primary) !important; }
+body.tela-centralizada { color: var(--text-primary) !important; background: radial-gradient(ellipse at 50% 0%, var(--time-halo), transparent 62%), #0b0c0f !important; }
+.cartao { color: var(--text-primary) !important; background: rgba(20,22,26,.82) !important; border: 0 !important; border-radius: 18px !important; box-shadow: 0 18px 56px rgba(0,0,0,.32) !important; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur)); }
+.cartao h1, .cartao h2, #titulo-form { color: var(--text-primary) !important; }
+.cartao p, .campo-grupo label, #form-login label { color: var(--text-secondary) !important; }
+::selection { color: #fff; background: color-mix(in srgb, var(--time-accent) 44%, #292a2d); }
+a { color: inherit; }
+button, input, textarea, select { font: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid color-mix(in srgb, var(--time-accent) 72%, white) !important; outline-offset: 2px; }
+
+/* Fixed navigation rail. The 3D view is sized to the remaining viewport. */
 #top-hud-bar {
-  position: fixed !important;
-  inset: 0 0 auto 0 !important;
-  height: 0 !important;
-  padding: 0 !important;
-  z-index: 150 !important;
-  background: transparent !important;
-  pointer-events: none !important;
+  position: fixed !important; inset: 0 auto 0 0 !important; z-index: 150 !important;
+  width: var(--rail-width) !important; height: 100dvh !important; padding: 14px 8px !important;
+  display: flex !important; flex-direction: column !important; align-items: center !important; gap: 18px !important;
+  background: rgba(13, 15, 18, .94) !important; border: 0 !important; border-radius: 0 !important;
+  box-shadow: 1px 0 22px rgba(0, 0, 0, .16) !important;
+  backdrop-filter: blur(var(--blur)) saturate(125%); -webkit-backdrop-filter: blur(var(--blur)) saturate(125%);
 }
 #menu-toggle {
-  position: fixed !important;
-  top: 18px !important;
-  left: 18px !important;
-  pointer-events: auto !important;
-  color: var(--text-primary) !important;
-  background: var(--glass-base) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  position: static !important; flex: 0 0 44px; width: 44px !important; height: 44px !important;
+  display: grid !important; place-items: center !important; padding: 0 !important;
+  color: var(--text-primary) !important; background: rgba(255,255,255,.065) !important;
+  border: 0 !important; border-radius: 12px !important; cursor: pointer;
 }
+#menu-toggle svg { stroke: currentColor !important; }
 .hud-nav {
-  position: fixed !important;
-  top: 16px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  margin: 0 !important;
-  padding: 7px !important;
-  gap: 4px !important;
-  border: 0 !important;
-  border-radius: 18px !important;
-  background: var(--glass-base) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
-  box-shadow: 0 12px 42px rgba(0,0,0,.2) !important;
-  pointer-events: auto !important;
-  z-index: 151 !important;
+  position: static !important; inset: auto !important; transform: none !important;
+  width: 100% !important; margin: 0 !important; padding: 0 !important;
+  display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: 7px !important;
+  background: transparent !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
 }
 .nav-item {
-  border: 0 !important;
-  border-radius: 12px !important;
-  padding: .6rem .82rem !important;
-  color: var(--text-secondary) !important;
-  background: transparent !important;
+  min-width: 0; min-height: 56px !important; padding: 7px 2px !important;
+  display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; gap: 5px !important;
+  color: var(--text-secondary) !important; background: transparent !important; border: 0 !important; border-radius: 12px !important;
+  font-size: 10px !important; line-height: 1.15 !important; text-align: center !important; text-decoration: none !important; cursor: pointer;
+  transition: color .18s ease, background-color .18s ease, transform .22s ease !important;
 }
-.nav-item:hover, .nav-item.active {
-  color: var(--text-primary) !important;
-  background: color-mix(in srgb, var(--time-accent) 15%, rgba(255,255,255,.06)) !important;
-}
-.nav-item svg { stroke: currentColor !important; }
-#hud-canvas { background: transparent !important; }
-#labels-canvas { pointer-events: none !important; }
+.nav-item svg { stroke: currentColor !important; flex: 0 0 auto; }
+.nav-item:hover, .nav-item.active { color: var(--text-primary) !important; background: color-mix(in srgb, var(--time-accent) 18%, rgba(255,255,255,.055)) !important; }
+#hud-canvas { left: var(--rail-width) !important; top: 0 !important; width: calc(100vw - var(--rail-width)) !important; height: 100dvh !important; }
+#labels-canvas { left: var(--rail-width) !important; width: calc(100vw - var(--rail-width)) !important; height: 100dvh !important; }
+#hud-response { left: calc(var(--rail-width) + 20px) !important; }
+#hud-weather { left: calc(var(--rail-width) + 20px) !important; right: auto !important; }
 
-/* Glass panels: menus, notes, calendar, contacts and conversation */
-.sidebar-cerebro, .sidebar, #menu-lateral, .menu-lateral,
-.chat-historico-direita, .painel-flutuante, #obsidian-modal,
-.intel-modal-card, .microfone-modal-card, .painel-calendario,
-#modal-evento-overlay > div, .modal-card, .cartao,
-.email-caixas-card, .email-lista-card, .email-leitor-card,
-.conta-conectada-box, .criar-nota-container, .contatos-card {
-  color: var(--text-primary) !important;
-  background: var(--glass-base) !important;
-  border: 0 !important;
-  border-radius: 20px !important;
-  box-shadow: 0 18px 56px rgba(0,0,0,.25), inset 0 1px rgba(255,255,255,.035) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(115%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%);
+/* Drawers begin beside the rail so it never covers their controls or text. */
+#menu-backdrop, .menu-backdrop {
+  display: none; position: fixed !important; inset: 0 0 0 var(--rail-width) !important; z-index: 155 !important;
+  background: rgba(4,5,7,.32) !important; backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
 }
-#menu-lateral {
-  background: rgba(18,19,23,.76) !important;
-  padding-top: 70px !important;
-  border-radius: 0 22px 22px 0 !important;
-  transform: translateX(-105%) !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  transition: transform .3s cubic-bezier(.2,.75,.25,1), visibility .3s !important;
+#menu-backdrop.visible, #menu-backdrop.aberto { display: block !important; }
+#menu-lateral, .menu-lateral, aside.menu-lateral {
+  position: fixed !important; top: 0 !important; bottom: 0 !important; left: var(--rail-width) !important;
+  z-index: 160 !important; width: min(340px, calc(100vw - var(--rail-width))) !important; height: 100dvh !important;
+  padding: 24px 16px !important; display: flex !important; flex-direction: column !important; gap: 5px !important;
+  overflow-y: auto !important; color: var(--text-primary) !important; background: rgba(18,20,24,.92) !important;
+  border: 0 !important; border-radius: 0 18px 18px 0 !important; box-shadow: 18px 0 48px rgba(0,0,0,.28) !important;
+  backdrop-filter: blur(var(--blur)) saturate(125%) !important; -webkit-backdrop-filter: blur(var(--blur)) saturate(125%) !important;
+  transform: translateX(calc(-100% - var(--rail-width))) !important; opacity: 0; visibility: hidden; pointer-events: none;
+  transition: transform .28s cubic-bezier(.2,.75,.25,1), opacity .22s ease, visibility .28s !important;
+  animation: none !important;
 }
 #menu-lateral.visible, #menu-lateral.aberto, #menu-lateral.active {
-  transform: translateX(0) !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-  animation: glass-menu-in .34s cubic-bezier(.2,.75,.25,1) both;
+  transform: translateX(0) !important; opacity: 1; visibility: visible; pointer-events: auto;
 }
-#menu-backdrop, .menu-backdrop {
-  background: rgba(3,4,7,.28) !important;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+#menu-lateral h2 { margin: 12px 8px 8px !important; color: var(--text-muted) !important; font-size: .7rem !important; font-weight: 650 !important; letter-spacing: .1em; text-transform: uppercase; }
+#menu-lateral button { min-height: 40px; width: 100%; padding: 9px 11px !important; color: var(--text-secondary) !important; background: transparent !important; border: 0 !important; border-radius: 10px !important; text-align: left; cursor: pointer; transition: background-color .18s ease, color .18s ease !important; }
+#menu-lateral button:hover { color: var(--text-primary) !important; background: rgba(255,255,255,.075) !important; }
+#menu-sair { margin-top: auto !important; }
+
+/* All side panels share a glass surface and a real slide/fade transition. */
+.sidebar-cerebro, .sidebar {
+  position: fixed !important; z-index: 145 !important; left: var(--rail-width) !important; top: 12px !important; bottom: 12px !important;
+  width: min(370px, calc(100vw - var(--rail-width) - 12px)) !important; height: auto !important; max-height: none !important;
+  display: flex !important; flex-direction: column !important; overflow: hidden !important;
+  color: var(--text-primary) !important; background: rgba(20,22,26,.76) !important;
+  border: 0 !important; border-radius: 18px !important; box-shadow: 0 18px 56px rgba(0,0,0,.32) !important;
+  backdrop-filter: blur(var(--blur)) saturate(125%) !important; -webkit-backdrop-filter: blur(var(--blur)) saturate(125%) !important;
+  transform: translateX(calc(-100% - var(--rail-width) - 18px)) !important; opacity: 0; visibility: hidden; pointer-events: none;
+  transition: transform .3s cubic-bezier(.2,.75,.25,1), opacity .22s ease, visibility .3s !important;
+  animation: none !important;
 }
-#menu-lateral h2 { color: var(--text-muted) !important; }
-#menu-lateral button {
-  color: var(--text-secondary) !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-}
-#menu-lateral button:hover {
-  color: var(--text-primary) !important;
-  background: rgba(255,255,255,.07) !important;
-}
-.sidebar-cerebro, .sidebar { background: rgba(20,21,25,.74) !important; }
 .sidebar-cerebro.aberta, .sidebar.aberta {
-  visibility: visible !important;
-  pointer-events: auto !important;
-  animation: glass-panel-in .32s cubic-bezier(.2,.75,.25,1) both;
+  transform: translateX(0) !important; opacity: 1; visibility: visible; pointer-events: auto;
 }
-.sidebar-cerebro:not(.aberta), .sidebar:not(.aberta) {
-  visibility: hidden;
-  pointer-events: none;
+.sidebar-cerebro-header, .sidebar-header, .chat-historico-header, .email-lista-header {
+  flex: 0 0 auto; color: var(--text-primary) !important; background: transparent !important;
+  border: 0 !important; box-shadow: inset 0 -1px rgba(255,255,255,.065) !important;
 }
-.sidebar-cerebro-header, .chat-historico-header, .email-lista-header {
-  color: var(--text-primary) !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+.sidebar-cerebro-header h2, .sidebar-cerebro-header h3, .sidebar-cerebro-header span,
+.sidebar-header h2, .chat-historico-header span { color: var(--text-primary) !important; }
+.cerebro-lista, #cerebro-lista-pastas, #cerebro-lista-notas, #contatos-lista, #lista-notas {
+  min-height: 0; overflow-y: auto; overscroll-behavior: contain;
 }
-.sidebar-cerebro-header h3, .sidebar-cerebro-header span,
-.chat-historico-header span { color: var(--text-primary) !important; }
-.cerebro-pasta, .cerebro-nota, .cerebro-nota-item, .chat-msg,
-.email-item, .email-pasta-item, .conta-conectada-box {
-  color: var(--text-secondary) !important;
-  background: rgba(255,255,255,.045) !important;
-  border: 0 !important;
-  box-shadow: none !important;
+.cerebro-pasta, .cerebro-nota, .cerebro-nota-item, .contato-item-clean {
+  color: var(--text-secondary) !important; background: rgba(255,255,255,.045) !important;
+  border: 0 !important; border-radius: 10px !important; box-shadow: none !important;
+  transition: background-color .18s ease, color .18s ease, transform .22s ease !important;
 }
-.cerebro-pasta:hover, .cerebro-nota:hover, .email-item:hover,
-.email-pasta-item:hover, .email-pasta-item.ativo {
-  color: var(--text-primary) !important;
-  background: color-mix(in srgb, var(--time-accent) 14%, rgba(255,255,255,.06)) !important;
-}
+.cerebro-pasta:hover, .cerebro-nota:hover, .contato-item-clean:hover { background: rgba(255,255,255,.08) !important; }
 .cerebro-pasta-nome, .cerebro-nota-titulo, .cerebro-nota-conteudo,
-.email-item-remetente, .email-item-assunto, .email-item-data,
-.email-corpo-txt, .email-remetente-txt, .email-data-txt,
-.email-vazio-msg, .email-secao-titulo, .contatos-lista, .painel-calendario {
-  color: var(--text-secondary) !important;
+#cerebro-painel h2, #cerebro-painel h3, #cerebro-painel h4,
+#sidebar-notas h2, #lista-notas, #lista-notas *, .contato-item-clean * { color: var(--text-secondary) !important; }
+.cerebro-nota-titulo, #cerebro-painel h2, #cerebro-painel h3, #sidebar-notas h2,
+.contato-item-clean div:first-child { color: var(--text-primary) !important; }
+.criar-nota-container { background: rgba(255,255,255,.04) !important; border: 0 !important; box-shadow: none !important; }
+
+/* Calendar is centered in the usable area and the month grid fits its window. */
+.painel-calendario, .sidebar-cerebro.painel-calendario {
+  left: calc(50% + var(--rail-width) / 2) !important; top: 50% !important; right: auto !important; bottom: auto !important;
+  width: min(860px, calc(100vw - var(--rail-width) - 36px)) !important;
+  height: min(700px, calc(100dvh - 28px)) !important; max-height: calc(100dvh - 28px) !important;
+  padding: 10px !important; border-radius: 18px !important; overflow: hidden !important;
+  transform: translate(-50%, -50%) scale(.97) !important;
 }
-.cerebro-nota-titulo, .email-item-remetente, .email-leitor-assunto { color: var(--text-primary) !important; }
+.painel-calendario.aberta, .sidebar-cerebro.painel-calendario.aberta {
+  display: flex !important; transform: translate(-50%, -50%) scale(1) !important; opacity: 1; visibility: visible; pointer-events: auto;
+}
+#calendario-conteudo { flex: 1 1 auto !important; min-height: 0 !important; padding: 8px !important; overflow: hidden !important; }
+#calendario-conteudo > div { gap: 8px !important; }
+#calendario-conteudo > div > div:last-child {
+  flex: 1 1 auto !important; min-height: 0 !important; grid-template-rows: repeat(6, minmax(0, 1fr)) !important; gap: 4px !important; overflow: hidden !important;
+}
+#calendario-conteudo [data-data] {
+  min-height: 0 !important; padding: 4px !important; gap: 2px !important; overflow: hidden !important;
+  color: var(--text-secondary) !important; background: rgba(255,255,255,.045) !important; border: 0 !important; border-radius: 8px !important; box-shadow: none !important;
+}
+#calendario-conteudo [data-data] span { color: var(--text-secondary) !important; }
+#calendario-conteudo .item-evento { min-height: 17px; padding: 1px 4px !important; overflow: hidden; color: var(--text-primary) !important; background: rgba(255,255,255,.08) !important; border: 0 !important; border-radius: 4px !important; font-size: 10px !important; line-height: 1.35 !important; }
+#calendario-conteudo .btn-add-evento { color: var(--time-accent) !important; background: transparent !important; }
+
+/* Unified compact dialog surfaces, including the cards created in JavaScript. */
+.intel-modal, .microfone-modal, #modal-nota-detalhes, #modal-contato-form, #modal-evento-overlay, .modal-overlay {
+  background: rgba(4,5,7,.58) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+}
+.intel-modal-card, .microfone-modal-card, .urfilig-note-card, #modal-contato-form > div,
+#modal-nota-detalhes > div, #modal-evento-overlay > div, .modal-card {
+  color: var(--text-primary) !important; background: rgba(23,25,29,.86) !important;
+  border: 0 !important; border-radius: 17px !important; box-shadow: 0 22px 64px rgba(0,0,0,.38) !important;
+  backdrop-filter: blur(var(--blur)) saturate(120%) !important; -webkit-backdrop-filter: blur(var(--blur)) saturate(120%) !important;
+}
+.intel-modal-card { max-height: min(720px, calc(100dvh - 36px)) !important; }
+.intel-modal-header, .microfone-modal-header { background: transparent !important; border: 0 !important; box-shadow: inset 0 -1px rgba(255,255,255,.07) !important; }
+.intel-modal-header h3, .intel-card-item h4, .urfilig-note-card h3, #modal-contato-form h3, #modal-evento-overlay h4 { color: var(--text-primary) !important; }
+.intel-modal-conteudo { min-height: 0; overflow-y: auto; color: var(--text-secondary) !important; }
+.intel-card-item {
+  display: flex; flex-direction: column; gap: 6px; padding: 13px 15px !important;
+  color: var(--text-secondary) !important; background: rgba(255,255,255,.055) !important;
+  border: 0 !important; border-radius: 12px !important; box-shadow: none !important;
+  transition: background-color .2s ease, transform .24s ease !important;
+}
+.intel-card-item:hover { background: rgba(255,255,255,.075) !important; }
+.intel-card-item h4 { margin: 0 0 3px !important; font-size: .82rem !important; font-weight: 650 !important; }
+.intel-card-item p, .intel-card-item strong, .intel-card-item span { color: var(--text-secondary) !important; line-height: 1.5 !important; }
+
 input, textarea, select, #chat-input {
-  color: var(--text-primary) !important;
-  background: rgba(255,255,255,.055) !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  box-shadow: none !important;
-  caret-color: var(--time-accent);
+  color: var(--text-primary) !important; background: var(--surface-input) !important;
+  border: 1px solid rgba(255,255,255,.035) !important; border-radius: 10px !important; box-shadow: none !important; caret-color: var(--time-accent) !important;
 }
-input::placeholder, textarea::placeholder, #chat-input::placeholder {
-  color: var(--text-muted) !important;
-  opacity: 1;
+input::placeholder, textarea::placeholder, #chat-input::placeholder { color: var(--text-muted) !important; opacity: 1; }
+button, .bolha-opcao, .chat-btn-enviar, .contatos-btn-novo, .btn-dinamico-esfera,
+.cerebro-form-fixo button, .email-container button, .btn-salvar-txt, .btn-modal-confirmar, .btn-modal-trocar {
+  color: var(--text-primary) !important; background: rgba(255,255,255,.075) !important;
+  border: 0 !important; border-radius: 10px !important; box-shadow: none !important;
+  transition: color .18s ease, background-color .18s ease, transform .2s ease, opacity .18s ease !important;
 }
-button, .bolha-opcao, .chat-btn-enviar, .contatos-btn-novo,
-.btn-dinamico-esfera, .cerebro-form-fixo button, .microfone-modal-acoes button,
-.email-container button, .btn-salvar-txt, .btn-modal-confirmar, .btn-modal-trocar {
-  color: var(--text-primary) !important;
-  background: rgba(255,255,255,.075) !important;
-  border: 0 !important;
-  border-radius: 12px !important;
-  box-shadow: none !important;
-}
-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--time-accent) 16%, rgba(255,255,255,.08)) !important;
-}
-button:disabled { opacity: .45; }
-#memory-tooltip {
-  color: var(--text-primary) !important;
-  background: var(--glass-strong) !important;
-  border: 0 !important;
-  border-radius: 10px !important;
-  backdrop-filter: blur(16px);
-}
-.microfone-modal, .modal-overlay {
-  background: rgba(3,4,7,.55) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.microfone-modal-indicador, .ponto-glow { background: var(--time-accent) !important; box-shadow: 0 0 18px var(--time-halo) !important; }
+button:hover:not(:disabled) { color: #fff !important; background: color-mix(in srgb, var(--time-accent) 18%, rgba(255,255,255,.085)) !important; }
+button:active:not(:disabled) { transform: scale(.98); }
+button:disabled { opacity: .48; }
+.conta-conectada-box { color: var(--text-secondary) !important; background: rgba(255,255,255,.045) !important; border: 0 !important; }
 
-/* Conversation starts minimized; opening it fades and rises into view. */
-#chat-painel { z-index: 90 !important; }
-.chat-historico-direita {
-  background: rgba(19,20,24,.74) !important;
-  border: 0 !important;
-  border-radius: 20px !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(115%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%);
-  box-shadow: 0 18px 56px rgba(0,0,0,.24) !important;
+/* E-mail is a child page in a compact floating window on the HUD. */
+#email-painel {
+  position: fixed !important; z-index: 145 !important; left: calc(50% + var(--rail-width) / 2) !important; top: 50% !important;
+  width: min(1180px, calc(100vw - var(--rail-width) - 36px)) !important; height: min(780px, calc(100dvh - 28px)) !important;
+  padding: 0 !important; overflow: hidden !important; transform: translate(-50%,-50%) scale(.97) !important;
+  display: flex !important; flex-direction: column !important; color: var(--text-primary) !important;
+  background: rgba(19,21,25,.78) !important; border: 0 !important; border-radius: 18px !important;
+  box-shadow: 0 20px 64px rgba(0,0,0,.38) !important; backdrop-filter: blur(var(--blur)) saturate(125%) !important;
+  transition: opacity .22s ease, transform .28s cubic-bezier(.2,.75,.25,1), visibility .28s !important;
+  opacity: 0; visibility: hidden; pointer-events: none;
 }
-.chat-historico-header { box-shadow: inset 0 -1px rgba(255,255,255,.06) !important; }
-#chat-restaurar { background: var(--glass-base) !important; backdrop-filter: blur(var(--glass-blur)); }
-#chat-form, .chat-form-inferior {
-  background: var(--glass-base) !important;
-  border: 0 !important;
-  border-radius: 16px !important;
-  box-shadow: 0 12px 40px rgba(0,0,0,.2) !important;
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
+#email-painel.aberta { opacity: 1; visibility: visible; pointer-events: auto; transform: translate(-50%,-50%) scale(1) !important; }
+#email-painel .email-window-header {
+  flex: 0 0 46px; min-height: 46px; padding: 0 54px 0 16px; display: flex; align-items: center;
+  color: var(--text-primary); background: rgba(255,255,255,.025); box-shadow: inset 0 -1px rgba(255,255,255,.06);
 }
-#chat-input { background: rgba(255,255,255,.055) !important; }
-
-/* The mail view uses the same translucent surfaces and shared system font. */
-body:has(.email-wrapper) {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  overflow: hidden !important;
-  background: radial-gradient(ellipse at 50% 0%, var(--time-halo), transparent 62%), #08090b !important;
-}
-.email-brand { display: none !important; }
-.email-topbar {
-  flex: 0 0 54px !important;
-  min-height: 54px !important;
-  box-sizing: border-box;
-  justify-content: flex-end !important;
-  padding: .6rem 1.25rem !important;
-  background: transparent !important;
-}
-.email-topbar-spacer { display: none !important; }
+#email-painel .email-window-header h2 { margin: 0; color: var(--text-primary); font-size: .9rem; font-weight: 650; }
+#email-fechar { position: absolute; z-index: 2; top: 10px; right: 10px; width: 34px; height: 34px; display: grid; place-items: center; background: rgba(255,255,255,.075) !important; }
+#email-frame { display: block; flex: 1 1 auto; width: 100%; min-height: 0; border: 0; background: transparent; }
+body:has(.email-wrapper) { display: flex !important; flex-direction: column !important; align-items: stretch !important; justify-content: flex-start !important; min-height: 0 !important; height: 100% !important; overflow: hidden !important; }
+.email-topbar { flex: 0 0 46px !important; min-height: 46px !important; margin: 0 !important; padding: 6px 48px 6px 12px !important; background: transparent !important; }
+.email-topbar-spacer, .email-brand { display: none !important; }
 .btn-voltar-hub { color: var(--text-secondary) !important; text-decoration: none !important; }
 .email-wrapper {
-  display: grid !important;
-  grid-template-columns: minmax(170px,220px) minmax(250px,330px) minmax(0,1fr) !important;
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  width: auto !important;
-  max-width: none !important;
-  height: auto !important;
-  margin: 0 !important;
-  padding: 0 1rem 1rem !important;
-  gap: .8rem !important;
+  display: grid !important; grid-template-columns: minmax(145px,185px) minmax(195px,270px) minmax(0,1fr) !important;
+  flex: 1 1 auto !important; width: 100% !important; max-width: none !important; min-width: 0 !important; min-height: 0 !important;
+  height: auto !important; margin: 0 !important; padding: 0 10px 10px !important; gap: 8px !important; overflow: hidden !important;
 }
 .email-caixas-card, .email-lista-card, .email-leitor-card {
-  min-width: 0 !important;
-  width: auto !important;
-  height: auto !important;
-  min-height: 0 !important;
-  background: rgba(20,21,25,.72) !important;
-  color: var(--text-primary) !important;
-  border: 0 !important;
-  border-radius: 20px !important;
-  box-shadow: 0 18px 56px rgba(0,0,0,.22) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(115%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%);
-  animation: glass-panel-in .34s ease both;
+  min-width: 0 !important; min-height: 0 !important; width: auto !important; height: auto !important;
+  color: var(--text-primary) !important; background: rgba(19,21,25,.78) !important;
+  border: 0 !important; border-radius: 13px !important; box-shadow: none !important;
+  backdrop-filter: blur(18px) saturate(115%); -webkit-backdrop-filter: blur(18px) saturate(115%);
 }
-.email-caixas-card { padding: 1rem .8rem !important; }
-.email-lista-card { display: flex !important; overflow: hidden !important; }
-.email-lista-header { padding: 1rem !important; color: var(--text-primary) !important; }
-.email-lista-scroll { min-height: 0 !important; }
-.email-item { padding: .9rem 1rem !important; border-radius: 10px !important; margin: 0 .4rem .25rem !important; }
-.email-item.selecionado { background: color-mix(in srgb, var(--time-accent) 16%, rgba(255,255,255,.06)) !important; }
-.email-leitor-card { padding: 1.25rem !important; }
-.email-leitor-header {
-  align-items: center !important;
-  flex-wrap: wrap;
-  padding-bottom: .85rem !important;
-  border: 0 !important;
-  box-shadow: inset 0 -1px rgba(255,255,255,.07);
-}
-.email-leitor-assunto { color: var(--text-primary) !important; }
-.email-corpo-txt, .email-remetente-txt, .email-data-txt,
-.email-vazio-msg, .email-estado-conexao, .email-erro-msg { color: var(--text-secondary) !important; }
-.conta-conectada-box { background: rgba(255,255,255,.05) !important; }
-.email-vazio-msg p[style] { color: var(--text-secondary) !important; }
+.email-caixas-card { padding: 12px 9px !important; }
+.email-lista-card { display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+.email-lista-header { padding: 12px !important; color: var(--text-primary) !important; }
+.email-lista-scroll { min-height: 0 !important; overflow: auto !important; }
+.email-item { margin: 0 5px 3px !important; padding: 10px !important; color: var(--text-secondary) !important; background: rgba(255,255,255,.035) !important; border: 0 !important; border-radius: 9px !important; }
+.email-item:hover { background: rgba(255,255,255,.075) !important; }
+.email-item.selecionado, .email-pasta-item.ativo { color: var(--text-primary) !important; background: color-mix(in srgb, var(--time-accent) 16%, rgba(255,255,255,.07)) !important; border: 0 !important; }
+.email-item-remetente, .email-leitor-assunto { color: var(--text-primary) !important; }
+.email-item-assunto, .email-item-data, .email-remetente-txt, .email-data-txt,
+.email-corpo-txt, .email-vazio-msg, .email-secao-titulo, .email-pasta-item, .conta-email-txt { color: var(--text-secondary) !important; }
+.email-leitor-card { padding: 16px !important; overflow: auto !important; }
+.email-leitor-header { flex-wrap: wrap; gap: 10px; align-items: center !important; padding-bottom: 12px !important; border: 0 !important; box-shadow: inset 0 -1px rgba(255,255,255,.07) !important; }
+.contato-item-clean { background: transparent !important; }
 
-/* Login and onboarding share the application's ambient color, with a quiet glass card. */
-body.tela-centralizada {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 100vh !important;
-  background: radial-gradient(ellipse at 50% 5%, var(--time-halo), transparent 58%), #08090b !important;
-  color: var(--text-primary) !important;
-  isolation: isolate;
+.chat-historico-direita {
+  color: var(--text-primary) !important; background: rgba(18,20,24,.78) !important; border: 0 !important; border-radius: 18px !important;
+  box-shadow: 0 18px 48px rgba(0,0,0,.28) !important; backdrop-filter: blur(var(--blur)); -webkit-backdrop-filter: blur(var(--blur));
 }
-body.tela-centralizada::before { content: none !important; }
-.cartao {
-  width: min(420px, calc(100vw - 40px)) !important;
-  padding: 2rem !important;
-  background: rgba(18,19,23,.72) !important;
-  border: 0 !important;
-  border-radius: 22px !important;
-  box-shadow: 0 24px 72px rgba(0,0,0,.34) !important;
-  animation: glass-panel-in .4s cubic-bezier(.2,.75,.25,1) both;
-}
-.cartao h1, #titulo-form { color: var(--text-primary) !important; }
-.cartao p.intro, .campo-grupo label, #form-login label { color: var(--text-secondary) !important; }
-#form-login input, .campo-grupo input, .campo-grupo textarea {
-  background: rgba(255,255,255,.06) !important;
-  color: var(--text-primary) !important;
-  border: 0 !important;
-}
-.bolha-btn { background: rgba(255,255,255,.09) !important; color: var(--text-primary) !important; border: 0 !important; }
-.btn-texto-simples { color: var(--text-secondary) !important; }
-.separador { color: var(--text-muted) !important; }
-#mensagem-erro { color: #e0a5a5 !important; }
-#modal-nota-detalhes { background: rgba(3,4,7,.58) !important; backdrop-filter: blur(12px); }
-#modal-nota-detalhes > .urfilig-note-card {
-  background: rgba(24,25,29,.84) !important;
-  color: var(--text-primary) !important;
-  border: 0 !important;
-  border-radius: 20px !important;
-  box-shadow: 0 24px 72px rgba(0,0,0,.4) !important;
-  backdrop-filter: blur(var(--glass-blur));
-}
-#modal-nota-detalhes .urfilig-note-card *,
-#modal-nota-detalhes label { color: var(--text-secondary) !important; }
-#modal-nota-detalhes input, #modal-nota-detalhes textarea,
-#modal-nota-detalhes select { color: var(--text-primary) !important; caret-color: var(--time-accent); }
-#modal-nota-detalhes option { background: #17181c !important; color: var(--text-primary) !important; }
+.chat-msg { color: var(--text-secondary) !important; background: rgba(255,255,255,.055) !important; border: 0 !important; border-radius: 12px !important; }
+.chat-form-inferior { background: rgba(18,20,24,.76) !important; border: 0 !important; border-radius: 15px !important; box-shadow: 0 12px 36px rgba(0,0,0,.22) !important; backdrop-filter: blur(var(--blur)); }
+#chat-input { background: rgba(255,255,255,.06) !important; }
+.microfone-modal, .intel-modal { z-index: 9999 !important; }
+.intel-modal.visible .intel-modal-card, .microfone-modal:not([hidden]) .microfone-modal-card { animation: glass-enter .24s ease both; }
+.ponto-glow, .microfone-modal-indicador { background: var(--time-accent) !important; box-shadow: 0 0 15px color-mix(in srgb, var(--time-accent) 48%, transparent) !important; }
 
-@keyframes glass-panel-in {
-  from { opacity: 0; transform: translateY(10px) scale(.99); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes glass-menu-in {
-  from { opacity: .75; translate: -12px 0; }
-  to { opacity: 1; translate: 0 0; }
-}
-@media (max-width: 850px) {
-  .email-wrapper { grid-template-columns: minmax(145px,190px) minmax(210px,280px) minmax(0,1fr) !important; padding: 0 .6rem .6rem !important; gap: .5rem !important; }
-  .email-leitor-card { padding: .85rem !important; }
-}
-@media (max-width: 650px) {
-  .hud-nav { top: auto !important; bottom: 12px !important; max-width: calc(100vw - 24px); overflow-x: auto; }
-  .email-wrapper { grid-template-columns: 1fr !important; grid-template-rows: auto minmax(150px,32vh) minmax(0,1fr) !important; overflow-y: auto !important; }
-  .email-caixas-card { min-height: 150px !important; }
-  .email-lista-card { min-height: 220px !important; }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
-}
-
-
-/* Higher-specificity finish: neutralize legacy CSS from older visual iterations. */
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body * {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-  text-shadow: none !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(#hud-canvas),
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body:has(.email-wrapper),
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) body.tela-centralizada {
-  background-color: #08090b !important;
-  color: var(--text-primary) !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #menu-lateral,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .painel-calendario,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .hud-nav,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-form-inferior,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-caixas-card,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-lista-card,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-card,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .modal-card {
-  color: var(--text-primary) !important;
-  background-color: var(--glass-base) !important;
-  border: 0 !important;
-  box-shadow: 0 18px 56px rgba(0,0,0,.24) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(115%) !important;
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(115%) !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) button,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .nav-item,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) input,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) textarea,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) select {
-  color: var(--text-primary) !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartoon-windowbar {
-  display: none !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-brand {
-  display: none !important;
-}
-
-
-/* Keep secondary and primary text readable despite legacy inline-priority rules. */
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #menu-lateral *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .chat-historico-direita *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-wrapper *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao * {
-  color: var(--text-secondary) !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro h2,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro h3,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .sidebar-cerebro-header *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #chat-historico .chat-historico-header *,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-leitor-assunto,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .email-item-remetente,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao h1,
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) .cartao h2 {
-  color: var(--text-primary) !important;
-}
-:not(#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost#urfilig-theme-boost) #chat-historico[style*="display: flex"] {
-  animation: glass-panel-in .34s cubic-bezier(.2,.75,.25,1) both;
-}
-
-/* Frameless Tauri windows: keep controls without restoring a title strip. */
-.window-chrome-minimal { position: fixed; inset: 0; z-index: 20000; pointer-events: none; }
-.window-drag-zone { position: absolute; inset: 0 92px auto 0; height: 8px; pointer-events: auto; cursor: grab; }
-.window-chrome-actions {
-  position: absolute; top: 7px; right: 9px; display: flex; gap: 3px; padding: 3px;
-  border-radius: 12px; background: rgba(24,25,29,.62);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); pointer-events: auto;
-}
-.window-chrome-actions button {
-  width: 28px; height: 24px; padding: 0; border: 0 !important; border-radius: 8px;
-  color: var(--text-secondary) !important; background: transparent !important;
-  font: 500 15px/1 ui-sans-serif, system-ui, sans-serif !important; cursor: pointer;
-}
-.window-chrome-actions button:hover { color: var(--text-primary) !important; background: rgba(255,255,255,.1) !important; }
-.window-chrome-actions [data-window-action="close"]:hover {
-  background: color-mix(in srgb, var(--time-accent) 38%, rgba(255,255,255,.1)) !important;
-}
-.email-topbar { margin-top: 0 !important; }
-
-/* Final shared UI layer: keep old page-specific !important rules from leaking
-   their former white/pastel themes into the current dark interface. */
-:root {
-  --glass-base: rgba(18, 19, 23, .92);
-  --glass-raised: rgba(30, 31, 36, .9);
-  --glass-strong: rgba(13, 14, 17, .97);
-  --text-primary: #f2f2f3;
-  --text-secondary: #c4c5ca;
-  --text-muted: #9b9da5;
-}
-html body:has(#hud-canvas), html body:has(.email-wrapper) {
-  background: radial-gradient(ellipse at 55% 0%, var(--time-halo), transparent 58%), #08090b !important;
-  color: var(--text-primary) !important;
-}
-html body #top-hud-bar {
-  position: fixed !important; inset: 0 auto 0 0 !important; z-index: 150 !important;
-  width: 76px !important; height: 100vh !important; padding: 14px 8px !important;
-  display: flex !important; flex-direction: column !important; align-items: center !important;
-  gap: 18px !important; background: rgba(14,15,18,.88) !important;
-  border: 0 !important; border-radius: 0 !important; box-shadow: 1px 0 24px rgba(0,0,0,.18) !important;
-  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); pointer-events: auto !important;
-}
-html body #menu-toggle { position: static !important; width: 44px !important; height: 44px !important; flex: 0 0 auto; }
-html body .hud-nav {
-  position: static !important; inset: auto !important; transform: none !important;
-  display: flex !important; flex-direction: column !important; align-items: stretch !important;
-  width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important;
-  gap: 8px !important; border: 0 !important; border-radius: 0 !important;
-  background: transparent !important; box-shadow: none !important; overflow: visible !important;
-}
-html body .hud-nav .nav-item {
-  min-height: 56px !important; padding: 8px 3px !important; display: flex !important;
-  flex-direction: column !important; align-items: center !important; justify-content: center !important;
-  gap: 5px !important; color: var(--text-secondary) !important; font-size: 10px !important;
-  line-height: 1.2 !important; text-align: center !important; border: 0 !important;
-  border-radius: 12px !important; background: transparent !important;
-}
-html body .hud-nav .nav-item:hover, html body .hud-nav .nav-item.active {
-  color: #fff !important; background: color-mix(in srgb, var(--time-accent) 20%, rgba(255,255,255,.06)) !important;
-}
-html body #hud-canvas { left: 76px !important; width: calc(100vw - 76px) !important; }
-html body #labels-canvas { left: 76px !important; width: calc(100vw - 76px) !important; }
-html body #hud-response, html body #hud-weather { left: 96px !important; }
-html body #menu-lateral { top: 0 !important; left: 76px !important; height: 100vh !important; max-height: 100vh !important; }
-html body .menu-backdrop { left: 76px !important; }
-
-html body .sidebar-cerebro, html body #cerebro-painel, html body .sidebar,
-html body #menu-lateral, html body .painel-calendario, html body .intel-modal-card,
-html body .microfone-modal-card, html body .modal-card, html body #modal-evento-overlay > div,
-html body .contatos-card, html body .email-caixas-card, html body .email-lista-card,
-html body .email-leitor-card, html body .conta-conectada-box, html body .criar-nota-container {
-  color: var(--text-primary) !important; background: rgba(18,19,23,.94) !important;
-  border: 0 !important; outline: 0 !important; border-radius: 16px !important;
-  box-shadow: 0 16px 44px rgba(0,0,0,.28) !important;
-  backdrop-filter: blur(22px) saturate(115%) !important;
-}
-html body #cerebro-painel *, html body #sidebar-notas *, html body .email-wrapper *,
-html body .painel-calendario *, html body .contatos-card * { text-shadow: none !important; }
-html body #cerebro-painel .cerebro-pasta, html body #cerebro-painel .cerebro-nota,
-html body #sidebar-notas .cerebro-pasta, html body #sidebar-notas .cerebro-nota,
-html body #cerebro-painel .cerebro-nota-item, html body #lista-notas .cerebro-pasta,
-html body #lista-notas .cerebro-nota, html body .contatos-card .contato-item,
-html body .contatos-card .contato-card {
-  color: var(--text-secondary) !important; background: rgba(255,255,255,.045) !important;
-  border: 0 !important; box-shadow: none !important; border-radius: 10px !important;
-}
-html body #cerebro-painel .cerebro-pasta span, html body #cerebro-painel .cerebro-nota span,
-html body #sidebar-notas .cerebro-pasta span, html body #sidebar-notas .cerebro-nota span,
-html body #lista-notas *, html body .contatos-card *, html body .email-wrapper * {
-  color: inherit !important;
-}
-html body #cerebro-painel h2, html body #cerebro-painel h3, html body #cerebro-painel h4,
-html body #sidebar-notas h2, html body .email-leitor-assunto, html body .email-item-remetente,
-html body .contatos-card h2, html body .contatos-card h3 { color: var(--text-primary) !important; }
-html body input, html body textarea, html body select,
-html body #modal-nota-detalhes input, html body #modal-nota-detalhes textarea,
-html body #modal-nota-detalhes select {
-  color: var(--text-primary) !important; background: rgba(255,255,255,.07) !important;
-  border: 0 !important; box-shadow: none !important; caret-color: var(--time-accent) !important;
-}
-html body button, html body .nav-item, html body .bolha-opcao, html body .chat-btn-enviar,
-html body .btn-dinamico-esfera, html body .cerebro-form-fixo button,
-html body #menu-lateral button, html body #modal-evento-overlay button {
-  color: var(--text-primary) !important; background: rgba(255,255,255,.075) !important;
-  border: 0 !important; box-shadow: none !important; border-radius: 10px !important;
-}
-html body button:hover:not(:disabled), html body #menu-lateral button:hover {
-  color: #fff !important; background: color-mix(in srgb, var(--time-accent) 20%, rgba(255,255,255,.08)) !important;
-}
-html body .sidebar-cerebro-header, html body #cerebro-painel .sidebar-cerebro-header,
-html body #sidebar-notas .sidebar-header, html body .email-leitor-header,
-html body .email-lista-header { border: 0 !important; box-shadow: inset 0 -1px rgba(255,255,255,.07) !important; }
-
-/* Calendar cells are generated with inline legacy colors; override them and fit
-   all six possible week rows into a compact, scroll-free panel. */
-html body .painel-calendario {
-  position: fixed !important; left: calc(50% + 38px) !important; top: 50% !important;
-  width: min(820px, calc(100vw - 130px)) !important;
-  height: min(680px, calc(100vh - 36px)) !important; max-height: calc(100vh - 36px) !important;
-  padding: 14px !important; transform: translate(-50%, -50%) scale(.98) !important;
-  display: flex !important; flex-direction: column !important; overflow: hidden !important;
-}
-html body .painel-calendario.aberta { transform: translate(-50%, -50%) scale(1) !important; }
-html body #calendario-conteudo { flex: 1 !important; min-height: 0 !important; padding: 8px !important; overflow: hidden !important; }
-html body #calendario-conteudo > div { gap: 8px !important; }
-html body #calendario-conteudo > div > div:last-child {
-  flex: 1 1 auto !important; min-height: 0 !important; grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
-  gap: 4px !important; overflow: hidden !important;
-}
-html body #calendario-conteudo [data-data] {
-  min-height: 0 !important; padding: 4px !important; gap: 2px !important;
-  color: var(--text-secondary) !important; background: rgba(255,255,255,.045) !important;
-  border: 0 !important; border-radius: 8px !important; overflow: hidden !important;
-}
-html body #calendario-conteudo [data-data] > div:first-child { min-height: 20px; }
-html body #calendario-conteudo [data-data] span { color: var(--text-secondary) !important; }
-html body #calendario-conteudo .item-evento {
-  min-height: 17px; padding: 1px 4px !important; color: var(--text-primary) !important;
-  background: rgba(255,255,255,.08) !important; border: 0 !important; border-radius: 4px !important;
-  font-size: 10px !important; line-height: 1.4 !important;
-}
-html body #calendario-conteudo .btn-add-evento { color: var(--time-accent) !important; background: transparent !important; }
-
-html body .email-wrapper { grid-template-columns: minmax(150px,190px) minmax(210px,280px) minmax(0,1fr) !important; padding: 0 .8rem .8rem !important; gap: .65rem !important; }
-html body .email-topbar { padding: .55rem .8rem !important; }
-html body .email-caixas-card, html body .email-lista-card, html body .email-leitor-card {
-  background: rgba(18,19,23,.9) !important; border: 0 !important; border-radius: 14px !important;
-}
-html body .email-item { border: 0 !important; border-radius: 8px !important; }
-html body .email-item-remetente, html body .email-item-assunto, html body .email-item-data,
-html body .email-remetente-txt, html body .email-data-txt, html body .email-corpo-txt,
-html body .email-vazio-msg, html body .email-secao-titulo, html body .conta-email-txt,
-html body .email-pasta-item, html body .btn-voltar-hub { color: var(--text-secondary) !important; }
-html body .email-item-remetente, html body .email-leitor-assunto { color: var(--text-primary) !important; }
-html body .email-pasta-item.ativo, html body .email-item.selecionado {
-  color: var(--text-primary) !important; background: color-mix(in srgb, var(--time-accent) 18%, rgba(255,255,255,.06)) !important;
-}
-html body .contato-item-clean { color: var(--text-secondary) !important; background: transparent !important; border: 0 !important; }
-html body .contato-item-clean:hover { background: rgba(255,255,255,.06) !important; }
-html body .contato-item-clean div { color: var(--text-secondary) !important; }
-html body .contato-item-clean div:first-child { color: var(--text-primary) !important; }
-html body .contatos-busca-container, html body .contatos-rodape { background: transparent !important; border: 0 !important; }
-html body .intel-modal-card, html body .modal-card, html body #modal-evento-overlay > div { border: 0 !important; }
-.urfilig-dialog-backdrop { position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center; padding: 20px; background: rgba(3,4,7,.62); backdrop-filter: blur(12px); }
-.urfilig-dialog-card { width: min(420px, 100%); padding: 20px; color: var(--text-primary); background: rgba(20,21,25,.97); border: 0; border-radius: 16px; box-shadow: 0 22px 70px rgba(0,0,0,.48); }
-.urfilig-dialog-card h2 { margin: 0 0 8px; font-size: 1rem; }
+.urfilig-dialog-backdrop { position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center; padding: 20px; background: rgba(4,5,7,.58); backdrop-filter: blur(12px); }
+.urfilig-dialog-card { width: min(420px, 100%); padding: 20px; color: var(--text-primary); background: rgba(23,25,29,.9); border: 0; border-radius: 17px; box-shadow: 0 22px 64px rgba(0,0,0,.4); backdrop-filter: blur(var(--blur)); }
+.urfilig-dialog-card h2 { margin: 0 0 8px; color: var(--text-primary); font-size: 1rem; }
 .urfilig-dialog-card p { color: var(--text-secondary); line-height: 1.5; }
 .urfilig-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-.urfilig-dialog-actions button[data-primary] { background: color-mix(in srgb, var(--time-accent) 28%, #25262b) !important; }
-.urfilig-toast { position: fixed; z-index: 20001; right: 20px; bottom: 20px; max-width: min(420px, calc(100vw - 40px)); padding: 12px 16px; color: var(--text-primary); background: rgba(24,25,29,.97); border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,.35); }
+.urfilig-toast { position: fixed; z-index: 20001; right: 20px; bottom: 20px; max-width: min(420px, calc(100vw - 40px)); padding: 12px 16px; color: var(--text-primary); background: rgba(24,26,30,.94); border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,.35); backdrop-filter: blur(18px); }
+
+.window-chrome-minimal { position: fixed; inset: 0; z-index: 20000; pointer-events: none; }
+.window-drag-zone { position: absolute; inset: 0 92px auto 0; height: 8px; pointer-events: auto; cursor: grab; }
+.window-chrome-actions { position: absolute; top: 7px; right: 9px; display: flex; gap: 3px; padding: 3px; border-radius: 12px; background: rgba(24,25,29,.68); backdrop-filter: blur(18px); pointer-events: auto; }
+.window-chrome-actions button { width: 28px; height: 24px; padding: 0; color: var(--text-secondary) !important; background: transparent !important; border: 0 !important; border-radius: 8px !important; font-size: 15px !important; cursor: pointer; }
+.window-chrome-actions button:hover { color: var(--text-primary) !important; background: rgba(255,255,255,.1) !important; }
+
+@keyframes glass-enter { from { opacity: 0; scale: .985; } to { opacity: 1; scale: 1; } }
 @media (max-width: 700px) {
-  html body #top-hud-bar { width: 60px !important; padding: 10px 5px !important; }
-  html body #hud-canvas { left: 60px !important; width: calc(100vw - 60px) !important; }
-  html body #labels-canvas { left: 60px !important; width: calc(100vw - 60px) !important; }
-  html body #menu-lateral { left: 60px !important; }
-  html body .menu-backdrop { left: 60px !important; }
-  html body .painel-calendario { left: calc(50% + 30px) !important; width: calc(100vw - 72px) !important; height: min(620px, calc(100vh - 24px)) !important; padding: 8px !important; }
-  html body #calendario-conteudo { padding: 3px !important; }
-  html body #calendario-conteudo [data-data] { padding: 2px !important; }
-  html body .email-wrapper { grid-template-columns: minmax(0,1fr) !important; grid-template-rows: auto minmax(150px,28vh) minmax(220px,1fr) !important; overflow-y: auto !important; }
+  :root { --rail-width: 60px; }
+  #top-hud-bar { padding: 10px 5px !important; }
+  #menu-lateral { padding: 16px 10px !important; }
+  .sidebar-cerebro, .sidebar { width: calc(100vw - var(--rail-width) - 12px) !important; }
+  .painel-calendario, .sidebar-cerebro.painel-calendario { left: calc(50% + var(--rail-width) / 2) !important; width: calc(100vw - var(--rail-width) - 20px) !important; height: min(660px,calc(100dvh - 18px)) !important; padding: 6px !important; }
+  #calendario-conteudo { padding: 3px !important; }
+  #calendario-conteudo [data-data] { padding: 2px !important; }
+  #email-painel { left: calc(50% + var(--rail-width) / 2) !important; width: calc(100vw - var(--rail-width) - 20px) !important; height: min(780px,calc(100dvh - 18px)) !important; }
+  body:has(.email-wrapper) { overflow: auto !important; }
+  .email-wrapper { grid-template-columns: minmax(0,1fr) !important; grid-template-rows: auto minmax(130px,25dvh) minmax(200px,1fr) !important; overflow-y: auto !important; }
+  .email-caixas-card { min-height: 120px !important; }
+  .email-lista-card { min-height: 160px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

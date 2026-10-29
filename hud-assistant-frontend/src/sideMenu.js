@@ -268,6 +268,27 @@ export function iniciarMenuLateral(socket) {
     alternarPainelCalendario();
   });
   document.querySelector('#calendario-fechar')?.addEventListener('click', () => painelCalendario?.classList.remove('aberta'));
+
+  const painelEmail = document.querySelector('#email-painel');
+  const fecharEmail = () => {
+    painelEmail?.classList.remove('aberta');
+    painelEmail?.setAttribute('aria-hidden', 'true');
+  };
+  const abrirEmail = () => {
+    document.querySelectorAll('.sidebar-cerebro.aberta, .sidebar.aberta').forEach((painel) => painel.classList.remove('aberta'));
+    fecharMenu();
+    painelEmail?.classList.add('aberta');
+    painelEmail?.setAttribute('aria-hidden', 'false');
+  };
+  document.querySelector('#nav-emails')?.addEventListener('click', (event) => {
+    event.preventDefault();
+    abrirEmail();
+  });
+  document.querySelector('#email-fechar')?.addEventListener('click', fecharEmail);
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') fecharEmail(); });
+  window.addEventListener('message', (event) => {
+    if (event.origin === window.location.origin && event.data?.type === 'urfilig:close-email') fecharEmail();
+  });
   // Menu de Contexto
   let contextMenu = document.getElementById('urfilig-context-menu');
   if (!contextMenu) {

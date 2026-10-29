@@ -36,6 +36,14 @@ const btnAlterarConta = document.getElementById('btn-alterar-conta');
 
 const modalEmailPreview = document.getElementById('modal-email-preview');
 const btnModalTrocar = document.getElementById('btn-modal-trocar');
+const btnVoltarHub = document.querySelector('.btn-voltar-hub');
+
+if (window.parent !== window) {
+  btnVoltarHub?.addEventListener('click', (event) => {
+    event.preventDefault();
+    window.parent.postMessage({ type: 'urfilig:close-email' }, window.location.origin);
+  });
+}
 
 let emailAbertoAtual = null;
 let googleAccessToken = localStorage.getItem('google_access_token');
