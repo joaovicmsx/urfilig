@@ -222,13 +222,16 @@ function atualizarTemaPorHorario() {
   const rgb = getTimeColor();
   const cor = new THREE.Color(`rgb(${rgb.join(',')})`);
   const uniforms = fundoEtereo.material.uniforms;
-  uniforms.corTopo.value.set('#191a1e');
-  uniforms.corMeio.value.set('#111216');
-  uniforms.corBase.value.set('#0d0e11');
-  uniforms.corVazio.value.set('#090a0d');
+  const hora = new Date().getHours();
+  const luzDia = Math.max(0, Math.min(1, (hora - 6) / 2, (19 - hora) / 2));
+  const corDia = new THREE.Color('#6b641f');
+  uniforms.corTopo.value.copy(new THREE.Color('#191a1e').lerp(corDia, luzDia * 0.82));
+  uniforms.corMeio.value.copy(new THREE.Color('#111216').lerp(new THREE.Color('#302b13'), luzDia * 0.7));
+  uniforms.corBase.value.copy(new THREE.Color('#0d0e11').lerp(new THREE.Color('#1a180b'), luzDia * 0.52));
+  uniforms.corVazio.value.copy(new THREE.Color('#090a0d').lerp(new THREE.Color('#111109'), luzDia * 0.36));
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
-  document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .045)`);
+  document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
 }
 atualizarTemaPorHorario();
 setInterval(atualizarTemaPorHorario, 60_000);

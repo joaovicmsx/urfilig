@@ -9,6 +9,30 @@ const inicioDoDia = (data = new Date()) => {
   return inicio;
 };
 const dataCurta = (data) => new Date(data).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+const dataSolicitada = (valor) => {
+  if (!valor || !/^\d{4}-\d{2}-\d{2}$/.test(valor)) return inicioDoDia();
+  const [ano, mes, dia] = valor.split('-').map(Number);
+  return new Date(ano, mes - 1, dia);
+};
+let cacheTendencias = { atualizadoEm: 0, dados: null };
+const decodificarXml = (valor = '') => valor
+  .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+  .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+async function lerTendenciasGoogle(geo, pais) {
+  const resposta = await fetch(`https://trends.google.com/trending/rss?geo=${geo}`, {
+    signal: AbortSignal.timeout(9000), headers: { 'User-Agent': 'Urfilig/1.0 (live-trends)' },
+  });
+  if (!resposta.ok) throw new Error(`Google Trends respondeu ${resposta.status}`);
+  const xml = await resposta.text();
+  return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].map(([, item]) => {
+    const campo = (nome) => decodificarXml(item.match(new RegExp(`<${nome}[^>]*>([\\s\\S]*?)<\\/${nome}>`, 'i'))?.[1]?.trim() || '');
+    const topico = campo('title');
+    const noticia = item.match(/<ht:news_item(?:\s[^>]*)?>([\s\S]*?)<\/ht:news_item>/i)?.[1] || '';
+    const detalheNoticia = (nome) => decodificarXml(noticia.match(new RegExp(`<ht:${nome}[^>]*>([\\s\\S]*?)<\\/ht:${nome}>`, 'i'))?.[1]?.trim() || '');
+    return topico ? { topico, buscas: campo('ht:approx_traffic'), publicadoEm: campo('pubDate'), url: detalheNoticia('news_item_url') || campo('link'), noticia: detalheNoticia('news_item_title'), fonteNoticia: detalheNoticia('news_item_source'), pais } : null;
+  }).filter(Boolean).slice(0, 8);
+}
 
 router.get('/metricas', async (req, res) => {
   const usuarioId = getUsuarioId(req);
@@ -53,34 +77,43 @@ router.get('/resumo-inbox', async (req, res) => {
 });
 
 router.get('/tendencias', async (req, res) => {
-  const usuarioId = getUsuarioId(req);
+  if (cacheTendencias.dados && Date.now() - cacheTendencias.atualizadoEm < 5 * 60 * 1000) {
+    return res.json({ ok: true, fonte: 'Google Trends', atualizadoEm: cacheTendencias.atualizadoEm, tendencias: cacheTendencias.dados });
+  }
   try {
-    const notas = await prisma.nota.findMany({ where: { usuarioId }, select: { titulo: true, conteudo: true } });
-    const contagemPalavras = new Map();
-    const ignorar = new Set(['para', 'como', 'mais', 'muito', 'sobre', 'entre', 'quando', 'onde', 'porque', 'isso', 'esta', 'esse', 'essa', 'com', 'sem', 'uma', 'uns', 'umas', 'dos', 'das', 'que', 'por', 'não', 'nos', 'nas', 'pelo', 'pela', 'ser', 'ter', 'sua', 'seu']);
-    notas.forEach(({ titulo, conteudo }) => {
-      const unicasDaNota = new Set((`${titulo} ${conteudo || ''}`.toLocaleLowerCase('pt-BR').match(/[a-zà-ú]{4,}/gi) || []));
-      unicasDaNota.forEach((palavra) => { if (!ignorar.has(palavra)) contagemPalavras.set(palavra, (contagemPalavras.get(palavra) || 0) + 1); });
+    const regioes = [['BR', 'Brasil'], ['US', 'Estados Unidos'], ['GB', 'Reino Unido'], ['IN', 'Índia'], ['JP', 'Japão']];
+    const resultados = await Promise.allSettled(regioes.map(([geo, pais]) => lerTendenciasGoogle(geo, pais)));
+    const tendencias = resultados.flatMap((resultado) => resultado.status === 'fulfilled' ? resultado.value : []);
+    const porTopico = new Map();
+    tendencias.forEach((item) => {
+      const chave = item.topico.toLocaleLowerCase('pt-BR');
+      const existente = porTopico.get(chave);
+      if (existente) existente.pais += `, ${item.pais}`;
+      else porTopico.set(chave, item);
     });
-    const tendencias = [...contagemPalavras.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 8).map(([topico, relevancia]) => ({ topico, relevancia }));
-    res.json({ ok: true, totalNotasAnalisadas: notas.length, tendencias });
+    const unicas = [...porTopico.values()];
+    if (!unicas.length) throw new Error('Google Trends indisponível no momento.');
+    cacheTendencias = { atualizadoEm: Date.now(), dados: unicas };
+    res.json({ ok: true, fonte: 'Google Trends', atualizadoEm: cacheTendencias.atualizadoEm, tendencias: unicas });
   } catch (erro) {
     console.error('[Intel] Erro em tendencias:', erro);
-    res.status(500).json({ erro: 'Erro ao analisar as notas.' });
+    res.status(503).json({ erro: 'Não foi possível atualizar as tendências da internet agora.' });
   }
 });
 
 router.get('/plano-hoje', async (req, res) => {
   const usuarioId = getUsuarioId(req);
   try {
-    const inicioHoje = inicioDoDia();
+    const inicioHoje = dataSolicitada(req.query.data);
     const fimHoje = new Date(inicioHoje);
     fimHoje.setDate(fimHoje.getDate() + 1);
-    const [compromissosHoje, notasRecentes] = await Promise.all([
+    const fimDoDia = fimHoje;
+    const [compromissosHoje, tarefas, notasRecentes] = await Promise.all([
       prisma.evento.findMany({ where: { usuarioId, dataInicio: { gte: inicioHoje, lt: fimHoje } }, orderBy: { dataInicio: 'asc' } }),
-      prisma.nota.findMany({ where: { usuarioId }, take: 5, orderBy: { dataCriacao: 'desc' }, select: { id: true, titulo: true, dataCriacao: true } }),
+      prisma.agendaItem.findMany({ where: { usuarioId, data: { gte: inicioHoje, lt: fimDoDia } }, orderBy: [{ concluido: 'asc' }, { horario: 'asc' }] }),
+      prisma.nota.findMany({ where: { usuarioId, dataCriacao: { gte: inicioHoje, lt: fimDoDia } }, orderBy: { dataCriacao: 'desc' }, select: { id: true, titulo: true, dataCriacao: true } }),
     ]);
-    res.json({ ok: true, plano: { data: inicioHoje.toLocaleDateString('pt-BR'), compromissosHoje, notasRecentes } });
+    res.json({ ok: true, plano: { data: inicioHoje.toISOString().slice(0, 10), dataTexto: inicioHoje.toLocaleDateString('pt-BR', { dateStyle: 'full' }), hoje: inicioDoDia().getTime() === inicioHoje.getTime(), compromissosHoje, tarefas, tarefasConcluidas: tarefas.filter((item) => item.concluido).length, notasRecentes } });
   } catch (erro) {
     console.error('[Intel] Erro em plano-hoje:', erro);
     res.status(500).json({ erro: 'Erro ao carregar os dados de hoje.' });
@@ -90,14 +123,20 @@ router.get('/plano-hoje', async (req, res) => {
 router.get('/revisao-semanal', async (req, res) => {
   const usuarioId = getUsuarioId(req);
   try {
-    const inicioPeriodo = new Date();
-    inicioPeriodo.setDate(inicioPeriodo.getDate() - 7);
-    const [notasCriadas, eventosAgendados, novosContatos] = await Promise.all([
-      prisma.nota.count({ where: { usuarioId, dataCriacao: { gte: inicioPeriodo } } }),
-      prisma.evento.count({ where: { usuarioId, dataInicio: { gte: inicioPeriodo } } }),
-      prisma.contato.count({ where: { usuarioId, createdAt: { gte: inicioPeriodo } } }),
+    const fimPeriodo = new Date();
+    const inicioPeriodo = inicioDoDia(new Date(fimPeriodo.getTime() - 6 * 24 * 60 * 60 * 1000));
+    const proximosDias = new Date(inicioDoDia());
+    proximosDias.setDate(proximosDias.getDate() + 7);
+    const [notasCriadas, eventosAgendados, novosContatos, tarefasFeitas, tarefasCriadas, tarefas, alertasCompromissos] = await Promise.all([
+      prisma.nota.count({ where: { usuarioId, dataCriacao: { gte: inicioPeriodo, lte: fimPeriodo } } }),
+      prisma.evento.count({ where: { usuarioId, dataInicio: { gte: inicioPeriodo, lte: fimPeriodo } } }),
+      prisma.contato.count({ where: { usuarioId, createdAt: { gte: inicioPeriodo, lte: fimPeriodo } } }),
+      prisma.agendaItem.count({ where: { usuarioId, data: { gte: inicioPeriodo, lte: fimPeriodo }, concluido: true } }),
+      prisma.agendaItem.count({ where: { usuarioId, createdAt: { gte: inicioPeriodo, lte: fimPeriodo } } }),
+      prisma.agendaItem.findMany({ where: { usuarioId, data: { gte: inicioPeriodo, lte: fimPeriodo } }, orderBy: [{ data: 'desc' }, { horario: 'asc' }], take: 12, select: { titulo: true, horario: true, data: true, concluido: true } }),
+      prisma.evento.findMany({ where: { usuarioId, dataInicio: { gte: new Date(), lt: proximosDias } }, orderBy: { dataInicio: 'asc' }, take: 8, select: { titulo: true, dataInicio: true } }),
     ]);
-    res.json({ ok: true, revisao: { periodo: 'Últimos 7 dias', notasCriadas, eventosAgendados, novosContatos } });
+    res.json({ ok: true, revisao: { dataAtual: new Date().toISOString(), inicioPeriodo: inicioPeriodo.toISOString(), fimPeriodo: fimPeriodo.toISOString(), periodo: 'Últimos 7 dias', tarefasFeitas, tarefasCriadas, tarefas, notasCriadas, eventosAgendados, novosContatos, alertasCompromissos } });
   } catch (erro) {
     console.error('[Intel] Erro em revisao-semanal:', erro);
     res.status(500).json({ erro: 'Erro ao gerar revisão semanal.' });
