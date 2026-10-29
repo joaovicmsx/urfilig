@@ -18,6 +18,8 @@ import { exigirLogin, validarSessao, sair, BACKEND_URL } from './authGuard.js';
 import { iniciarMenuLateral } from './sideMenu.js';
 import { carregarCalendarioUI } from './calendario.js';
 import { iniciarModuloContatos } from './contatos.js';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { emitTo } from '@tauri-apps/api/event';
 
 exigirLogin();
 validarSessao();
@@ -49,7 +51,7 @@ scene.add(fundoEtereo);
 scene.fog = new THREE.FogExp2(0x050506, 0.02);
 
 // Câmara fixa
-const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 100);
+const camera = new THREE.PerspectiveCamera(52, (canvas?.getBoundingClientRect().width || window.innerWidth) / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0.65, 14);
 
 // --- Controlo de Zoom da Esfera ---
@@ -73,7 +75,7 @@ const LIMITES_ESFERA = {
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(dpr);
-renderer.setSize(window.innerWidth, window.innerHeight, false);
+renderer.setSize(canvas?.getBoundingClientRect().width || window.innerWidth, window.innerHeight, false);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -81,9 +83,10 @@ renderer.toneMappingExposure = 1.0;
 function redimensionarCanvasLabels() {
   if (!labelsCanvas) return;
   const currentDpr = Math.min(window.devicePixelRatio, 2);
-  labelsCanvas.width = window.innerWidth * currentDpr;
+  const width = canvas?.getBoundingClientRect().width || window.innerWidth;
+  labelsCanvas.width = width * currentDpr;
   labelsCanvas.height = window.innerHeight * currentDpr;
-  labelsCanvas.style.width = window.innerWidth + 'px';
+  labelsCanvas.style.width = width + 'px';
   labelsCanvas.style.height = window.innerHeight + 'px';
 }
 window.addEventListener('resize', redimensionarCanvasLabels);
@@ -100,22 +103,22 @@ scene.add(luzMascote);
 scene.add(luzMascote.target);
 
 const renderTarget = new THREE.WebGLRenderTarget(
-  window.innerWidth * dpr,
+  (canvas?.getBoundingClientRect().width || window.innerWidth) * dpr,
   window.innerHeight * dpr,
   { samples: 4, type: THREE.HalfFloatType }
 );
 
 const composer = new EffectComposer(renderer, renderTarget);
 composer.setPixelRatio(dpr);
-composer.setSize(window.innerWidth, window.innerHeight);
+composer.setSize(canvas?.getBoundingClientRect().width || window.innerWidth, window.innerHeight);
 
 composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.16,
-  0.15,
-  0.88
+  new THREE.Vector2(canvas?.getBoundingClientRect().width || window.innerWidth, window.innerHeight),
+  0.22,
+  0.2,
+  0.8
 );
 composer.addPass(bloomPass);
 
@@ -166,7 +169,6 @@ let mascotStateMachine = null;
 let motionController = null;
 let headTracker = null;
 let faceMesh = null;
-let audioContext = null;
 let muted = false;
 let mousePresenteNaTela = false;
 
@@ -191,7 +193,6 @@ const memorySphere = new PersonalitySphere(scene, {
   },
   onSelect: (particle) => {
     if (!particle) return;
-    memorySphere.playParticleSound('implode');
     setLiveStatus('Selecionado: ' + (particle.label || particle.titulo));
 
     if (particle.corAtual) {
@@ -205,7 +206,6 @@ const memorySphere = new PersonalitySphere(scene, {
   },
   onRightClick: (particle) => {
     if (!particle) return;
-    memorySphere.playParticleSound('explode');
     memorySphere.emitDust(particle.position || particle.posicaoAtual, particle.corAtual, 40, 'explode');
     setLiveStatus('Menu de Opções (Botão Direito): ' + (particle.label || particle.titulo));
 
@@ -224,11 +224,11 @@ function atualizarTemaPorHorario() {
   const uniforms = fundoEtereo.material.uniforms;
   const hora = new Date().getHours();
   const luzDia = Math.max(0, Math.min(1, (hora - 6) / 2, (19 - hora) / 2));
-  const corDia = new THREE.Color('#6b641f');
-  uniforms.corTopo.value.copy(new THREE.Color('#191a1e').lerp(corDia, luzDia * 0.82));
-  uniforms.corMeio.value.copy(new THREE.Color('#111216').lerp(new THREE.Color('#302b13'), luzDia * 0.7));
-  uniforms.corBase.value.copy(new THREE.Color('#0d0e11').lerp(new THREE.Color('#1a180b'), luzDia * 0.52));
-  uniforms.corVazio.value.copy(new THREE.Color('#090a0d').lerp(new THREE.Color('#111109'), luzDia * 0.36));
+  const corDia = new THREE.Color('#b6ab35');
+  uniforms.corTopo.value.copy(new THREE.Color('#191a1e').lerp(corDia, luzDia * 0.96));
+  uniforms.corMeio.value.copy(new THREE.Color('#111216').lerp(new THREE.Color('#514c1d'), luzDia * 0.88));
+  uniforms.corBase.value.copy(new THREE.Color('#0d0e11').lerp(new THREE.Color('#292712'), luzDia * 0.62));
+  uniforms.corVazio.value.copy(new THREE.Color('#090a0d').lerp(new THREE.Color('#1d1c10'), luzDia * 0.45));
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
@@ -406,6 +406,7 @@ function hitTestPersonalizado(clientX, clientY) {
 
   let melhorIndice = null;
   let menorDistancia = 45;
+  const rectCanvas = canvas.getBoundingClientRect();
 
   for (let i = 0; i < particulas.length; i++) {
     const p = particulas[i];
@@ -418,7 +419,7 @@ function hitTestPersonalizado(clientX, clientY) {
     tempVec.project(camera);
 
     if (tempVec.z >= -1 && tempVec.z <= 1) {
-      const telaX = (tempVec.x * 0.5 + 0.5) * window.innerWidth;
+      const telaX = rectCanvas.left + (tempVec.x * 0.5 + 0.5) * rectCanvas.width;
       const telaY = (tempVec.y * -0.5 + 0.5) * window.innerHeight;
 
       const distanciaReal = Math.hypot(telaX - clientX, telaY - clientY);
@@ -451,6 +452,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (chatForm) {
     const novoForm = chatForm.cloneNode(true);
     chatForm.parentNode.replaceChild(novoForm, chatForm);
+    const provider = novoForm.querySelector('#chat-provider');
+    if (provider) {
+      provider.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
+      provider.addEventListener('change', () => localStorage.setItem('urfilig_llm_provider', provider.value));
+    }
 
     novoForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -471,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('urfilig_token')}`,
           },
-          body: JSON.stringify({ texto }),
+          body: JSON.stringify({ texto, provider: provider?.value || localStorage.getItem('urfilig_llm_provider') || 'gemini' }),
         });
 
         const dados = await resp.json();
@@ -628,17 +634,75 @@ function tocarAudioPiper(audioBase64) {
   });
 }
 
-function showWeather({ temperatura }) {
-  let elementoClima = document.querySelector('#hud-weather');
-  if (!elementoClima) {
-    elementoClima = document.createElement('div');
-    elementoClima.id = 'hud-weather';
-    elementoClima.style.cssText =
-      'position:fixed;top:1.4rem;right:5.5rem;z-index:2;color:#a5f3fc;font-size:0.85rem;opacity:0.85;';
-    document.body.append(elementoClima);
-  }
-  elementoClima.textContent = `${Math.round(temperatura)}°C — Contagem`;
+function showWeather({ temperatura, codigo }) {
+  const elementoClima = document.querySelector('#hud-clock-weather');
+  if (!elementoClima || !Number.isFinite(Number(temperatura))) return;
+  const descricoes = { 0: 'céu limpo', 1: 'poucas nuvens', 2: 'nublado', 3: 'encoberto', 45: 'neblina', 48: 'neblina', 51: 'garoa', 53: 'garoa', 55: 'garoa', 61: 'chuva leve', 63: 'chuva', 65: 'chuva forte', 71: 'neve', 80: 'pancadas de chuva', 95: 'trovoadas' };
+  elementoClima.textContent = `Contagem · ${Math.round(temperatura)}°C · ${descricoes[codigo] || 'clima atual'}`;
 }
+fetch('https://api.open-meteo.com/v1/forecast?latitude=-19.9317&longitude=-44.0536&current_weather=true&timezone=America%2FSao_Paulo', { cache: 'no-store' })
+  .then((response) => response.ok ? response.json() : null)
+  .then((data) => {
+    if (data?.current_weather) showWeather({ temperatura: data.current_weather.temperature, codigo: data.current_weather.weathercode });
+  }).catch(() => {});
+
+function atualizarRelogio() {
+  const agora = new Date();
+  const hora = document.querySelector('#hud-clock-time');
+  const data = document.querySelector('#hud-clock-date');
+  if (hora) hora.textContent = agora.toLocaleTimeString('pt-BR', { hour12: false });
+  if (data) data.textContent = agora.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+}
+atualizarRelogio();
+setInterval(atualizarRelogio, 1000);
+
+const providerSelect = document.querySelector('#chat-provider');
+if (providerSelect) {
+  providerSelect.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
+  fetch(`${BACKEND_URL}/api/inteligencia/llm-status`, { headers: { Authorization: `Bearer ${localStorage.getItem('urfilig_token')}` } })
+    .then((response) => response.ok ? response.json() : null)
+    .then((status) => {
+      const activeSelect = document.querySelector('#chat-provider');
+      if (!status || !activeSelect) return;
+      const ollamaOption = activeSelect.querySelector('option[value="ollama"]');
+      if (ollamaOption) ollamaOption.textContent = status.ollama ? `Ollama · ${status.ollamaModel}` : `Ollama · indisponível`;
+      const geminiOption = activeSelect.querySelector('option[value="gemini"]');
+      if (geminiOption && !status.gemini) geminiOption.textContent = 'Gemini · sem chave no servidor';
+    }).catch(() => {});
+}
+
+const overlayToggle = document.querySelector('#mascot-overlay-toggle');
+let mascotOverlay = null;
+overlayToggle?.addEventListener('click', async () => {
+  if (!isTauri()) {
+    overlayToggle.textContent = 'Disponível no aplicativo desktop';
+    return;
+  }
+  try {
+    if (mascotOverlay) {
+      await mascotOverlay.close(); mascotOverlay = null;
+      overlayToggle.textContent = 'Mascote sobreposto: desativado';
+      return;
+    }
+    mascotOverlay = await WebviewWindow.getByLabel('mascote-overlay');
+    if (!mascotOverlay) {
+      mascotOverlay = new WebviewWindow('mascote-overlay', {
+        url: 'mascote-overlay.html', title: 'Mascote Urfilig', width: 260, height: 320,
+        decorations: false, transparent: true, alwaysOnTop: true, focus: false, focusable: false,
+        resizable: false, skipTaskbar: true, shadow: false,
+      });
+      mascotOverlay.once('tauri://destroyed', () => {
+        mascotOverlay = null;
+        if (overlayToggle) overlayToggle.textContent = 'Mascote sobreposto: desativado';
+      });
+      mascotOverlay.once('tauri://error', (error) => console.error('[mascote-overlay] falha ao abrir', error));
+    }
+    overlayToggle.textContent = 'Mascote sobreposto: ativado';
+  } catch (error) {
+    console.error('[mascote-overlay] falha:', error);
+    overlayToggle.textContent = 'Não foi possível abrir o mascote';
+  }
+});
 
 function alternarPecaDoMascote(nomeDaParte, visivel) {
   if (!mascotRef) return;
@@ -675,7 +739,6 @@ function syncAccessibleParticles(particles) {
     });
     button.addEventListener('blur', () => memorySphere.hover(null));
     button.addEventListener('click', () => {
-      unlockAudio();
       memorySphere.select(index);
     });
     accessibilityContainer.append(button);
@@ -691,8 +754,6 @@ let posicaoInicialClique = { x: 0, y: 0 };
 
 canvas.addEventListener('pointerdown', (event) => {
   try {
-    unlockAudio();
-
     if (event.pointerType === 'mouse' && event.button !== 0 && event.button !== 2) return;
 
     posicaoInicialClique = { x: event.clientX, y: event.clientY };
@@ -817,6 +878,17 @@ canvas.addEventListener('pointermove', (event) => {
   }
 });
 
+window.addEventListener('pointermove', (event) => {
+  lastPointer = { x: event.clientX, y: event.clientY };
+  mousePresenteNaTela = true;
+  const rect = canvas.getBoundingClientRect();
+  ndcMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  ndcMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  if (isTauri() && mascotOverlay) void emitTo('mascote-overlay', 'mascot:mouse', { x: ndcMouse.x, y: ndcMouse.y });
+}, { passive: true });
+window.addEventListener('pointerleave', () => { mousePresenteNaTela = false; });
+window.addEventListener('blur', () => { mousePresenteNaTela = false; });
+
 canvas.addEventListener('pointerup', (event) => {
   try {
     if (!drag || drag.pointerId !== event.pointerId) return;
@@ -835,10 +907,9 @@ canvas.addEventListener('pointerup', (event) => {
       memorySphere.setInertia(drag.deltaX, drag.deltaY);
     }
 
-    // AO SOLTAR O NÓ: EMITE POEIRA E TOCAR SOM DE FINALIZAÇÃO
+    // Ao soltar o nó, mostra apenas um efeito visual.
     if (nodeArrastado) {
       memorySphere.emitDust(nodeArrastado.position || nodeArrastado.posicaoAtual, nodeArrastado.corAtual, 30, 'explode');
-      memorySphere.playParticleSound('explode');
       nodeArrastado = null;
       memorySphere.nodeArrastado = null;
     }
@@ -850,15 +921,6 @@ canvas.addEventListener('pointerup', (event) => {
   }
 });
 
-function unlockAudio() {
-  if (!audioContext) {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    audioContext = new AudioCtx();
-  }
-  if (audioContext.state === 'suspended') audioContext.resume();
-}
-
 function setLiveStatus(message) {
   if (liveStatus) liveStatus.textContent = message;
 }
@@ -869,15 +931,16 @@ reducedMotionQuery.addEventListener?.('change', (event) => {
 
 window.addEventListener('resize', () => {
   const currentDpr = Math.min(window.devicePixelRatio, 2);
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const width = canvas?.getBoundingClientRect().width || window.innerWidth;
+  camera.aspect = width / window.innerHeight;
   camera.updateMatrixWorld();
   camera.updateProjectionMatrix();
   renderer.setPixelRatio(currentDpr);
-  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setSize(width, window.innerHeight, false);
   composer.setPixelRatio(currentDpr);
-  composer.setSize(window.innerWidth, window.innerHeight);
-  bloomPass.setSize(window.innerWidth, window.innerHeight);
-  smaaPass.setSize(window.innerWidth * currentDpr, window.innerHeight * currentDpr);
+  composer.setSize(width, window.innerHeight);
+  bloomPass.setSize(width, window.innerHeight);
+  smaaPass.setSize(width * currentDpr, window.innerHeight * currentDpr);
   redimensionarCanvasLabels();
 });
 
@@ -886,6 +949,7 @@ function renderizarRotulosObsidian() {
   if (!ctx2d || !labelsCanvas || particulas.length === 0) return;
 
   const currentDpr = Math.min(window.devicePixelRatio, 2);
+  const canvasRect = canvas.getBoundingClientRect();
   ctx2d.clearRect(0, 0, labelsCanvas.width, labelsCanvas.height);
 
   const dirCam = new THREE.Vector3(0, 0, 1);
@@ -929,7 +993,7 @@ function renderizarRotulosObsidian() {
     tempVec.project(camera);
 
     if (tempVec.z >= -1 && tempVec.z <= 1) {
-      const px = (tempVec.x * 0.5 + 0.5) * window.innerWidth * currentDpr;
+      const px = (tempVec.x * 0.5 + 0.5) * canvasRect.width * currentDpr;
       const py = (tempVec.y * -0.5 + 0.5) * window.innerHeight * currentDpr;
 
       ctx2d.font = `600 ${11 * currentDpr}px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
@@ -974,6 +1038,7 @@ function animate() {
   );
 
   memorySphere.update(delta);
+  if (!reducedMotionQuery.matches) memorySphere.grupo.rotation.y += delta * 0.009;
   composer.render();
   renderizarRotulosObsidian();
   requestAnimationFrame(animate);

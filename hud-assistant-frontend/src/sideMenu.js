@@ -1,5 +1,6 @@
 import { BACKEND_URL } from './authGuard.js';
 import { showAlert } from './uiDialogs.js';
+import { iniciarPaineisDados } from './dataPanels.js';
 
 // =========================================================================
 // MODAIS CUSTOMIZADOS (FONTE PADRÃO DA APLICAÇÃO - CLEAN DARK)
@@ -132,134 +133,7 @@ export function iniciarMenuLateral(socket) {
     Authorization: `Bearer ${localStorage.getItem('urfilig_token')}`,
   });
 
-  const modalDados = document.querySelector('#intel-modal');
-  const tituloDados = document.querySelector('#intel-modal-titulo');
-  const corpoDados = document.querySelector('#intel-modal-corpo');
-  document.querySelector('#intel-modal-fechar')?.addEventListener('click', () => modalDados?.classList.remove('visible'));
-  modalDados?.addEventListener('click', (event) => { if (event.target === modalDados) modalDados.classList.remove('visible'); });
-  document.addEventListener('keydown', (event) => { if (event.key === 'Escape') modalDados?.classList.remove('visible'); });
-
-  const fmtData = (valor, opcoes = { dateStyle: 'medium' }) => valor ? new Date(valor).toLocaleString('pt-BR', opcoes) : 'Sem data';
-  const criar = (tag, classe, texto) => { const node = document.createElement(tag); if (classe) node.className = classe; if (texto !== undefined) node.textContent = texto; return node; };
-  const iconesDados = {
-    calendario: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
-    nota: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h10l4 4v14H5z"/><path d="M14 3v5h5M8 13h8M8 17h6"/></svg>',
-    contato: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4"/><path d="M2.5 21a6.5 6.5 0 0 1 13 0M16 4.5a4 4 0 0 1 0 7.5m2 3a5.5 5.5 0 0 1 3.5 5"/></svg>',
-    tarefa: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m7 12 3 3 7-7"/></svg>',
-    tendencia: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17 9 11l4 4 8-9"/><path d="M15 6h6v6"/></svg>',
-  };
-  const carregarRelatorio = async (rota, params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    const resposta = await fetch(`${BACKEND_URL}/api/inteligencia/${rota}${query ? `?${query}` : ''}`, { headers: cabecalhoAuth(), cache: 'no-store' });
-    const payload = await resposta.json();
-    if (!resposta.ok) throw new Error(payload.erro || 'Não foi possível carregar estes dados.');
-    return payload;
-  };
-  const abrirRelatorio = (titulo) => { fecharMenu(); if (tituloDados) tituloDados.textContent = titulo; if (corpoDados) corpoDados.replaceChildren(criar('p', 'intel-loading', 'Carregando dados…')); modalDados?.classList.add('visible'); };
-  const mostrarErro = (erro) => { if (corpoDados) corpoDados.replaceChildren(criar('p', 'intel-empty', erro.message || 'Não foi possível carregar estes dados.')); };
-  function criarSecaoLista(titulo, itens, icone, mapear) {
-    const secao = criar('section', 'intel-data-group');
-    secao.append(criar('h4', 'intel-group-title', titulo));
-    if (!itens?.length) { secao.append(criar('p', 'intel-empty', 'Nenhum registro neste período.')); return secao; }
-    const lista = criar('div', 'intel-compact-list');
-    itens.forEach((item) => {
-      const linha = criar('article', 'intel-compact-row');
-      const simbolo = criar('span', 'intel-row-icon'); simbolo.innerHTML = icone;
-      const conteudo = criar('span', 'intel-row-content');
-      const detalhe = mapear(item);
-      conteudo.append(criar('strong', '', detalhe.titulo || 'Sem título'), criar('small', '', detalhe.data || ''));
-      linha.append(simbolo, conteudo); lista.append(linha);
-    });
-    secao.append(lista); return secao;
-  }
-  function renderResumo(resumo) {
-    corpoDados.replaceChildren();
-    const grid = criar('div', 'intel-summary-grid');
-    const hoje = criar('article', 'intel-summary-date');
-    const icon = criar('span', 'intel-row-icon'); icon.innerHTML = iconesDados.calendario;
-    hoje.append(icon, criar('div', '', 'Hoje'), criar('strong', '', resumo.data || new Date().toLocaleDateString('pt-BR')));
-    grid.append(hoje);
-    grid.append(criarSecaoLista('Próximos compromissos', resumo.proximosEventos, iconesDados.calendario, (item) => ({ titulo: item.titulo, data: item.horarioTexto || fmtData(item.horario) })));
-    grid.append(criarSecaoLista('Notas recentes', resumo.notasRecentes, iconesDados.nota, (item) => ({ titulo: item.titulo, data: item.dataTexto || fmtData(item.data) })));
-    grid.append(criarSecaoLista('Contatos recentes', resumo.contatosRecentes, iconesDados.contato, (item) => ({ titulo: item.nome, data: `${item.status || 'Contato'} · ${fmtData(item.updatedAt)}` })));
-    corpoDados.append(grid);
-  }
-  function renderMetricas(metricas) {
-    const nomes = { totalNotas: ['Notas', 'nota'], totalPastas: ['Pastas', 'nota'], eventosHoje: ['Compromissos hoje', 'calendario'], eventosSemana: ['Compromissos esta semana', 'calendario'], contatos: ['Contatos', 'contato'], leads: ['Leads', 'contato'] };
-    corpoDados.replaceChildren(); const grid = criar('div', 'intel-kpi-grid');
-    Object.entries(nomes).forEach(([campo, [nome, icone]]) => {
-      const card = criar('article', 'intel-kpi'); const sim = criar('span', 'intel-row-icon'); sim.innerHTML = iconesDados[icone];
-      card.append(sim, criar('small', '', nome), criar('strong', '', String(metricas[campo] ?? 0))); grid.append(card);
-    });
-    corpoDados.append(grid);
-  }
-  async function renderTendencias(payload) {
-    corpoDados.replaceChildren();
-    const cab = criar('div', 'intel-report-heading');
-    cab.append(criar('p', '', `Google Trends · Brasil, EUA, Reino Unido, Índia e Japão · atualizado ${fmtData(payload.atualizadoEm, { hour: '2-digit', minute: '2-digit' })}`));
-    const lista = criar('div', 'intel-trend-list');
-    payload.tendencias.forEach((item, index) => {
-      const linha = criar('article', 'intel-trend-row'); const icon = criar('span', 'intel-row-icon'); icon.innerHTML = iconesDados.tendencia;
-      const detalhes = criar('div', 'intel-row-content'); detalhes.append(criar('strong', '', `${index + 1}. ${item.topico}`), criar('small', '', [item.pais, item.buscas && `${item.buscas} buscas`, item.publicadoEm && fmtData(item.publicadoEm, { dateStyle: 'short', timeStyle: 'short' })].filter(Boolean).join(' · ')));
-      if (item.url) { const link = criar('a', 'intel-trend-link', item.noticia ? `Notícia: ${item.noticia}${item.fonteNoticia ? ` · ${item.fonteNoticia}` : ''}` : 'Abrir tendência'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; detalhes.append(link); }
-      linha.append(icon, detalhes); lista.append(linha);
-    });
-    cab.append(criar('a', 'intel-source-link', 'Abrir Google Trends')); cab.lastChild.href = 'https://trends.google.com/trending?geo=BR'; cab.lastChild.target = '_blank'; cab.lastChild.rel = 'noopener noreferrer';
-    corpoDados.append(cab, lista);
-  }
-  function renderPlano(plano) {
-    corpoDados.replaceChildren();
-    const cab = criar('div', 'intel-plan-header'); cab.append(criar('div', '', plano.dataTexto || plano.data));
-    const date = document.createElement('input'); date.type = 'date'; date.value = plano.data; date.setAttribute('aria-label', 'Escolher dia do plano');
-    date.addEventListener('change', () => atualizarPlano(date.value)); cab.append(date); corpoDados.append(cab);
-    const progresso = criar('div', 'intel-plan-progress'); progresso.append(criar('strong', '', `${plano.tarefasConcluidas} de ${plano.tarefas.length} tarefas concluídas`));
-    const barra = criar('div', 'intel-progress-track'); const avanco = criar('span'); avanco.style.width = `${plano.tarefas.length ? plano.tarefasConcluidas / plano.tarefas.length * 100 : 0}%`; barra.append(avanco); progresso.append(barra); corpoDados.append(progresso);
-    const secaoTarefas = criar('section', 'intel-data-group'); secaoTarefas.append(criar('h4', 'intel-group-title', 'Meu plano'));
-    const form = criar('form', 'intel-task-form'); const texto = document.createElement('input'); texto.name = 'titulo'; texto.placeholder = 'Adicionar uma tarefa'; texto.required = true; texto.maxLength = 140;
-    const horario = document.createElement('input'); horario.name = 'horario'; horario.type = 'time'; horario.setAttribute('aria-label', 'Horário da tarefa');
-    const salvar = criar('button', '', 'Adicionar'); salvar.type = 'submit'; form.append(texto, horario, salvar);
-    form.addEventListener('submit', async (event) => { event.preventDefault(); salvar.disabled = true; try { const resposta = await fetch(`${BACKEND_URL}/api/agenda`, { method: 'POST', headers: cabecalhoAuth(), body: JSON.stringify({ titulo: texto.value.trim(), horario: horario.value || undefined, data: `${plano.data}T12:00:00` }) }); const resultado = await resposta.json(); if (!resposta.ok) throw new Error(resultado.erro || 'Não foi possível salvar a tarefa.'); await atualizarPlano(plano.data); } catch (erro) { mostrarErro(erro); } finally { salvar.disabled = false; } });
-    secaoTarefas.append(form);
-    if (!plano.tarefas.length) secaoTarefas.append(criar('p', 'intel-empty', 'Adicione tarefas para montar seu plano do dia.'));
-    plano.tarefas.forEach((tarefa) => { const label = criar('label', `intel-task${tarefa.concluido ? ' concluida' : ''}`); const check = document.createElement('input'); check.type = 'checkbox'; check.checked = tarefa.concluido; check.disabled = tarefa.concluido; check.addEventListener('change', async () => { try { const resposta = await fetch(`${BACKEND_URL}/api/agenda/${encodeURIComponent(tarefa.id)}/concluir`, { method: 'POST', headers: cabecalhoAuth() }); if (!resposta.ok) throw new Error('Não foi possível concluir a tarefa.'); await atualizarPlano(plano.data); } catch (erro) { mostrarErro(erro); } }); label.append(check, criar('span', '', tarefa.titulo), criar('small', '', tarefa.horario || '')); secaoTarefas.append(label); });
-    corpoDados.append(secaoTarefas, criarSecaoLista('Compromissos', plano.compromissosHoje.map((evento) => ({ titulo: evento.titulo, horario: evento.dataInicio })), iconesDados.calendario, (evento) => ({ titulo: evento.titulo, data: fmtData(evento.horario || evento.dataInicio, { hour: '2-digit', minute: '2-digit' }) })), criarSecaoLista('Notas criadas neste dia', plano.notasRecentes, iconesDados.nota, (nota) => ({ titulo: nota.titulo, data: fmtData(nota.dataCriacao, { hour: '2-digit', minute: '2-digit' }) })));
-  }
-  async function atualizarPlano(data) { try { const payload = await carregarRelatorio('plano-hoje', data ? { data } : {}); renderPlano(payload.plano); } catch (erro) { mostrarErro(erro); } }
-  async function contarEmailsRecentes() {
-    const token = localStorage.getItem('google_access_token');
-    if (!token) return { disponivel: false };
-    const fim = new Date(); const inicio = new Date(fim); inicio.setDate(inicio.getDate() - 6);
-    const diaQuery = (d) => `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
-    const contar = async (query) => { const url = new URL('https://gmail.googleapis.com/gmail/v1/users/me/messages'); url.searchParams.set('q', `after:${diaQuery(inicio)} before:${diaQuery(new Date(fim.getTime() + 86400000))} ${query}`); url.searchParams.set('maxResults', '1'); const resp = await fetch(url, { headers: { Authorization: `Bearer ${token}` } }); if (!resp.ok) throw new Error('A sessão de leitura do Gmail expirou.'); return (await resp.json()).resultSizeEstimate ?? 0; };
-    try { const [enviados, recebidos] = await Promise.all([contar('in:sent'), contar('-in:sent -in:drafts -in:trash -in:spam')]); return { disponivel: true, enviados, recebidos }; } catch { return { disponivel: false }; }
-  }
-  async function renderRevisao(revisao) {
-    corpoDados.replaceChildren();
-    const email = await contarEmailsRecentes();
-    const kpis = criar('div', 'intel-kpi-grid');
-    const valores = [
-      ['Tarefas concluídas', revisao.tarefasFeitas, 'tarefa'], ['Tarefas adicionadas', revisao.tarefasCriadas, 'tarefa'], ['Notas criadas', revisao.notasCriadas, 'nota'],
-      ['E-mails enviados · estimativa', email.disponivel ? email.enviados : '—', 'nota'], ['E-mails recebidos · estimativa', email.disponivel ? email.recebidos : '—', 'nota'],
-      ['Compromissos', revisao.eventosAgendados, 'calendario'],
-    ];
-    valores.forEach(([nome, valor, icone]) => { const card = criar('article', 'intel-kpi'); const sim = criar('span', 'intel-row-icon'); sim.innerHTML = iconesDados[icone]; card.append(sim, criar('small', '', nome), criar('strong', '', String(valor))); kpis.append(card); });
-    corpoDados.append(criar('p', 'intel-week-period', `Hoje · ${fmtData(revisao.dataAtual)} · período de ${fmtData(revisao.inicioPeriodo)} a ${fmtData(revisao.fimPeriodo)}`), kpis);
-    if (!email.disponivel) corpoDados.append(criar('p', 'intel-week-note', 'Conecte o Gmail para ver as contagens de mensagens recebidas e enviadas.'));
-    corpoDados.append(criarSecaoLista('Tarefas do período', revisao.tarefas, iconesDados.tarefa, (tarefa) => ({ titulo: `${tarefa.concluido ? '✓ ' : ''}${tarefa.titulo}`, data: [fmtData(tarefa.data), tarefa.horario, tarefa.concluido ? 'Concluída' : 'Pendente'].filter(Boolean).join(' · ') })), criarSecaoLista('Alertas de compromissos próximos', revisao.alertasCompromissos, iconesDados.calendario, (evento) => ({ titulo: evento.titulo, data: fmtData(evento.dataInicio, { dateStyle: 'short', timeStyle: 'short' }) })));
-  }
-  const relatorios = {
-    'btn-metricas': { titulo: 'Visão geral', rota: 'metricas', render: (payload) => renderMetricas(payload.metricas) },
-    'btn-resumo-inbox': { titulo: 'Resumo dos Dados', rota: 'resumo-inbox', render: (payload) => renderResumo(payload.resumo) },
-    'btn-tendencias': { titulo: 'Tendências em tempo real', rota: 'tendencias', render: renderTendencias },
-    'btn-plano-hoje': { titulo: 'Plano do dia', rota: 'plano-hoje', render: (payload) => renderPlano(payload.plano) },
-    'btn-revisao-semanal': { titulo: 'Resumo semanal', rota: 'revisao-semanal', render: renderRevisao },
-  };
-  Object.entries(relatorios).forEach(([id, relatorio]) => {
-    document.querySelector(`#${id}`)?.addEventListener('click', async () => {
-      abrirRelatorio(relatorio.titulo);
-      try { await relatorio.render(await carregarRelatorio(relatorio.rota)); } catch (erro) { mostrarErro(erro); }
-    });
-  });
+  iniciarPaineisDados({ backendUrl: BACKEND_URL, cabecalhoAuth, fecharMenu });
 
   const iconeFechar = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
   const iconeSetaBaixo = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8b949e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transition: transform 0.2s ease;"><polyline points="6 9 12 15 18 9"></polyline></svg>`;

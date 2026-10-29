@@ -80,7 +80,24 @@ export class HeadTracker {
   }
 
   _tentarRastrear(mascote, nome, opcoes) {
-    const osso = mascote.getObjectByName(nome);
+    const normalizar = (valor) => valor.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    let osso = mascote.getObjectByName(nome);
+    if (!osso) {
+      const chave = normalizar(nome);
+      const cabeca = chave.includes('cab') || chave.includes('head');
+      const aliases = cabeca ? /head|cabeca|cabeza|cranium/ : /eye|olho|ojo/;
+      mascote.traverse((objeto) => {
+        if (osso || !objeto.isBone) return;
+        const rotulo = normalizar(objeto.name || '');
+        const ladoCorreto = chave.includes('esquerdo') || chave.endsWith('l')
+          ? /left|esquerdo|l$/.test(rotulo)
+          : chave.includes('direito') || chave.endsWith('r')
+            ? /right|direito|r$/.test(rotulo)
+            : true;
+        if (aliases.test(rotulo) && ladoCorreto) osso = objeto;
+      });
+    }
+    if (osso && !osso.parent) return null;
     return osso ? new OssoRastreado(osso, opcoes) : null;
   }
 

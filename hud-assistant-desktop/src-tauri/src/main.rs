@@ -12,7 +12,9 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
-use tauri::Manager;
+#[cfg(windows)]
+use std::time::Duration;
+use tauri::{Emitter, Manager};
 use tauri::webview::{PermissionKind, PermissionResponse};
 use tauri::Url;
 #[cfg(windows)]
@@ -20,6 +22,16 @@ use std::os::windows::process::CommandExt;
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+#[cfg(windows)]
+#[repr(C)]
+struct CursorPoint { x: i32, y: i32 }
+
+#[cfg(windows)]
+#[link(name = "user32")]
+extern "system" {
+    fn GetCursorPos(point: *mut CursorPoint) -> i32;
+}
 
 /// Guarda os processos filhos (backend Node + servidor Python da wake
 /// word) pra poder encerrar os dois quando a janela do app fechar — sem
@@ -61,6 +73,28 @@ fn main() {
             }
         })
         .setup(|app| {
+            #[cfg(windows)]
+            {
+                let app_handle = app.handle().clone();
+                std::thread::spawn(move || loop {
+                    if app_handle.get_webview_window("main").is_none() { break; }
+                    let mut cursor = CursorPoint { x: 0, y: 0 };
+                    if unsafe { GetCursorPos(&mut cursor) } != 0 {
+                        if let Some(overlay) = app_handle.get_webview_window("mascote-overlay") {
+                            if let (Ok(position), Ok(size)) = (overlay.outer_position(), overlay.inner_size()) {
+                                if size.width > 0 && size.height > 0 {
+                                    let payload = serde_json::json!({
+                                        "x": ((cursor.x - position.x) as f64 / size.width as f64) * 2.0 - 1.0,
+                                        "y": -(((cursor.y - position.y) as f64 / size.height as f64) * 2.0 - 1.0),
+                                    });
+                                    let _ = app_handle.emit_to("mascote-overlay", "mascot:mouse", payload);
+                                }
+                            }
+                        }
+                    }
+                    std::thread::sleep(Duration::from_millis(50));
+                });
+            }
             // Em desenvolvimento (`cargo tauri dev`), o mais simples é você
             // já ter o backend/Python rodando manualmente em terminais
             // separados, como sempre fez — descomente o bloco abaixo só
@@ -138,7 +172,10 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
+            if window.label() == "main" && matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
+                if let Some(overlay) = window.app_handle().get_webview_window("mascote-overlay") {
+                    let _ = overlay.close();
+                }
                 let estado = window.state::<Mutex<ProcessosFilhos>>();
                 let mut estado = estado.lock().unwrap();
 

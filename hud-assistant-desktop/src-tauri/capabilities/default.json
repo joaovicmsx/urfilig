@@ -3,7 +3,8 @@
   "identifier": "default",
   "description": "Permissões padrão da janela principal da Urfilig",
   "windows": [
-    "main"
+    "main",
+    "mascote-overlay"
   ],
   "permissions": [
     "core:default",
@@ -12,6 +13,8 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-is-maximized",
     "core:window:allow-close",
+    "core:webview:allow-create-webview-window",
+    "core:event:allow-emit-to",
     "fs:default",
     {
       "identifier": "fs:scope",

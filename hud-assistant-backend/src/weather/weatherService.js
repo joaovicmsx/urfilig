@@ -47,6 +47,7 @@ export async function atualizarClimaEEmitir() {
     emitirGlobal('weather:update', {
       temperatura: clima.temperature,
       ventoKmh: clima.windspeed,
+      codigo: clima.weathercode,
       atualizadoEm: new Date().toISOString(),
     });
 

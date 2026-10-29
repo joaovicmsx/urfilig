@@ -29,7 +29,7 @@ const leitorData = document.getElementById('leitor-data');
 const leitorCorpo = document.getElementById('leitor-corpo');
 
 let btnSalvarTxt = document.getElementById('btn-salvar-txt');
-let btnSalvarCerebro = document.getElementById('btn-salvar-cerebro');
+let btnSalvarNotas = document.getElementById('btn-salvar-notas');
 
 const txtContaAtiva = document.getElementById('txt-conta-ativa');
 const btnAlterarConta = document.getElementById('btn-alterar-conta');
@@ -51,23 +51,10 @@ let googleAccessToken = localStorage.getItem('google_access_token');
 // --- INICIALIZAÇÃO E ADEQUAÇÃO DOS BOTÕES DE AÇÃO ---
 function inicializarBotoesAcao() {
   btnSalvarTxt = document.getElementById('btn-salvar-txt');
-  if (btnSalvarTxt) {
-    btnSalvarTxt.textContent = 'Salvar em Texto (.txt) em seu computador';
-  }
-
-  btnSalvarCerebro = document.getElementById('btn-salvar-cerebro');
-  
-  // Se o botão do Cérebro ainda não existir no HTML, injeta automaticamente ao lado do botão TXT
-  if (!btnSalvarCerebro && btnSalvarTxt && btnSalvarTxt.parentElement) {
-    btnSalvarCerebro = document.createElement('button');
-    btnSalvarCerebro.id = 'btn-salvar-cerebro';
-    btnSalvarCerebro.className = 'btn-salvar-cerebro';
-    btnSalvarCerebro.textContent = 'Salvar no Cérebro da Urfilig';
-    btnSalvarCerebro.disabled = true;
-    btnSalvarTxt.parentElement.appendChild(btnSalvarCerebro);
-  }
-
-  btnSalvarCerebro?.addEventListener('click', salvarNoCerebro);
+  btnSalvarNotas = document.getElementById('btn-salvar-notas');
+  if (btnSalvarTxt) btnSalvarTxt.textContent = 'Salvar em TXT';
+  if (btnSalvarNotas) btnSalvarNotas.textContent = 'Salvar nas Notas';
+  btnSalvarNotas?.addEventListener('click', salvarNasNotas);
 }
 
 function verificarTokenNaUrl() {
@@ -299,7 +286,7 @@ async function abrirEmail(id, assunto, remetente, dataStr) {
   leitorAssunto.textContent = 'Carregando...';
   leitorCorpo.textContent = '';
   if (btnSalvarTxt) btnSalvarTxt.disabled = true;
-  if (btnSalvarCerebro) btnSalvarCerebro.disabled = true;
+  if (btnSalvarNotas) btnSalvarNotas.disabled = true;
   
   try {
     const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
@@ -316,15 +303,15 @@ async function abrirEmail(id, assunto, remetente, dataStr) {
     leitorCorpo.textContent = corpoTexto;
     
     if (btnSalvarTxt) btnSalvarTxt.disabled = false;
-    if (btnSalvarCerebro) btnSalvarCerebro.disabled = false;
+    if (btnSalvarNotas) btnSalvarNotas.disabled = false;
   } catch (erro) {
     leitorAssunto.textContent = 'Erro ao carregar a mensagem.';
     console.error(erro);
   }
 }
 
-// --- FUNÇÃO PARA SALVAR NO CÉREBRO DA URFILIG ---
-async function salvarNoCerebro() {
+// --- FUNÇÃO PARA SALVAR NAS NOTAS ---
+async function salvarNasNotas() {
   if (!emailAbertoAtual) return;
 
   const tokenUrfilig = localStorage.getItem('urfilig_token');
@@ -333,9 +320,9 @@ async function salvarNoCerebro() {
     return;
   }
 
-  if (btnSalvarCerebro) {
-    btnSalvarCerebro.textContent = 'Salvando no Cérebro...';
-    btnSalvarCerebro.disabled = true;
+  if (btnSalvarNotas) {
+    btnSalvarNotas.textContent = 'Salvando nas Notas…';
+    btnSalvarNotas.disabled = true;
   }
 
   try {
@@ -371,7 +358,7 @@ async function salvarNoCerebro() {
     }
 
     if (!pastaTarget) {
-      throw new Error('Não foi possível criar/encontrar uma pasta no Cérebro.');
+      throw new Error('Não foi possível criar/encontrar uma pasta nas Notas.');
     }
 
     // 3. Monta e envia a nota para a pasta "E-mails"
@@ -397,14 +384,14 @@ async function salvarNoCerebro() {
       throw new Error(errJson.erro || errJson.message || `Erro ${resNota.status}`);
     }
 
-    showToast('E-mail salvo no Cérebro da Urfilig.');
+    showToast('E-mail salvo nas Notas.');
   } catch (erro) {
-    console.error('[Email] Erro ao salvar no Cérebro:', erro);
-    await showAlert(`Falha ao salvar no Cérebro: ${erro.message}`);
+    console.error('[Email] Erro ao salvar nas Notas:', erro);
+    await showAlert(`Falha ao salvar nas Notas: ${erro.message}`);
   } finally {
-    if (btnSalvarCerebro) {
-      btnSalvarCerebro.textContent = 'Salvar no Cérebro da Urfilig';
-      btnSalvarCerebro.disabled = false;
+    if (btnSalvarNotas) {
+      btnSalvarNotas.textContent = 'Salvar nas Notas';
+      btnSalvarNotas.disabled = false;
     }
   }
 }

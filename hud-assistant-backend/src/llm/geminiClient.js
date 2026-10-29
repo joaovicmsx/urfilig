@@ -9,15 +9,13 @@ const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
  */
 export async function perguntarGemini(prompt, systemPrompt = '', { formatoJson = false } = {}) {
   if (!ai) {
-    console.error('[GeminiClient] Erro: GEMINI_API_KEY não configurada no .env');
-    if (formatoJson) {
-      return JSON.stringify({ erro: 'Chave de API não configurada.' });
-    }
-    return 'Chave do Gemini não configurada no servidor.';
+    const error = new Error('Gemini indisponível: configure GEMINI_API_KEY no ambiente do backend.');
+    error.code = 'GEMINI_NOT_CONFIGURED';
+    throw error;
   }
 
   try {
-    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const modelName = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
     const config = {
       systemInstruction: systemPrompt || undefined,
@@ -38,17 +36,6 @@ export async function perguntarGemini(prompt, systemPrompt = '', { formatoJson =
 
   } catch (error) {
     console.error('[GeminiClient] Erro na chamada do Gemini:', error.status || error.message);
-
-    if (error.status === 429 || error.message?.includes('429')) {
-      if (formatoJson) {
-        return JSON.stringify({ erro: 'Limite de requisições excedido. Tente em alguns segundos.' });
-      }
-      return 'Excedi o limite de chamadas momentâneo da API. Aguarde alguns segundos e tente novamente!';
-    }
-
-    if (formatoJson) {
-      return JSON.stringify({ erro: 'Não foi possível processar o comando no momento.' });
-    }
-    return 'Desculpe, tive um problema ao consultar minha inteligência. Tente novamente em instantes!';
+    throw error;
   }
 }

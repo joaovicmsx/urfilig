@@ -54,6 +54,13 @@
 
     <canvas id="hud-canvas" aria-label="Urfilig e sua esfera neural. Arraste para girar e selecione memórias." tabindex="0"></canvas>
     <canvas id="labels-canvas"></canvas>
+    <div id="sky-events" aria-hidden="true"><i class="sky-cloud cloud-one"></i><i class="sky-cloud cloud-two"></i><i class="sky-meteor"></i></div>
+    <section id="hud-clock-widget" aria-label="Relógio e clima">
+      <div class="hud-clock-time" id="hud-clock-time">--:--:--</div>
+      <div class="hud-clock-date" id="hud-clock-date">Carregando data…</div>
+      <div class="hud-clock-weather" id="hud-clock-weather">Clima indisponível</div>
+      <button type="button" id="mascot-overlay-toggle">Mascote sobreposto: desativado</button>
+    </section>
 
     <div id="hud-response" aria-live="polite"></div>
     <div id="memory-tooltip" role="tooltip" hidden></div>
@@ -70,8 +77,6 @@
       <button id="menu-abrir-cerebro" type="button">Notas</button>
 
       <h2>Dados</h2>
-      <button id="btn-metricas" type="button">Visão geral</button>
-      <button id="btn-resumo-inbox" type="button">Resumo dos Dados</button>
       <button id="btn-tendencias" type="button">Tendências</button>
       <button id="btn-plano-hoje" type="button">Plano de Hoje</button>
       <button id="btn-revisao-semanal" type="button">Resumo Semanal</button>
@@ -137,6 +142,7 @@
 
       <form id="chat-form" class="chat-form-inferior">
         <input id="chat-input" type="text" placeholder="Falar com a Urfilig..." autocomplete="off" />
+        <select id="chat-provider" aria-label="Provedor de IA" title="Escolher provedor de IA"><option value="gemini">Gemini</option><option value="ollama">Ollama</option></select>
         <button type="submit" class="chat-btn-enviar">Enviar</button>
       </form>
     </div>

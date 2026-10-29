@@ -27,7 +27,10 @@ function erroDeQuota(erro) {
  * Assinatura idêntica às dos clients individuais, então basta trocar o import
  * nos arquivos que consomem.
  */
-export async function perguntarLLM(prompt, systemPrompt = '', { formatoJson = false } = {}) {
+export async function perguntarLLM(prompt, systemPrompt = '', { formatoJson = false, provider } = {}) {
+  const escolhido = provider || process.env.LLM_PROVIDER || 'gemini';
+  if (escolhido === 'ollama') return perguntarOllama(prompt, systemPrompt, { formatoJson });
+  if (escolhido !== 'gemini') throw new Error('Provedor de IA inválido. Escolha Gemini ou Ollama.');
   try {
     return await perguntarGemini(prompt, systemPrompt, { formatoJson });
   } catch (erro) {

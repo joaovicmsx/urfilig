@@ -2,6 +2,21 @@ import { Router } from 'express';
 import { prisma } from '../prisma.js';
 
 const router = Router();
+router.get('/llm-status', async (_req, res) => {
+  const provider = process.env.LLM_PROVIDER || 'gemini';
+  const gemini = Boolean(process.env.GEMINI_API_KEY);
+  const ollamaBase = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/$/, '');
+  let ollama = false;
+  try {
+    const response = await fetch(`${ollamaBase}/api/tags`, { signal: AbortSignal.timeout(1600) });
+    if (response.ok) {
+      const data = await response.json();
+      const model = process.env.OLLAMA_MODEL || 'llama3.1';
+      ollama = Array.isArray(data.models) && data.models.some((item) => item.name === model || item.name?.startsWith(`${model}:`));
+    }
+  } catch { /* Ollama é opcional; o status não deve derrubar a tela. */ }
+  res.json({ provider, gemini, ollama, ollamaModel: process.env.OLLAMA_MODEL || 'llama3.1' });
+});
 const getUsuarioId = (req) => req.usuarioId || req.userId || req.user?.id;
 const inicioDoDia = (data = new Date()) => {
   const inicio = new Date(data);
@@ -28,9 +43,11 @@ async function lerTendenciasGoogle(geo, pais) {
   return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/gi)].map(([, item]) => {
     const campo = (nome) => decodificarXml(item.match(new RegExp(`<${nome}[^>]*>([\\s\\S]*?)<\\/${nome}>`, 'i'))?.[1]?.trim() || '');
     const topico = campo('title');
-    const noticia = item.match(/<ht:news_item(?:\s[^>]*)?>([\s\S]*?)<\/ht:news_item>/i)?.[1] || '';
-    const detalheNoticia = (nome) => decodificarXml(noticia.match(new RegExp(`<ht:${nome}[^>]*>([\\s\\S]*?)<\\/ht:${nome}>`, 'i'))?.[1]?.trim() || '');
-    return topico ? { topico, buscas: campo('ht:approx_traffic'), publicadoEm: campo('pubDate'), url: detalheNoticia('news_item_url') || campo('link'), noticia: detalheNoticia('news_item_title'), fonteNoticia: detalheNoticia('news_item_source'), pais } : null;
+    const noticias = [...item.matchAll(/<ht:news_item(?:\s[^>]*)?>([\s\S]*?)<\/ht:news_item>/gi)].map(([, bloco]) => {
+      const detalhe = (nome) => decodificarXml(bloco.match(new RegExp(`<ht:${nome}[^>]*>([\\s\\S]*?)<\\/ht:${nome}>`, 'i'))?.[1]?.trim() || '');
+      return { titulo: detalhe('news_item_title'), url: detalhe('news_item_url'), fonte: detalhe('news_item_source'), imagem: detalhe('news_item_picture') };
+    }).filter((noticia) => noticia.titulo || noticia.url);
+    return topico ? { topico, buscas: campo('ht:approx_traffic'), publicadoEm: campo('pubDate'), pais, noticias } : null;
   }).filter(Boolean).slice(0, 8);
 }
 

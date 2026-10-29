@@ -15,7 +15,7 @@ profissão, hobbies) de forma natural, como uma pessoa comentaria, não como
 quem está recitando um formulário de volta. Não use saudação genérica tipo
 "Olá, tudo bem?" — seja específica e pessoal. 2-4 frases.`;
 
-export async function processarComando(usuarioId, texto) {
+export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
   const { sentimento, prioridade } = detectarSentimento(texto);
   const conteudoNota = detectarIntencaoDeNota(texto);
 
@@ -82,7 +82,7 @@ export async function processarComando(usuarioId, texto) {
   }
 
   const systemPrompt = await montarSystemPrompt(usuarioId, { sentimento, prioridade });
-  const resposta = await perguntarLLM(textoParaGemini, systemPrompt);
+  const resposta = await perguntarLLM(textoParaGemini, systemPrompt, opcoesLLM);
 
   emitirEstado(usuarioId, 'SPEAKING');
   const audioBase64 = await sintetizarFala(resposta);
