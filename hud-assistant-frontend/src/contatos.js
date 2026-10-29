@@ -1,4 +1,5 @@
 import { BACKEND_URL } from './authGuard.js';
+import { showAlert } from './uiDialogs.js';
 
 function getContatoKey(c) {
   return String(c.id || c._id || c.nome || '').trim();
@@ -261,7 +262,7 @@ export function iniciarModuloContatos() {
       }
 
       if (!pastaContatos || !pastaContatos.id) {
-        alert('Não foi possível localizar ou criar a pasta "Contatos" no Cérebro.');
+        await showAlert('Não foi possível localizar ou criar a pasta "Contatos" no Cérebro.');
         return;
       }
 
@@ -369,7 +370,7 @@ export function iniciarModuloContatos() {
       };
 
       if (!dados.nome) {
-        alert('Preencha pelo menos o nome do contato.');
+        await showAlert('Preencha pelo menos o nome do contato.');
         return;
       }
 

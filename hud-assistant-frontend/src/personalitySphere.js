@@ -51,7 +51,7 @@ export class PersonalitySphere {
     this.grupo = new THREE.Group();
     scene.add(this.grupo);
 
-    const geometriaCore = new THREE.IcosahedronGeometry(0.065, 2);
+    const geometriaCore = new THREE.IcosahedronGeometry(0.08, 2);
     const materialCore = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95 });
     this.instancedMesh = new THREE.InstancedMesh(geometriaCore, materialCore, maxParticles);
     this.instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -463,7 +463,8 @@ export class PersonalitySphere {
         }
       }
 
-      p.corAtual.copy(this.corHorario).multiplyScalar(0.88 + (i % 4) * 0.045);
+      const pulsacao = this.reducedMotion ? 1 : 0.97 + Math.sin(tempo * 0.72 + p.fase) * 0.055;
+      p.corAtual.copy(this.corHorario).multiplyScalar((0.94 + (i % 4) * 0.035) * pulsacao);
 
       const corRender = p.corAtual.clone().multiplyScalar(1.05);
       if (this.hoverIndex === i || this.nodeArrastado === p) {
@@ -472,7 +473,8 @@ export class PersonalitySphere {
 
       this.instancedMesh.setColorAt(i, corRender);
 
-      matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(1, 1, 1));
+      const tamanhoPulsado = this.reducedMotion ? 1 : 0.97 + Math.sin(tempo * 0.72 + p.fase) * 0.045;
+      matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(tamanhoPulsado, tamanhoPulsado, tamanhoPulsado));
       this.instancedMesh.setMatrixAt(i, matriz);
     });
 

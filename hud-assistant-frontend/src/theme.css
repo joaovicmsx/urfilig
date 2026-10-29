@@ -460,3 +460,165 @@ body.tela-centralizada::before { content: none !important; }
   background: color-mix(in srgb, var(--time-accent) 38%, rgba(255,255,255,.1)) !important;
 }
 .email-topbar { margin-top: 0 !important; }
+
+/* Final shared UI layer: keep old page-specific !important rules from leaking
+   their former white/pastel themes into the current dark interface. */
+:root {
+  --glass-base: rgba(18, 19, 23, .92);
+  --glass-raised: rgba(30, 31, 36, .9);
+  --glass-strong: rgba(13, 14, 17, .97);
+  --text-primary: #f2f2f3;
+  --text-secondary: #c4c5ca;
+  --text-muted: #9b9da5;
+}
+html body:has(#hud-canvas), html body:has(.email-wrapper) {
+  background: radial-gradient(ellipse at 55% 0%, var(--time-halo), transparent 58%), #08090b !important;
+  color: var(--text-primary) !important;
+}
+html body #top-hud-bar {
+  position: fixed !important; inset: 0 auto 0 0 !important; z-index: 150 !important;
+  width: 76px !important; height: 100vh !important; padding: 14px 8px !important;
+  display: flex !important; flex-direction: column !important; align-items: center !important;
+  gap: 18px !important; background: rgba(14,15,18,.88) !important;
+  border: 0 !important; border-radius: 0 !important; box-shadow: 1px 0 24px rgba(0,0,0,.18) !important;
+  backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); pointer-events: auto !important;
+}
+html body #menu-toggle { position: static !important; width: 44px !important; height: 44px !important; flex: 0 0 auto; }
+html body .hud-nav {
+  position: static !important; inset: auto !important; transform: none !important;
+  display: flex !important; flex-direction: column !important; align-items: stretch !important;
+  width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important;
+  gap: 8px !important; border: 0 !important; border-radius: 0 !important;
+  background: transparent !important; box-shadow: none !important; overflow: visible !important;
+}
+html body .hud-nav .nav-item {
+  min-height: 56px !important; padding: 8px 3px !important; display: flex !important;
+  flex-direction: column !important; align-items: center !important; justify-content: center !important;
+  gap: 5px !important; color: var(--text-secondary) !important; font-size: 10px !important;
+  line-height: 1.2 !important; text-align: center !important; border: 0 !important;
+  border-radius: 12px !important; background: transparent !important;
+}
+html body .hud-nav .nav-item:hover, html body .hud-nav .nav-item.active {
+  color: #fff !important; background: color-mix(in srgb, var(--time-accent) 20%, rgba(255,255,255,.06)) !important;
+}
+html body #hud-canvas { left: 76px !important; width: calc(100vw - 76px) !important; }
+html body #labels-canvas { left: 76px !important; width: calc(100vw - 76px) !important; }
+html body #hud-response, html body #hud-weather { left: 96px !important; }
+html body #menu-lateral { top: 0 !important; left: 76px !important; height: 100vh !important; max-height: 100vh !important; }
+html body .menu-backdrop { left: 76px !important; }
+
+html body .sidebar-cerebro, html body #cerebro-painel, html body .sidebar,
+html body #menu-lateral, html body .painel-calendario, html body .intel-modal-card,
+html body .microfone-modal-card, html body .modal-card, html body #modal-evento-overlay > div,
+html body .contatos-card, html body .email-caixas-card, html body .email-lista-card,
+html body .email-leitor-card, html body .conta-conectada-box, html body .criar-nota-container {
+  color: var(--text-primary) !important; background: rgba(18,19,23,.94) !important;
+  border: 0 !important; outline: 0 !important; border-radius: 16px !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.28) !important;
+  backdrop-filter: blur(22px) saturate(115%) !important;
+}
+html body #cerebro-painel *, html body #sidebar-notas *, html body .email-wrapper *,
+html body .painel-calendario *, html body .contatos-card * { text-shadow: none !important; }
+html body #cerebro-painel .cerebro-pasta, html body #cerebro-painel .cerebro-nota,
+html body #sidebar-notas .cerebro-pasta, html body #sidebar-notas .cerebro-nota,
+html body #cerebro-painel .cerebro-nota-item, html body #lista-notas .cerebro-pasta,
+html body #lista-notas .cerebro-nota, html body .contatos-card .contato-item,
+html body .contatos-card .contato-card {
+  color: var(--text-secondary) !important; background: rgba(255,255,255,.045) !important;
+  border: 0 !important; box-shadow: none !important; border-radius: 10px !important;
+}
+html body #cerebro-painel .cerebro-pasta span, html body #cerebro-painel .cerebro-nota span,
+html body #sidebar-notas .cerebro-pasta span, html body #sidebar-notas .cerebro-nota span,
+html body #lista-notas *, html body .contatos-card *, html body .email-wrapper * {
+  color: inherit !important;
+}
+html body #cerebro-painel h2, html body #cerebro-painel h3, html body #cerebro-painel h4,
+html body #sidebar-notas h2, html body .email-leitor-assunto, html body .email-item-remetente,
+html body .contatos-card h2, html body .contatos-card h3 { color: var(--text-primary) !important; }
+html body input, html body textarea, html body select,
+html body #modal-nota-detalhes input, html body #modal-nota-detalhes textarea,
+html body #modal-nota-detalhes select {
+  color: var(--text-primary) !important; background: rgba(255,255,255,.07) !important;
+  border: 0 !important; box-shadow: none !important; caret-color: var(--time-accent) !important;
+}
+html body button, html body .nav-item, html body .bolha-opcao, html body .chat-btn-enviar,
+html body .btn-dinamico-esfera, html body .cerebro-form-fixo button,
+html body #menu-lateral button, html body #modal-evento-overlay button {
+  color: var(--text-primary) !important; background: rgba(255,255,255,.075) !important;
+  border: 0 !important; box-shadow: none !important; border-radius: 10px !important;
+}
+html body button:hover:not(:disabled), html body #menu-lateral button:hover {
+  color: #fff !important; background: color-mix(in srgb, var(--time-accent) 20%, rgba(255,255,255,.08)) !important;
+}
+html body .sidebar-cerebro-header, html body #cerebro-painel .sidebar-cerebro-header,
+html body #sidebar-notas .sidebar-header, html body .email-leitor-header,
+html body .email-lista-header { border: 0 !important; box-shadow: inset 0 -1px rgba(255,255,255,.07) !important; }
+
+/* Calendar cells are generated with inline legacy colors; override them and fit
+   all six possible week rows into a compact, scroll-free panel. */
+html body .painel-calendario {
+  position: fixed !important; left: calc(50% + 38px) !important; top: 50% !important;
+  width: min(820px, calc(100vw - 130px)) !important;
+  height: min(680px, calc(100vh - 36px)) !important; max-height: calc(100vh - 36px) !important;
+  padding: 14px !important; transform: translate(-50%, -50%) scale(.98) !important;
+  display: flex !important; flex-direction: column !important; overflow: hidden !important;
+}
+html body .painel-calendario.aberta { transform: translate(-50%, -50%) scale(1) !important; }
+html body #calendario-conteudo { flex: 1 !important; min-height: 0 !important; padding: 8px !important; overflow: hidden !important; }
+html body #calendario-conteudo > div { gap: 8px !important; }
+html body #calendario-conteudo > div > div:last-child {
+  flex: 1 1 auto !important; min-height: 0 !important; grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
+  gap: 4px !important; overflow: hidden !important;
+}
+html body #calendario-conteudo [data-data] {
+  min-height: 0 !important; padding: 4px !important; gap: 2px !important;
+  color: var(--text-secondary) !important; background: rgba(255,255,255,.045) !important;
+  border: 0 !important; border-radius: 8px !important; overflow: hidden !important;
+}
+html body #calendario-conteudo [data-data] > div:first-child { min-height: 20px; }
+html body #calendario-conteudo [data-data] span { color: var(--text-secondary) !important; }
+html body #calendario-conteudo .item-evento {
+  min-height: 17px; padding: 1px 4px !important; color: var(--text-primary) !important;
+  background: rgba(255,255,255,.08) !important; border: 0 !important; border-radius: 4px !important;
+  font-size: 10px !important; line-height: 1.4 !important;
+}
+html body #calendario-conteudo .btn-add-evento { color: var(--time-accent) !important; background: transparent !important; }
+
+html body .email-wrapper { grid-template-columns: minmax(150px,190px) minmax(210px,280px) minmax(0,1fr) !important; padding: 0 .8rem .8rem !important; gap: .65rem !important; }
+html body .email-topbar { padding: .55rem .8rem !important; }
+html body .email-caixas-card, html body .email-lista-card, html body .email-leitor-card {
+  background: rgba(18,19,23,.9) !important; border: 0 !important; border-radius: 14px !important;
+}
+html body .email-item { border: 0 !important; border-radius: 8px !important; }
+html body .email-item-remetente, html body .email-item-assunto, html body .email-item-data,
+html body .email-remetente-txt, html body .email-data-txt, html body .email-corpo-txt,
+html body .email-vazio-msg, html body .email-secao-titulo, html body .conta-email-txt,
+html body .email-pasta-item, html body .btn-voltar-hub { color: var(--text-secondary) !important; }
+html body .email-item-remetente, html body .email-leitor-assunto { color: var(--text-primary) !important; }
+html body .email-pasta-item.ativo, html body .email-item.selecionado {
+  color: var(--text-primary) !important; background: color-mix(in srgb, var(--time-accent) 18%, rgba(255,255,255,.06)) !important;
+}
+html body .contato-item-clean { color: var(--text-secondary) !important; background: transparent !important; border: 0 !important; }
+html body .contato-item-clean:hover { background: rgba(255,255,255,.06) !important; }
+html body .contato-item-clean div { color: var(--text-secondary) !important; }
+html body .contato-item-clean div:first-child { color: var(--text-primary) !important; }
+html body .contatos-busca-container, html body .contatos-rodape { background: transparent !important; border: 0 !important; }
+html body .intel-modal-card, html body .modal-card, html body #modal-evento-overlay > div { border: 0 !important; }
+.urfilig-dialog-backdrop { position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center; padding: 20px; background: rgba(3,4,7,.62); backdrop-filter: blur(12px); }
+.urfilig-dialog-card { width: min(420px, 100%); padding: 20px; color: var(--text-primary); background: rgba(20,21,25,.97); border: 0; border-radius: 16px; box-shadow: 0 22px 70px rgba(0,0,0,.48); }
+.urfilig-dialog-card h2 { margin: 0 0 8px; font-size: 1rem; }
+.urfilig-dialog-card p { color: var(--text-secondary); line-height: 1.5; }
+.urfilig-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+.urfilig-dialog-actions button[data-primary] { background: color-mix(in srgb, var(--time-accent) 28%, #25262b) !important; }
+.urfilig-toast { position: fixed; z-index: 20001; right: 20px; bottom: 20px; max-width: min(420px, calc(100vw - 40px)); padding: 12px 16px; color: var(--text-primary); background: rgba(24,25,29,.97); border-radius: 12px; box-shadow: 0 12px 36px rgba(0,0,0,.35); }
+@media (max-width: 700px) {
+  html body #top-hud-bar { width: 60px !important; padding: 10px 5px !important; }
+  html body #hud-canvas { left: 60px !important; width: calc(100vw - 60px) !important; }
+  html body #labels-canvas { left: 60px !important; width: calc(100vw - 60px) !important; }
+  html body #menu-lateral { left: 60px !important; }
+  html body .menu-backdrop { left: 60px !important; }
+  html body .painel-calendario { left: calc(50% + 30px) !important; width: calc(100vw - 72px) !important; height: min(620px, calc(100vh - 24px)) !important; padding: 8px !important; }
+  html body #calendario-conteudo { padding: 3px !important; }
+  html body #calendario-conteudo [data-data] { padding: 2px !important; }
+  html body .email-wrapper { grid-template-columns: minmax(0,1fr) !important; grid-template-rows: auto minmax(150px,28vh) minmax(220px,1fr) !important; overflow-y: auto !important; }
+}

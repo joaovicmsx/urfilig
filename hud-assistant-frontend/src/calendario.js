@@ -1,4 +1,5 @@
 import { BACKEND_URL } from './authGuard.js';
+import { showAlert, showConfirm } from './uiDialogs.js';
 
 let dataAtual = new Date();
 let eventosCache = [];
@@ -153,7 +154,7 @@ function abrirModalEvento(evento = {}) {
 
   if (isEdicao) {
     document.querySelector('#btn-apagar-ev').onclick = async () => {
-      if (confirm('Deseja excluir este evento?')) {
+      if (await showConfirm('Deseja excluir este evento?')) {
         await fetch(`${BACKEND_URL}/api/eventos/${evento.id}`, {
           method: 'DELETE',
           headers: cabecalhoAuth(),
@@ -200,10 +201,10 @@ function abrirModalEvento(evento = {}) {
       } else {
         const err = await res.json().catch(() => ({}));
         console.error('[Calendário] Erro do Backend:', err);
-        alert('Erro ao salvar evento: ' + (err.erro || err.message || 'Verifique o console'));
+        await showAlert('Erro ao salvar evento: ' + (err.erro || err.message || 'Verifique a conexão.'));
       }
     } catch (erro) {
-      alert('Erro de conexão com o servidor: ' + erro.message);
+      await showAlert('Erro de conexão com o servidor: ' + erro.message);
     } finally {
       btnSalvar.disabled = false;
       btnSalvar.textContent = 'Salvar';

@@ -1,6 +1,7 @@
 import './timeTheme.js';
 import './windowChrome.js';
 import { BACKEND_URL, exigirLogin, validarSessao } from './authGuard.js';
+import { showAlert, showToast } from './uiDialogs.js';
 
 exigirLogin();
 void validarSessao();
@@ -320,7 +321,7 @@ async function salvarNoCerebro() {
 
   const tokenUrfilig = localStorage.getItem('urfilig_token');
   if (!tokenUrfilig) {
-    alert('Sessão da Urfilig não encontrada. Faça login novamente.');
+    await showAlert('Sessão da Urfilig não encontrada. Faça login novamente.');
     return;
   }
 
@@ -388,10 +389,10 @@ async function salvarNoCerebro() {
       throw new Error(errJson.erro || errJson.message || `Erro ${resNota.status}`);
     }
 
-    alert('E-mail salvo com sucesso no Cérebro da Urfilig!');
+    showToast('E-mail salvo no Cérebro da Urfilig.');
   } catch (erro) {
     console.error('[Email] Erro ao salvar no Cérebro:', erro);
-    alert(`Falha ao salvar no Cérebro: ${erro.message}`);
+    await showAlert(`Falha ao salvar no Cérebro: ${erro.message}`);
   } finally {
     if (btnSalvarCerebro) {
       btnSalvarCerebro.textContent = 'Salvar no Cérebro da Urfilig';
@@ -437,7 +438,7 @@ ${emailAbertoAtual.corpo}
   try {
     if (writeTextFile && BaseDirectory) {
       await writeTextFile(nomeArquivo, conteudoArquivo, { dir: BaseDirectory.Document });
-      alert(`Arquivo salvo em Documentos com sucesso!\n\nNome: ${nomeArquivo}`);
+      showToast(`Arquivo salvo em Documentos: ${nomeArquivo}`);
     } else {
       const blob = new Blob([conteudoArquivo], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);

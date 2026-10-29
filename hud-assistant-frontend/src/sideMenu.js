@@ -1,4 +1,5 @@
 import { BACKEND_URL } from './authGuard.js';
+import { showAlert } from './uiDialogs.js';
 
 // =========================================================================
 // MODAIS CUSTOMIZADOS (FONTE PADRÃO DA APLICAÇÃO - CLEAN DARK)
@@ -129,6 +130,73 @@ export function iniciarMenuLateral(socket) {
   const cabecalhoAuth = () => ({
     'Content-Type': 'application/json',
     Authorization: `Bearer ${localStorage.getItem('urfilig_token')}`,
+  });
+
+  const modalDados = document.querySelector('#intel-modal');
+  const tituloDados = document.querySelector('#intel-modal-titulo');
+  const corpoDados = document.querySelector('#intel-modal-corpo');
+  document.querySelector('#intel-modal-fechar')?.addEventListener('click', () => modalDados?.classList.remove('visible'));
+  modalDados?.addEventListener('click', (event) => { if (event.target === modalDados) modalDados.classList.remove('visible'); });
+
+  const relatorios = {
+    'btn-metricas': ['Extração de Métricas', 'metricas', 'metricas'],
+    'btn-resumo-inbox': ['Resumo dos Dados', 'resumo-inbox', 'resumo'],
+    'btn-tendencias': ['Tendências das Notas', 'tendencias', null],
+    'btn-plano-hoje': ['Dados de Hoje', 'plano-hoje', 'plano'],
+    'btn-revisao-semanal': ['Revisão dos Últimos 7 Dias', 'revisao-semanal', 'revisao'],
+    'btn-insights': ['Insights do Seu Espaço', 'insights', null],
+  };
+  const rotuloCampo = (chave) => chave.replace(/([A-Z])/g, ' $1').replace(/^./, (letra) => letra.toUpperCase());
+  function adicionarValorDados(parent, chave, valor) {
+    if (valor === null || valor === undefined || typeof valor === 'boolean') return;
+    const bloco = document.createElement('section');
+    bloco.className = 'intel-card-item';
+    const titulo = document.createElement('h4');
+    titulo.textContent = rotuloCampo(chave);
+    bloco.append(titulo);
+    if (Array.isArray(valor)) {
+      if (!valor.length) {
+        const vazio = document.createElement('p'); vazio.textContent = 'Nenhum registro disponível.'; bloco.append(vazio);
+      } else {
+        valor.forEach((item) => {
+          if (item && typeof item === 'object') {
+            const linha = document.createElement('p');
+            linha.textContent = Object.entries(item).filter(([, v]) => v !== null && typeof v !== 'object').map(([k, v]) => `${rotuloCampo(k)}: ${v}`).join(' · ');
+            bloco.append(linha);
+          } else { const linha = document.createElement('p'); linha.textContent = String(item); bloco.append(linha); }
+        });
+      }
+    } else if (valor && typeof valor === 'object') {
+      Object.entries(valor).forEach(([campo, conteudo]) => adicionarValorDados(bloco, campo, conteudo));
+    } else {
+      const texto = document.createElement('p');
+      texto.textContent = typeof valor === 'string' && /^(\d{4}-\d\d-\d\dT)/.test(valor) ? new Date(valor).toLocaleString('pt-BR') : String(valor);
+      bloco.append(texto);
+    }
+    parent.append(bloco);
+  }
+  Object.entries(relatorios).forEach(([id, [titulo, rota, chave]]) => {
+    document.querySelector(`#${id}`)?.addEventListener('click', async () => {
+      fecharMenu();
+      if (tituloDados) tituloDados.textContent = titulo;
+      if (corpoDados) corpoDados.textContent = 'Carregando dados…';
+      modalDados?.classList.add('visible');
+      try {
+        const resposta = await fetch(`${BACKEND_URL}/api/inteligencia/${rota}`, { headers: cabecalhoAuth(), cache: 'no-store' });
+        const payload = await resposta.json();
+        if (!resposta.ok) throw new Error(payload.erro || 'Não foi possível carregar estes dados.');
+        if (!corpoDados) return;
+        corpoDados.replaceChildren();
+        const dados = chave ? payload[chave] : payload;
+        if (!dados || (Array.isArray(dados) && !dados.length)) {
+          corpoDados.textContent = 'Ainda não há registros para esta opção.';
+          return;
+        }
+        Object.entries(dados).filter(([campo]) => campo !== 'ok').forEach(([campo, valor]) => adicionarValorDados(corpoDados, campo, valor));
+      } catch (erro) {
+        if (corpoDados) corpoDados.textContent = erro.message || 'Não foi possível carregar estes dados.';
+      }
+    });
   });
 
   const iconeFechar = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -351,7 +419,7 @@ export function iniciarMenuLateral(socket) {
     const pastaIdSelecionada = selectPasta ? (selectPasta.value ? selectPasta.value : null) : pastaAlvoModal;
 
     if (!titulo) {
-      alert('O título não pode ficar vazio.');
+      await showAlert('O título não pode ficar vazio.');
       return;
     }
 
@@ -389,7 +457,7 @@ export function iniciarMenuLateral(socket) {
         }
         await carregarPastasDoBackend(true);
       } else {
-        alert('O servidor rejeitou esta gravação. Verifique se a sua API suporta mudar pastas neste endpoint.');
+        await showAlert('O servidor rejeitou esta gravação. Verifique a conexão e tente novamente.');
       }
     } catch (e) {
       console.error('[Cérebro] Erro ao salvar nota:', e);
@@ -430,7 +498,6 @@ export function iniciarMenuLateral(socket) {
       const ts = new Date().getTime(); 
       const fetchOpts = { headers: cabecalhoAuth(), cache: 'no-store' };
 
-      // APENAS busca as pastas (que já devem trazer as notas embutidas no seu Backend)
       const respPastas = await fetch(`${BACKEND_URL}/api/cerebro/pastas?_t=${ts}`, fetchOpts);
       if (respPastas.ok) {
         pastas = await respPastas.json();
@@ -449,7 +516,19 @@ export function iniciarMenuLateral(socket) {
         }
       });
 
-      // AQUI FOI REMOVIDA A CHAMADA QUE GERAVA O ERRO 404 (fetch /api/cerebro/notas)
+      // Notas sem pasta têm uma rota própria; não fazem parte da resposta de /pastas.
+      const respNotasSoltas = await fetch(`${BACKEND_URL}/api/cerebro/notas-soltas?_t=${ts}`, fetchOpts);
+      if (respNotasSoltas.ok) {
+        const notasSemPasta = await respNotasSoltas.json();
+        if (Array.isArray(notasSemPasta)) {
+          notasSemPasta.forEach(nota => {
+            const realId = nota.id || nota._id;
+            if (realId) {
+              mapaNotas.set(String(realId), { ...nota, id: realId, pastaId: null });
+            }
+          });
+        }
+      }
 
       try {
         const respUser = await fetch(`${BACKEND_URL}/api/auth/me?_t=${ts}`, fetchOpts);
@@ -651,11 +730,11 @@ export function iniciarMenuLateral(socket) {
       } else {
         const erroCorpo = await resp.text();
         console.error('[Cérebro] Erro retornado pelo servidor:', erroCorpo);
-        alert('O servidor recusou a alteração de pasta. Verifique a consola.');
+        await showAlert('O servidor recusou a alteração de pasta. A nota continua na pasta anterior.');
       }
     } catch (e) {
       console.error('[Cérebro] Falha crítica de rede ou servidor offline:', e);
-      alert('Erro de conexão com o servidor. Certifique-se de que o backend está online.');
+      await showAlert('Erro de conexão com o servidor. Certifique-se de que o backend está online.');
     }
   }
 
