@@ -4,7 +4,8 @@
   "description": "Permissões padrão da janela principal da Urfilig",
   "windows": [
     "main",
-    "mascote-overlay"
+    "mascote-overlay",
+    "routine-overlay"
   ],
   "permissions": [
     "core:default",

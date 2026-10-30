@@ -31,6 +31,7 @@ struct CursorPoint { x: i32, y: i32 }
 #[link(name = "user32")]
 extern "system" {
     fn GetCursorPos(point: *mut CursorPoint) -> i32;
+    fn GetSystemMetrics(index: i32) -> i32;
 }
 
 /// Guarda os processos filhos (backend Node + servidor Python da wake
@@ -80,16 +81,18 @@ fn main() {
                     if app_handle.get_webview_window("main").is_none() { break; }
                     let mut cursor = CursorPoint { x: 0, y: 0 };
                     if unsafe { GetCursorPos(&mut cursor) } != 0 {
-                        if let Some(overlay) = app_handle.get_webview_window("mascote-overlay") {
-                            if let (Ok(position), Ok(size)) = (overlay.outer_position(), overlay.inner_size()) {
-                                if size.width > 0 && size.height > 0 {
-                                    let payload = serde_json::json!({
-                                        "x": ((cursor.x - position.x) as f64 / size.width as f64) * 2.0 - 1.0,
-                                        "y": -(((cursor.y - position.y) as f64 / size.height as f64) * 2.0 - 1.0),
-                                    });
-                                    let _ = app_handle.emit_to("mascote-overlay", "mascot:mouse", payload);
-                                }
-                            }
+                        let left = unsafe { GetSystemMetrics(76) };
+                        let top = unsafe { GetSystemMetrics(77) };
+                        let width = unsafe { GetSystemMetrics(78) }.max(1);
+                        let height = unsafe { GetSystemMetrics(79) }.max(1);
+                        let x = (((cursor.x - left) as f64 / width as f64) * 2.0 - 1.0).clamp(-1.0, 1.0);
+                        let y = -(((cursor.y - top) as f64 / height as f64) * 2.0 - 1.0).clamp(-1.0, 1.0);
+                        let payload = serde_json::json!({ "x": x, "y": y });
+                        if app_handle.get_webview_window("mascote-overlay").is_some() {
+                            let _ = app_handle.emit_to("mascote-overlay", "mascot:mouse", payload.clone());
+                        }
+                        if app_handle.get_webview_window("routine-overlay").is_some() {
+                            let _ = app_handle.emit_to("routine-overlay", "desktop:mouse", payload);
                         }
                     }
                     std::thread::sleep(Duration::from_millis(50));

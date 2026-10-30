@@ -216,15 +216,21 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
     try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.href : ''; }
     catch { return ''; }
   };
-  async function renderTrends(payload = {}) {
+  async function renderTrends(payload = {}, focoSelecionado = 'todos') {
     const trends = items(payload.tendencias);
     if (payload.fonte !== 'Google Trends' || !trends.length || !trends.some((trend) => trend.pais)) {
       throw new Error('O backend ainda está servindo tendências antigas das notas. Reinicie ou atualize o servidor para carregar as tendências da internet.');
     }
     const lead = node('div', 'intel-trends-intro');
-    lead.append(node('p', '', `Tópicos que estão em alta no Google Trends · Brasil, EUA, Reino Unido, Índia e Japão`), node('small', '', `Atualizado ${asDate(payload.atualizadoEm, { hour: '2-digit', minute: '2-digit' })}`));
+    lead.append(node('p', '', `Tópicos em alta no Google Trends · Brasil, EUA, Reino Unido, Índia e Japão`));
+    const filtros = { tecnologia: /tecnologia|inteligência artificial|software|celular|apple|google|microsoft|jogo|games|internet|app/i, economia: /economia|dólar|bolsa|ações|juros|inflação|banco|pix|investimento|petróleo/i, esportes: /futebol|esporte|jogo|copa|campeonato|nba|f1|formula 1|tenis|olimp/i, entretenimento: /filme|série|musica|música|show|ator|atriz|celebridade|tv|novela/i, saude: /saúde|medicina|doença|vacina|hospital|bem-estar|fitness/i, mundo: /brasil|mundo|governo|presidente|eleição|guerra|país|internacional|clima/i };
+    const filtro = document.createElement('select'); filtro.className = 'intel-trend-filter'; filtro.setAttribute('aria-label', 'Filtrar assuntos em alta');
+    [['todos','Todos os assuntos'],['tecnologia','Tecnologia'],['economia','Economia'],['esportes','Esportes'],['entretenimento','Entretenimento'],['saude','Saúde'],['mundo','Mundo']].forEach(([value,label]) => { const option=document.createElement('option'); option.value=value; option.textContent=label; filtro.append(option); });
+    filtro.value = focoSelecionado; filtro.addEventListener('change', () => renderTrends(payload, filtro.value));
+    lead.append(filtro, node('small', '', `Atualizado ${asDate(payload.atualizadoEm, { hour: '2-digit', minute: '2-digit' })}`));
     const grid = node('div', 'intel-trend-grid');
-    trends.forEach((trend) => {
+    const trendsFiltradas = focoSelecionado === 'todos' ? trends : trends.filter((trend) => filtros[focoSelecionado]?.test([trend.topico, ...items(trend.noticias).map((news) => news.titulo)].join(' ')));
+    trendsFiltradas.forEach((trend) => {
       const card = node('article', 'intel-trend-card');
       const news = items(trend.noticias);
       if (safeHttpUrl(news[0]?.imagem)) {
@@ -256,6 +262,7 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
       grid.append(card);
     });
     const source = node('a', 'intel-source-link', 'Abrir Google Trends'); source.href = 'https://trends.google.com/trending?geo=BR'; source.target = '_blank'; source.rel = 'noopener noreferrer';
+    if (!trendsFiltradas.length) grid.append(node('p', 'intel-trend-empty', 'Nenhum assunto dessa categoria está entre as tendências atuais. Escolha outro tema para ver o que está em alta agora.'));
     corpo.replaceChildren(lead, grid, source);
   }
 

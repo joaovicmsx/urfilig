@@ -2,20 +2,14 @@ import * as THREE from 'three';
 
 // Paleta Azul Frio Bioluminescente
 const PALETA_AZUL_FRIO = [
-  new THREE.Color(0xaaaaaa),
-  new THREE.Color(0xaaaaaa),
-  new THREE.Color(0x9c9c9c),
-  new THREE.Color(0x888888),
-  new THREE.Color(0xc2c2c2),
+  new THREE.Color(0x91c9ff), new THREE.Color(0x75b8ff), new THREE.Color(0xa6d8ff),
+  new THREE.Color(0x7acfff), new THREE.Color(0xc1e7ff),
 ];
 
 // Paleta Amarelo Dourado Quente
 const PALETA_AMARELO_QUENTE = [
-  new THREE.Color(0xb0b0b0),
-  new THREE.Color(0xb0b0b0),
-  new THREE.Color(0xa5a5a5),
-  new THREE.Color(0x999999),
-  new THREE.Color(0xb8b8b8),
+  new THREE.Color(0xffe477), new THREE.Color(0xffd953), new THREE.Color(0xffef9c),
+  new THREE.Color(0xf3c846), new THREE.Color(0xffd86e),
 ];
 
 function pontoFibonacci(indice, total, raio) {
@@ -57,6 +51,12 @@ export class PersonalitySphere {
     this.instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.instancedMesh.count = 0;
     this.grupo.add(this.instancedMesh);
+    const auraGeometry = new THREE.IcosahedronGeometry(0.14, 2);
+    const auraMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false });
+    this.auraMesh = new THREE.InstancedMesh(auraGeometry, auraMaterial, maxParticles);
+    this.auraMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    this.auraMesh.count = 0;
+    this.grupo.add(this.auraMesh);
 
     this.linhasConstelacao = null;
 
@@ -301,6 +301,7 @@ export class PersonalitySphere {
     });
 
     this.instancedMesh.count = this.particulas.length;
+    this.auraMesh.count = this.particulas.length;
     this.reconstruirLinhasConstelacao();
     this.onParticles(this.particulas);
   }
@@ -472,14 +473,20 @@ export class PersonalitySphere {
       }
 
       this.instancedMesh.setColorAt(i, corRender);
+      this.auraMesh.setColorAt(i, p.corAtual.clone().multiplyScalar(1.35));
 
       const tamanhoPulsado = this.reducedMotion ? 1 : 0.97 + Math.sin(tempo * 0.72 + p.fase) * 0.045;
       matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(tamanhoPulsado, tamanhoPulsado, tamanhoPulsado));
       this.instancedMesh.setMatrixAt(i, matriz);
+      const escalaAura = tamanhoPulsado * (2.7 + Math.sin(tempo * 0.45 + p.fase) * 0.13);
+      matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(escalaAura, escalaAura, escalaAura));
+      this.auraMesh.setMatrixAt(i, matriz);
     });
 
     if (this.instancedMesh.instanceColor) this.instancedMesh.instanceColor.needsUpdate = true;
     this.instancedMesh.instanceMatrix.needsUpdate = true;
+    if (this.auraMesh.instanceColor) this.auraMesh.instanceColor.needsUpdate = true;
+    this.auraMesh.instanceMatrix.needsUpdate = true;
 
     this.atualizarPosicoesLinhas();
 

@@ -36,6 +36,15 @@ function responderCallback(res, mensagem, status = 200) {
   res.end(`<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Urfilig</title><body style="font:16px sans-serif;background:#111;color:#eee;padding:3rem"><h1>${mensagem}</h1><p>Você pode fechar esta aba e voltar ao Urfilig.</p></body></html>`);
 }
 
+function erroBancoIndisponivel(erro) {
+  return erro?.code === 'P1001' || erro?.code === 'P1002' ||
+    (erro?.name === 'PrismaClientInitializationError' && /database server|timed out|connection/i.test(erro.message || ''));
+}
+
+function mensagemBancoIndisponivel() {
+  return 'O banco de dados da Urfilig está indisponível. Verifique a conexão e tente novamente; sua conta Google não foi alterada.';
+}
+
 /** Inicia OAuth nativo: navegador externo + callback loopback + PKCE. */
 authRouter.post('/auth/google/desktop/start', async (req, res) => {
   const { clientId, clientSecret: clientSecretBody, emailAccess = false, loginHint } = req.body;
@@ -87,10 +96,13 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       sessao.status = 'complete';
       responderCallback(resCallback, sessao.emailAccess ? 'Conta conectada! Volte ao Urfilig e feche esta aba.' : 'Login concluído! Volte ao Urfilig.');
     } catch (erro) {
-      console.error('[auth] falha no OAuth Desktop:', erro.message, erro.response?.data || '');
+      const bancoIndisponivel = erroBancoIndisponivel(erro);
+      console.error('[auth] falha no OAuth Desktop:', bancoIndisponivel ? `banco indisponível (${erro.code || erro.name})` : (erro.code || erro.name || 'erro OAuth'));
       sessao.status = 'error';
-      sessao.erro = erro.message?.includes('outra conta Google') ? erro.message : 'Não foi possível concluir o login com Google.';
-      responderCallback(resCallback, 'Não foi possível concluir o login. Volte ao Urfilig.', 400);
+      sessao.erro = bancoIndisponivel
+        ? mensagemBancoIndisponivel()
+        : erro.message?.includes('outra conta Google') ? erro.message : 'Não foi possível concluir o login com Google.';
+      responderCallback(resCallback, bancoIndisponivel ? 'O Google autorizou, mas o banco de dados da Urfilig está indisponível. Volte ao app e tente novamente.' : 'Não foi possível concluir o login. Volte ao Urfilig.', 400);
     } finally {
       setTimeout(() => callbackServer.close(), 250);
     }
@@ -265,12 +277,19 @@ authRouter.get('/auth/me', async (req, res) => {
   const token = cabecalho?.startsWith('Bearer ') ? cabecalho.slice(7) : null;
   if (!token) return res.status(401).json({ erro: 'Não autenticado' });
 
+  let payload;
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    payload = jwt.verify(token, JWT_SECRET);
+  } catch {
+    return res.status(401).json({ erro: 'Token inválido ou expirado' });
+  }
+  try {
     const usuario = await prisma.usuario.findUnique({ where: { id: payload.sub } });
     if (!usuario) return res.status(401).json({ erro: 'Usuário não encontrado' });
     res.json({ usuario: paraRespostaPublica(usuario) });
-  } catch {
-    res.status(401).json({ erro: 'Token inválido ou expirado' });
+  } catch (erro) {
+    const bancoIndisponivel = erroBancoIndisponivel(erro);
+    console.error('[auth] falha ao consultar sessão:', bancoIndisponivel ? `banco indisponível (${erro.code || erro.name})` : (erro.code || erro.name || 'erro interno'));
+    res.status(503).json({ erro: bancoIndisponivel ? mensagemBancoIndisponivel() : 'Não foi possível validar a sessão agora. Tente novamente.' });
   }
 });

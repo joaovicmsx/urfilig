@@ -4,7 +4,19 @@ const baseUrl = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replac
 
 /** Chama o servidor Ollama local pelo endpoint oficial /api/chat. */
 export async function perguntarOllama(prompt, systemPrompt = '', { formatoJson = false, model } = {}) {
-  const nomeModelo = model || process.env.OLLAMA_MODEL || 'llama3.1';
+  let nomeModelo = model || process.env.OLLAMA_MODEL || 'llama3.1';
+  try {
+    const tags = await fetch(`${baseUrl}/api/tags`, { signal: AbortSignal.timeout(2500) });
+    if (tags.ok) {
+      const payloadTags = await tags.json();
+      const modelos = Array.isArray(payloadTags.models) ? payloadTags.models.map((item) => item.name).filter(Boolean) : [];
+      if (!modelos.some((item) => item === nomeModelo || item.startsWith(`${nomeModelo}:`)) && modelos.length) nomeModelo = modelos[0];
+      if (!modelos.length) throw new Error(`Ollama está ativo, mas não há modelos instalados. Instale um modelo com: ollama pull ${nomeModelo}`);
+    }
+  } catch (error) {
+    if (error.message?.startsWith('Ollama está ativo')) throw error;
+    // A chamada de chat abaixo informa o erro de conexão com mais contexto.
+  }
   let response;
   try {
     response = await fetch(`${baseUrl}/api/chat`, {

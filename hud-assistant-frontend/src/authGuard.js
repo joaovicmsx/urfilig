@@ -40,7 +40,8 @@ export async function obterUsuarioAtual() {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!resposta.ok) {
-    const erro = new Error(resposta.status === 401 || resposta.status === 403 ? 'sessão inválida' : 'backend indisponível');
+    const payload = await resposta.json().catch(() => ({}));
+    const erro = new Error(payload.erro || (resposta.status === 401 || resposta.status === 403 ? 'sessão inválida' : 'backend indisponível'));
     erro.status = resposta.status;
     throw erro;
   }
@@ -59,7 +60,7 @@ export async function validarSessao() {
       window.location.href = './onboarding.html';
     }
   } catch (erro) {
-    // Preserve a sessão local se a API estiver temporariamente fora do ar.
+    // Banco/backend fora do ar não significa que o JWT expirou: preserve a sessão.
     if (!erro.status || (erro.status !== 401 && erro.status !== 403)) return;
     sair();
   }

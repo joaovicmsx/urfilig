@@ -35,7 +35,13 @@ export async function perguntarGemini(prompt, systemPrompt = '', { formatoJson =
     return response.text;
 
   } catch (error) {
-    console.error('[GeminiClient] Erro na chamada do Gemini:', error.status || error.message);
+    const mensagem = String(error?.message || '');
+    if (Number(error?.status) === 401 || Number(error?.status) === 403 || /API key not valid|ACCESS_TOKEN_TYPE_UNSUPPORTED/i.test(mensagem)) {
+      const configuracao = new Error('A chave configurada para Gemini foi rejeitada. Use uma chave da Gemini API criada no Google AI Studio; tokens OAuth não são aceitos como GEMINI_API_KEY.');
+      configuracao.code = 'GEMINI_INVALID_API_KEY';
+      throw configuracao;
+    }
+    console.error('[GeminiClient] Erro na chamada do Gemini:', error.status || error.code || 'erro');
     throw error;
   }
 }

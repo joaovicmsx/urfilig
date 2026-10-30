@@ -28,6 +28,8 @@ new GLTFLoader().load('/models/mascote.glb', ({ scene: model }) => {
   mascot.scale.setScalar(2.25 / (size.y || 1));
   bounds.setFromObject(mascot);
   mascot.position.y -= (bounds.min.y + bounds.max.y) / 2;
+  // Use the same front-facing orientation as the main HUD; do not rotate the entire body.
+  mascot.rotation.y = Math.PI / 2;
   scene.add(mascot);
   tracker = new HeadTracker(mascot);
   if (status) status.textContent = 'Urfilig · mova o mouse';
@@ -59,7 +61,6 @@ function animate() {
     tracker.atualizarAlvoComRaycaster(raycaster);
     tracker.update(delta, pointerActive);
   }
-  if (mascot) mascot.rotation.y += delta * .08;
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }

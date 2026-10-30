@@ -78,6 +78,34 @@ async function verificarTokenGoogleNaUrl() {
 
 window.addEventListener('DOMContentLoaded', verificarTokenGoogleNaUrl);
 
+async function verificarConexaoSistema() {
+  const card = document.querySelector('#estado-sistema');
+  const texto = document.querySelector('#estado-sistema-texto');
+  const botao = document.querySelector('#verificar-sistema');
+  if (!card || !texto) return;
+  card.dataset.status = 'checking';
+  texto.textContent = 'Verificando conexão com o serviço e o banco…';
+  if (botao) botao.disabled = true;
+  try {
+    const resposta = await fetch(`${BACKEND_URL}/health/ready`, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const estado = await resposta.json().catch(() => ({}));
+    if (!resposta.ok || estado.database !== 'online') throw new Error(estado.erro || 'O banco de dados está indisponível.');
+    card.dataset.status = 'online';
+    texto.textContent = 'Serviço e banco conectados.';
+  } catch (erro) {
+    card.dataset.status = 'offline';
+    texto.textContent = erro.name === 'TimeoutError' || erro.name === 'AbortError'
+      ? 'O serviço demorou para responder. Verifique a conexão.'
+      : erro.message === 'Failed to fetch'
+        ? 'Não foi possível acessar o backend da Urfilig.'
+        : erro.message;
+  } finally {
+    if (botao) botao.disabled = false;
+  }
+}
+document.querySelector('#verificar-sistema')?.addEventListener('click', verificarConexaoSistema);
+void verificarConexaoSistema();
+
 form?.addEventListener('submit', async (evento) => {
   evento.preventDefault();
   if (mensagemErro) mensagemErro.textContent = '';

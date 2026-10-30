@@ -55,11 +55,18 @@
     <canvas id="hud-canvas" aria-label="Urfilig e sua esfera neural. Arraste para girar e selecione memórias." tabindex="0"></canvas>
     <canvas id="labels-canvas"></canvas>
     <div id="sky-events" aria-hidden="true"><i class="sky-cloud cloud-one"></i><i class="sky-cloud cloud-two"></i><i class="sky-meteor"></i></div>
+    <section id="routine-board" aria-label="Quadros de rotinas" hidden></section>
     <section id="hud-clock-widget" aria-label="Relógio e clima">
       <div class="hud-clock-time" id="hud-clock-time">--:--:--</div>
       <div class="hud-clock-date" id="hud-clock-date">Carregando data…</div>
       <div class="hud-clock-weather" id="hud-clock-weather">Clima indisponível</div>
-      <button type="button" id="mascot-overlay-toggle">Mascote sobreposto: desativado</button>
+    </section>
+    <section id="hud-quick-controls" aria-label="Controles rápidos">
+      <label for="quick-chat-provider">Assistente</label>
+      <select id="quick-chat-provider" aria-label="Escolher Gemini ou Ollama">
+        <option value="gemini">Gemini</option><option value="ollama">Ollama local</option>
+      </select>
+      <button type="button" id="mascot-overlay-toggle" aria-pressed="false">Sobrepor mascote</button>
     </section>
 
     <div id="hud-response" aria-live="polite"></div>

@@ -120,6 +120,10 @@
       display: flex;
       justify-content: center;
     }
+    #estado-sistema { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; color: #c4c8d0; background: rgba(255,255,255,.04); border-radius: 10px; font-size: .76rem; line-height: 1.4; }
+    #estado-sistema[data-status="offline"] { color: #ffd0c7; background: rgba(137,53,43,.16); }
+    #estado-sistema[data-status="online"] { color: #d5e8cf; }
+    #verificar-sistema { flex: 0 0 auto; padding: 5px 8px; color: inherit; background: rgba(255,255,255,.07); border: 0; border-radius: 7px; font-size: .68rem; cursor: pointer; }
   </style>
 </head>
 <body class="tela-centralizada">
@@ -143,6 +147,11 @@
     </form>
 
     <button type="button" id="alternar-modo" class="btn-texto-simples">Criar uma conta</button>
+
+    <div id="estado-sistema" role="status" aria-live="polite" data-status="checking">
+      <span id="estado-sistema-texto">Verificando conexão…</span>
+      <button id="verificar-sistema" type="button">Verificar</button>
+    </div>
 
     <div class="separador">ou</div>
 

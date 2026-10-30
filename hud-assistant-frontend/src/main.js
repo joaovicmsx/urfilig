@@ -18,8 +18,8 @@ import { exigirLogin, validarSessao, sair, BACKEND_URL } from './authGuard.js';
 import { iniciarMenuLateral } from './sideMenu.js';
 import { carregarCalendarioUI } from './calendario.js';
 import { iniciarModuloContatos } from './contatos.js';
+import { iniciarQuadrosRotina } from './routineBoards.js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { emitTo } from '@tauri-apps/api/event';
 
 exigirLogin();
 validarSessao();
@@ -27,6 +27,7 @@ window.sairDaUrfilig = sair;
 window.carregarCalendarioUI = carregarCalendarioUI;
 
 iniciarModuloContatos();
+iniciarQuadrosRotina();
 
 const canvas = document.querySelector('#hud-canvas');
 const labelsCanvas = document.querySelector('#labels-canvas');
@@ -224,11 +225,11 @@ function atualizarTemaPorHorario() {
   const uniforms = fundoEtereo.material.uniforms;
   const hora = new Date().getHours();
   const luzDia = Math.max(0, Math.min(1, (hora - 6) / 2, (19 - hora) / 2));
-  const corDia = new THREE.Color('#b6ab35');
+  const corDia = new THREE.Color('#e4cf4c');
   uniforms.corTopo.value.copy(new THREE.Color('#191a1e').lerp(corDia, luzDia * 0.96));
-  uniforms.corMeio.value.copy(new THREE.Color('#111216').lerp(new THREE.Color('#514c1d'), luzDia * 0.88));
-  uniforms.corBase.value.copy(new THREE.Color('#0d0e11').lerp(new THREE.Color('#292712'), luzDia * 0.62));
-  uniforms.corVazio.value.copy(new THREE.Color('#090a0d').lerp(new THREE.Color('#1d1c10'), luzDia * 0.45));
+  uniforms.corMeio.value.copy(new THREE.Color('#111216').lerp(new THREE.Color('#5a5527'), luzDia * 0.88));
+  uniforms.corBase.value.copy(new THREE.Color('#0d0e11').lerp(new THREE.Color('#39361c'), luzDia * 0.72));
+  uniforms.corVazio.value.copy(new THREE.Color('#090a0d').lerp(new THREE.Color('#272512'), luzDia * 0.55));
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
@@ -453,9 +454,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const novoForm = chatForm.cloneNode(true);
     chatForm.parentNode.replaceChild(novoForm, chatForm);
     const provider = novoForm.querySelector('#chat-provider');
+    const quickProvider = document.querySelector('#quick-chat-provider');
     if (provider) {
       provider.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
-      provider.addEventListener('change', () => localStorage.setItem('urfilig_llm_provider', provider.value));
+      if (quickProvider) quickProvider.value = provider.value;
+      provider.addEventListener('change', () => {
+        localStorage.setItem('urfilig_llm_provider', provider.value);
+        if (quickProvider) quickProvider.value = provider.value;
+      });
+      quickProvider?.addEventListener('change', () => {
+        provider.value = quickProvider.value;
+        localStorage.setItem('urfilig_llm_provider', provider.value);
+      });
     }
 
     novoForm.addEventListener('submit', async (e) => {
@@ -482,10 +492,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dados = await resp.json();
         if (resp.ok && dados.resposta) {
+          const registroRotina = window.registrarPresencaRotina?.(texto);
+          adicionarMensagemChat('Urfilig', dados.resposta);
+          if (typeof registroRotina === 'string') adicionarMensagemChat('Rotina', registroRotina);
           carregarMemoriasECerebro();
           if (typeof window.recarregarInterfaceNotas === 'function') {
             window.recarregarInterfaceNotas();
           }
+        } else {
+          adicionarMensagemChat('Urfilig', dados.detalhe || dados.erro || 'Não consegui responder agora. Confira o estado do Gemini ou do Ollama no menu inferior esquerdo.');
         }
       } catch (err) {
         console.error('[chat] Erro ao enviar comando:', err);
@@ -504,7 +519,9 @@ function adicionarMensagemChat(autor, texto) {
 
   const msgDiv = document.createElement('div');
   msgDiv.className = autor === 'Você' ? 'chat-msg usuario' : 'chat-msg urfilig';
-  msgDiv.innerHTML = `<strong>${autor}:</strong> ${texto}`;
+  const autorEl = document.createElement('strong');
+  autorEl.textContent = `${autor}:`;
+  msgDiv.append(autorEl, document.createTextNode(` ${texto}`));
   chatMensagens.appendChild(msgDiv);
   chatMensagens.scrollTop = chatMensagens.scrollHeight;
 }
@@ -659,15 +676,19 @@ setInterval(atualizarRelogio, 1000);
 const providerSelect = document.querySelector('#chat-provider');
 if (providerSelect) {
   providerSelect.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
+  const quickProvider = document.querySelector('#quick-chat-provider');
+  if (quickProvider) quickProvider.value = providerSelect.value;
   fetch(`${BACKEND_URL}/api/inteligencia/llm-status`, { headers: { Authorization: `Bearer ${localStorage.getItem('urfilig_token')}` } })
     .then((response) => response.ok ? response.json() : null)
     .then((status) => {
       const activeSelect = document.querySelector('#chat-provider');
       if (!status || !activeSelect) return;
       const ollamaOption = activeSelect.querySelector('option[value="ollama"]');
-      if (ollamaOption) ollamaOption.textContent = status.ollama ? `Ollama · ${status.ollamaModel}` : `Ollama · indisponível`;
+      if (ollamaOption) ollamaOption.textContent = status.ollama ? `Ollama · ${status.ollamaModel}` : status.ollamaServidor ? `Instale ${status.ollamaModel}` : 'Inicie Ollama local';
       const geminiOption = activeSelect.querySelector('option[value="gemini"]');
-      if (geminiOption && !status.gemini) geminiOption.textContent = 'Gemini · sem chave no servidor';
+      if (geminiOption && !status.gemini) geminiOption.textContent = 'Gemini · configure API key';
+      const quickOllama = quickProvider?.querySelector('option[value="ollama"]');
+      if (quickOllama) quickOllama.textContent = status.ollama ? `Ollama local · ${status.ollamaModel}` : status.ollamaServidor ? `Instale ${status.ollamaModel}` : 'Inicie Ollama local';
     }).catch(() => {});
 }
 
@@ -681,7 +702,8 @@ overlayToggle?.addEventListener('click', async () => {
   try {
     if (mascotOverlay) {
       await mascotOverlay.close(); mascotOverlay = null;
-      overlayToggle.textContent = 'Mascote sobreposto: desativado';
+      overlayToggle.textContent = 'Sobrepor mascote';
+      overlayToggle.setAttribute('aria-pressed', 'false');
       return;
     }
     mascotOverlay = await WebviewWindow.getByLabel('mascote-overlay');
@@ -693,11 +715,12 @@ overlayToggle?.addEventListener('click', async () => {
       });
       mascotOverlay.once('tauri://destroyed', () => {
         mascotOverlay = null;
-        if (overlayToggle) overlayToggle.textContent = 'Mascote sobreposto: desativado';
+        if (overlayToggle) { overlayToggle.textContent = 'Sobrepor mascote'; overlayToggle.setAttribute('aria-pressed', 'false'); }
       });
       mascotOverlay.once('tauri://error', (error) => console.error('[mascote-overlay] falha ao abrir', error));
     }
     overlayToggle.textContent = 'Mascote sobreposto: ativado';
+    overlayToggle.setAttribute('aria-pressed', 'true');
   } catch (error) {
     console.error('[mascote-overlay] falha:', error);
     overlayToggle.textContent = 'Não foi possível abrir o mascote';
@@ -884,7 +907,6 @@ window.addEventListener('pointermove', (event) => {
   const rect = canvas.getBoundingClientRect();
   ndcMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   ndcMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-  if (isTauri() && mascotOverlay) void emitTo('mascote-overlay', 'mascot:mouse', { x: ndcMouse.x, y: ndcMouse.y });
 }, { passive: true });
 window.addEventListener('pointerleave', () => { mousePresenteNaTela = false; });
 window.addEventListener('blur', () => { mousePresenteNaTela = false; });

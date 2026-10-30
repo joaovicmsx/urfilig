@@ -5,17 +5,24 @@ const router = Router();
 router.get('/llm-status', async (_req, res) => {
   const provider = process.env.LLM_PROVIDER || 'gemini';
   const gemini = Boolean(process.env.GEMINI_API_KEY);
+  let geminiEstado = gemini ? 'chave configurada; validação ocorre na primeira chamada' : 'configure uma chave da Gemini API';
   const ollamaBase = (process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434').replace(/\/$/, '');
+  let ollamaServidor = false;
   let ollama = false;
+  let ollamaModel = process.env.OLLAMA_MODEL || 'llama3.1';
+  let modelosInstalados = [];
   try {
     const response = await fetch(`${ollamaBase}/api/tags`, { signal: AbortSignal.timeout(1600) });
     if (response.ok) {
+      ollamaServidor = true;
       const data = await response.json();
-      const model = process.env.OLLAMA_MODEL || 'llama3.1';
-      ollama = Array.isArray(data.models) && data.models.some((item) => item.name === model || item.name?.startsWith(`${model}:`));
+      modelosInstalados = Array.isArray(data.models) ? data.models.map((item) => item.name).filter(Boolean) : [];
+      const modeloConfiguradoInstalado = modelosInstalados.some((item) => item === ollamaModel || item.startsWith(`${ollamaModel}:`));
+      ollama = modeloConfiguradoInstalado || modelosInstalados.length > 0;
+      if (!modeloConfiguradoInstalado && modelosInstalados.length) ollamaModel = modelosInstalados[0];
     }
   } catch { /* Ollama é opcional; o status não deve derrubar a tela. */ }
-  res.json({ provider, gemini, ollama, ollamaModel: process.env.OLLAMA_MODEL || 'llama3.1' });
+  res.json({ provider, gemini, geminiEstado, ollamaServidor, ollama, ollamaModel, modelosInstalados });
 });
 const getUsuarioId = (req) => req.usuarioId || req.userId || req.user?.id;
 const inicioDoDia = (data = new Date()) => {

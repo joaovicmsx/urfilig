@@ -192,8 +192,8 @@ model Pasta {
 
 model Nota {
   id          Int      @id @default(autoincrement())
-  pastaId     Int
-  pasta       Pasta    @relation(fields: [pastaId], references: [id], onDelete: Cascade)
+  pastaId     Int?
+  pasta       Pasta?   @relation(fields: [pastaId], references: [id], onDelete: Cascade)
   usuarioId   String
   usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   titulo      String

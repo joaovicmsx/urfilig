@@ -21,6 +21,7 @@ import { exigirAutenticacao } from './auth/authMiddleware.js';
 import { evoluirPersonalidadeDoUsuario, evoluirPersonalidadeDeTodos } from './persona/evolutionJob.js';
 import { gerarReflexaoDiariaDoUsuario, gerarReflexaoDiariaDeTodos } from './persona/reflectionJob.js';
 import { atualizarClimaEEmitir } from './weather/weatherService.js';
+import { prisma } from './db/client.js';
 
 const app = express();
 
@@ -42,6 +43,25 @@ app.use('/api/cerebro', cerebroRouter);
 app.use('/api/inteligencia', exigirAutenticacao, inteligenciaRouter);
 
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+app.get('/health/ready', async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ ok: true, backend: 'online', database: 'online' });
+  } catch (erro) {
+    const bancoIndisponivel = erro?.code === 'P1001' || erro?.code === 'P1002' ||
+      (erro?.name === 'PrismaClientInitializationError' && /database server|timed out|connection/i.test(erro.message || ''));
+    console.error('[health] banco indisponível:', erro?.code || erro?.name || 'erro interno');
+    res.status(503).json({
+      ok: false,
+      backend: 'online',
+      database: 'offline',
+      erro: bancoIndisponivel
+        ? 'O banco de dados não está acessível. Confira a internet e tente novamente.'
+        : 'O backend não conseguiu verificar o banco de dados.',
+    });
+  }
+});
 
 app.post('/api/persona/evoluir-agora', exigirAutenticacao, async (req, res) => {
   await evoluirPersonalidadeDoUsuario(req.usuarioId);
