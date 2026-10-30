@@ -20,22 +20,15 @@ function escapeHtml(value) {
 }
 
 export function iniciarQuadrosRotina() {
-  const menu = document.querySelector('#menu-lateral');
   const boardRoot = document.querySelector('#routine-board');
-  if (!menu || !boardRoot) return;
+  const addButton = document.querySelector('#nav-routines');
+  if (!addButton || !boardRoot) return;
 
   const save = (boards) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
     void emitTo('routine-overlay', 'routine:refresh', boards).catch(() => {});
   };
   let routineOverlay = null;
-  const addButton = document.createElement('button');
-  addButton.id = 'menu-criar-rotina';
-  addButton.type = 'button';
-  addButton.textContent = 'Criar quadro de rotinas';
-  const dataHeading = [...menu.querySelectorAll('h2')].find((heading) => heading.textContent.trim().toLowerCase() === 'dados');
-  menu.insertBefore(addButton, dataHeading || menu.querySelector('#menu-sair'));
-
   const render = () => {
     const boards = readBoards();
     boardRoot.replaceChildren();
@@ -45,14 +38,19 @@ export function iniciarQuadrosRotina() {
       const card = document.createElement('article');
       card.className = `routine-card${board.fixed ? ' is-fixed' : ''}`;
       const elapsed = Math.max(0, Math.floor((Date.now() - board.createdAt) / 86400000));
-      const days = Array.from({ length: board.days }, (_, index) => index + 1);
-      const completed = Object.keys(board.checkins || {}).length;
-      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>${Math.min(board.days, elapsed + 1)} de ${board.days} dias · ${completed} presenças</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-squares" aria-label="Presenças do quadro ${escapeHtml(board.name)}">${days.map((day) => {
-        const date = new Date(board.createdAt); date.setDate(date.getDate() + day - 1);
+      const inicio = new Date(board.createdAt); inicio.setHours(0, 0, 0, 0);
+      const dias = Array.from({ length: board.days }, (_, index) => {
+        const date = new Date(inicio); date.setDate(inicio.getDate() + index);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return { date, key, day: index + 1 };
+      });
+      const completed = Object.keys(board.checkins || {}).length;
+      const blanks = Array.from({ length: inicio.getDay() }, () => '<span class="routine-square routine-square-empty" aria-hidden="true"></span>').join('');
+      const diasHtml = dias.map(({ date, key, day }) => {
         const checked = Boolean(board.checkins?.[key]);
-        return `<span class="routine-square${checked ? ' done' : ''}" style="--routine-color:${escapeHtml(board.color)}" title="Dia ${day}${checked ? ` · presença ${escapeHtml(board.checkins[key])}` : ''}">${day}</span>`;
-      }).join('')}</div><footer><label><input class="routine-fixed" type="checkbox" ${board.fixed ? 'checked' : ''}> Fixar no canto</label><button type="button" class="routine-overlay-open">Sobrepor na área de trabalho</button></footer><small class="routine-hint">No chat, diga “fiz presença às 9:00”.</small>`;
+        return `<span class="routine-square${checked ? ' done' : ''}" style="--routine-color:${escapeHtml(board.color)}" title="${date.toLocaleDateString('pt-BR')}${checked ? ` · presença ${escapeHtml(board.checkins[key])}` : ''}">${date.getDate()}</span>`;
+      }).join('');
+      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>Iniciado em ${inicio.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })} · ${Math.min(board.days, elapsed + 1)}/${board.days} dias · ${completed} presenças</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-squares" aria-label="Presenças do quadro ${escapeHtml(board.name)}">${blanks}${diasHtml}</div><footer><label><input class="routine-fixed" type="checkbox" ${board.fixed ? 'checked' : ''}> Fixar no canto</label><button type="button" class="routine-overlay-open">Sobrepor na área de trabalho</button></footer><small class="routine-hint">No chat, diga “fiz presença na academia às 9:00”.</small>`;
       card.querySelector('.routine-remove').addEventListener('click', () => {
         save(readBoards().filter((item) => item.id !== board.id)); render();
       });

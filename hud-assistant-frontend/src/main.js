@@ -131,10 +131,10 @@ function criarFundoEtereo() {
   const material = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     uniforms: {
-      corTopo: { value: new THREE.Color(0x24212a) },
-      corMeio: { value: new THREE.Color(0x1c1b22) },
-      corBase: { value: new THREE.Color(0x15141a) },
-      corVazio: { value: new THREE.Color(0x101015) },
+      corTopo: { value: new THREE.Color('#26385f') },
+      corMeio: { value: new THREE.Color('#1b2a4b') },
+      corBase: { value: new THREE.Color('#111d37') },
+      corVazio: { value: new THREE.Color('#0b1428') },
     },
     vertexShader: `
       varying vec3 vPosicao;
@@ -157,6 +157,8 @@ function criarFundoEtereo() {
         float nevoa = 0.15 + sin(vPosicao.x * 0.04) * sin(vPosicao.z * 0.04) * 0.08;
         cor = mix(cor, corVazio, clamp(nevoa, 0.0, 0.4));
         gl_FragColor = vec4(cor, 1.0);
+        #include <tonemapping_fragment>
+        #include <colorspace_fragment>
       }
     `,
   });
@@ -225,11 +227,11 @@ function atualizarTemaPorHorario() {
   const uniforms = fundoEtereo.material.uniforms;
   const hora = new Date().getHours();
   const luzDia = Math.max(0, Math.min(1, (hora - 6) / 2, (19 - hora) / 2));
-  const corDia = new THREE.Color('#e4cf4c');
-  uniforms.corTopo.value.copy(new THREE.Color('#191a1e').lerp(corDia, luzDia * 0.96));
-  uniforms.corMeio.value.copy(new THREE.Color('#111216').lerp(new THREE.Color('#5a5527'), luzDia * 0.88));
-  uniforms.corBase.value.copy(new THREE.Color('#0d0e11').lerp(new THREE.Color('#39361c'), luzDia * 0.72));
-  uniforms.corVazio.value.copy(new THREE.Color('#090a0d').lerp(new THREE.Color('#272512'), luzDia * 0.55));
+  const corDia = new THREE.Color('#e4d35c');
+  uniforms.corTopo.value.copy(new THREE.Color('#26385f').lerp(corDia, luzDia * 0.96));
+  uniforms.corMeio.value.copy(new THREE.Color('#1b2a4b').lerp(new THREE.Color('#756a2c'), luzDia * 0.88));
+  uniforms.corBase.value.copy(new THREE.Color('#111d37').lerp(new THREE.Color('#494020'), luzDia * 0.72));
+  uniforms.corVazio.value.copy(new THREE.Color('#0b1428').lerp(new THREE.Color('#2b291b'), luzDia * 0.55));
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
@@ -453,19 +455,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (chatForm) {
     const novoForm = chatForm.cloneNode(true);
     chatForm.parentNode.replaceChild(novoForm, chatForm);
-    const provider = novoForm.querySelector('#chat-provider');
     const quickProvider = document.querySelector('#quick-chat-provider');
-    if (provider) {
-      provider.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
-      if (quickProvider) quickProvider.value = provider.value;
-      provider.addEventListener('change', () => {
-        localStorage.setItem('urfilig_llm_provider', provider.value);
-        if (quickProvider) quickProvider.value = provider.value;
-      });
-      quickProvider?.addEventListener('change', () => {
-        provider.value = quickProvider.value;
-        localStorage.setItem('urfilig_llm_provider', provider.value);
-      });
+    const provider = quickProvider;
+    if (quickProvider) {
+      quickProvider.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
+      quickProvider.addEventListener('change', () => localStorage.setItem('urfilig_llm_provider', quickProvider.value));
     }
 
     novoForm.addEventListener('submit', async (e) => {
@@ -620,10 +614,10 @@ carregarMascote('/models/mascote.glb', scene)
     mascotStateMachine = new MascotStateMachine(mixer, clips);
     motionController = new MascotMotionController(mascote, {
       modo: 'fixo',
-      posicaoFixa: new THREE.Vector3(-4.5, -2, 8.0),
-      pontoParaOlhar: new THREE.Vector3(-4.5, -2, 20),
+      posicaoFixa: new THREE.Vector3(-4.8, -1.2, 8.0),
+      pontoParaOlhar: new THREE.Vector3(-4.8, -1.2, 20),
     });
-    mascote.rotation.y = Math.PI / 2;
+    mascote.rotation.y = 0;
 
     headTracker = new HeadTracker(mascote);
     faceMesh = encontrarMeshComMorphTargets(mascote);
@@ -673,22 +667,18 @@ function atualizarRelogio() {
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
-const providerSelect = document.querySelector('#chat-provider');
+const providerSelect = document.querySelector('#quick-chat-provider');
 if (providerSelect) {
   providerSelect.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
-  const quickProvider = document.querySelector('#quick-chat-provider');
-  if (quickProvider) quickProvider.value = providerSelect.value;
   fetch(`${BACKEND_URL}/api/inteligencia/llm-status`, { headers: { Authorization: `Bearer ${localStorage.getItem('urfilig_token')}` } })
     .then((response) => response.ok ? response.json() : null)
     .then((status) => {
-      const activeSelect = document.querySelector('#chat-provider');
+      const activeSelect = document.querySelector('#quick-chat-provider');
       if (!status || !activeSelect) return;
       const ollamaOption = activeSelect.querySelector('option[value="ollama"]');
       if (ollamaOption) ollamaOption.textContent = status.ollama ? `Ollama · ${status.ollamaModel}` : status.ollamaServidor ? `Instale ${status.ollamaModel}` : 'Inicie Ollama local';
       const geminiOption = activeSelect.querySelector('option[value="gemini"]');
       if (geminiOption && !status.gemini) geminiOption.textContent = 'Gemini · configure API key';
-      const quickOllama = quickProvider?.querySelector('option[value="ollama"]');
-      if (quickOllama) quickOllama.textContent = status.ollama ? `Ollama local · ${status.ollamaModel}` : status.ollamaServidor ? `Instale ${status.ollamaModel}` : 'Inicie Ollama local';
     }).catch(() => {});
 }
 

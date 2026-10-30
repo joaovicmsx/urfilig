@@ -88,8 +88,17 @@ fn main() {
                         let x = (((cursor.x - left) as f64 / width as f64) * 2.0 - 1.0).clamp(-1.0, 1.0);
                         let y = -(((cursor.y - top) as f64 / height as f64) * 2.0 - 1.0).clamp(-1.0, 1.0);
                         let payload = serde_json::json!({ "x": x, "y": y });
-                        if app_handle.get_webview_window("mascote-overlay").is_some() {
-                            let _ = app_handle.emit_to("mascote-overlay", "mascot:mouse", payload.clone());
+                        if let Some(overlay) = app_handle.get_webview_window("mascote-overlay") {
+                            let mut overlay_payload = payload.clone();
+                            if let (Ok(position), Ok(size)) = (overlay.outer_position(), overlay.outer_size()) {
+                                let width = size.width.max(1) as f64;
+                                let height = size.height.max(1) as f64;
+                                let overlay_x = (((cursor.x - position.x) as f64 / width) * 2.0 - 1.0).clamp(-1.0, 1.0);
+                                let overlay_y = -(((cursor.y - position.y) as f64 / height) * 2.0 - 1.0).clamp(-1.0, 1.0);
+                                overlay_payload["x"] = serde_json::json!(overlay_x);
+                                overlay_payload["y"] = serde_json::json!(overlay_y);
+                            }
+                            let _ = app_handle.emit_to("mascote-overlay", "mascot:mouse", overlay_payload);
                         }
                         if app_handle.get_webview_window("routine-overlay").is_some() {
                             let _ = app_handle.emit_to("routine-overlay", "desktop:mouse", payload);

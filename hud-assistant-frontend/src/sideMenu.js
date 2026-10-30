@@ -174,10 +174,15 @@ export function iniciarMenuLateral(socket) {
   document.querySelector('#menu-editar-perfil')?.addEventListener('click', () => {
     window.location.href = '/onboarding.html?editar=1';
   });
+  document.querySelector('#nav-profile')?.addEventListener('click', () => {
+    window.location.href = '/onboarding.html?editar=1';
+  });
 
   document.querySelector('#menu-sair')?.addEventListener('click', () => {
     window.sairDaUrfilig?.();
   });
+  document.querySelector('#nav-logout')?.addEventListener('click', () => window.sairDaUrfilig?.());
+  document.querySelector('#nav-contatos')?.addEventListener('click', () => window.alternarPainelContatos?.());
 
   document.querySelector('#menu-abrir-contatos')?.addEventListener('click', () => {
     fecharMenu();

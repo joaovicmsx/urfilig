@@ -45,18 +45,23 @@ export class PersonalitySphere {
     this.grupo = new THREE.Group();
     scene.add(this.grupo);
 
-    const geometriaCore = new THREE.IcosahedronGeometry(0.08, 2);
-    const materialCore = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.95 });
+    const geometriaCore = new THREE.SphereGeometry(0.115, 32, 24);
+    const materialCore = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.08, clearcoat: 0.8, clearcoatRoughness: 0.18, emissive: 0xffffff, emissiveIntensity: 0.42 });
     this.instancedMesh = new THREE.InstancedMesh(geometriaCore, materialCore, maxParticles);
     this.instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.instancedMesh.count = 0;
     this.grupo.add(this.instancedMesh);
-    const auraGeometry = new THREE.IcosahedronGeometry(0.14, 2);
-    const auraMaterial = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false });
-    this.auraMesh = new THREE.InstancedMesh(auraGeometry, auraMaterial, maxParticles);
-    this.auraMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    this.auraMesh.count = 0;
-    this.grupo.add(this.auraMesh);
+    const glowCanvas = document.createElement('canvas');
+    glowCanvas.width = glowCanvas.height = 128;
+    const glowContext = glowCanvas.getContext('2d');
+    const glowGradient = glowContext.createRadialGradient(64, 64, 3, 64, 64, 64);
+    glowGradient.addColorStop(0, 'rgba(255,255,255,.52)');
+    glowGradient.addColorStop(.18, 'rgba(255,255,255,.28)');
+    glowGradient.addColorStop(.48, 'rgba(255,255,255,.09)');
+    glowGradient.addColorStop(1, 'rgba(255,255,255,0)');
+    glowContext.fillStyle = glowGradient; glowContext.fillRect(0, 0, 128, 128);
+    this.glowTexture = new THREE.CanvasTexture(glowCanvas);
+    this.glowTexture.colorSpace = THREE.SRGBColorSpace;
 
     this.linhasConstelacao = null;
 
@@ -166,6 +171,8 @@ export class PersonalitySphere {
       if (!mantida) {
         this.emitDust(p.posicaoAtual, p.corAtual, 50, 'explode');
         this.playParticleSound('explode');
+        if (p.aura) { this.grupo.remove(p.aura); p.aura.material.dispose(); }
+        if (p.auraSoft) { this.grupo.remove(p.auraSoft); p.auraSoft.material.dispose(); }
       }
       return mantida;
     });
@@ -214,6 +221,7 @@ export class PersonalitySphere {
           position: posInit.clone(),
         };
         this.particulas.push(existente);
+        this.garantirAura(existente);
         
         this.emitDust(existente.posicaoAtual, existente.corAtual, 50, 'implode');
         this.playParticleSound('implode');
@@ -232,6 +240,7 @@ export class PersonalitySphere {
           this.playParticleSound('move');
         }
       }
+      this.garantirAura(existente);
 
       if (dado.isFolder && notasPorPasta.has(keyPasta)) {
         const filhas = notasPorPasta.get(keyPasta);
@@ -277,6 +286,7 @@ export class PersonalitySphere {
               position: posInitNota.clone(),
             };
             this.particulas.push(existenteNota);
+            this.garantirAura(existenteNota);
             
             this.emitDust(existenteNota.posicaoAtual, existenteNota.corAtual, 50, 'implode');
             this.playParticleSound('implode');
@@ -296,12 +306,12 @@ export class PersonalitySphere {
               this.playParticleSound('move');
             }
           }
+          this.garantirAura(existenteNota);
         });
       }
     });
 
     this.instancedMesh.count = this.particulas.length;
-    this.auraMesh.count = this.particulas.length;
     this.reconstruirLinhasConstelacao();
     this.onParticles(this.particulas);
   }
@@ -412,6 +422,18 @@ export class PersonalitySphere {
     this.corHorario.copy(color);
   }
 
+  garantirAura(particula) {
+    if (!particula || particula.aura) return;
+    const material = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, toneMapped: false });
+    particula.aura = new THREE.Sprite(material);
+    particula.aura.scale.set(1.08, 1.08, 1);
+    this.grupo.add(particula.aura);
+    const softMaterial = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, toneMapped: false });
+    particula.auraSoft = new THREE.Sprite(softMaterial);
+    particula.auraSoft.scale.set(1.85, 1.85, 1);
+    this.grupo.add(particula.auraSoft);
+  }
+
   update(delta) {
     this.grupo.rotation.y += this.velocidadeRotacao.y;
     this.grupo.rotation.x += this.velocidadeRotacao.x;
@@ -473,20 +495,27 @@ export class PersonalitySphere {
       }
 
       this.instancedMesh.setColorAt(i, corRender);
-      this.auraMesh.setColorAt(i, p.corAtual.clone().multiplyScalar(1.35));
+      if (p.aura) {
+        const brilho = this.reducedMotion ? 1 : .91 + Math.sin(tempo * .62 + p.fase) * .14;
+        p.aura.position.copy(p.position);
+        p.aura.material.color.copy(this.corHorario).multiplyScalar(1.9);
+        p.aura.material.opacity = .86 + Math.sin(tempo * .52 + p.fase) * .13;
+        p.aura.scale.setScalar(1.08 * brilho);
+        if (p.auraSoft) {
+          p.auraSoft.position.copy(p.position);
+          p.auraSoft.material.color.copy(this.corHorario).multiplyScalar(1.55);
+          p.auraSoft.material.opacity = .25 + Math.sin(tempo * .52 + p.fase) * .07;
+          p.auraSoft.scale.setScalar(1.85 * brilho);
+        }
+      }
 
       const tamanhoPulsado = this.reducedMotion ? 1 : 0.97 + Math.sin(tempo * 0.72 + p.fase) * 0.045;
       matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(tamanhoPulsado, tamanhoPulsado, tamanhoPulsado));
       this.instancedMesh.setMatrixAt(i, matriz);
-      const escalaAura = tamanhoPulsado * (2.7 + Math.sin(tempo * 0.45 + p.fase) * 0.13);
-      matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(escalaAura, escalaAura, escalaAura));
-      this.auraMesh.setMatrixAt(i, matriz);
     });
 
     if (this.instancedMesh.instanceColor) this.instancedMesh.instanceColor.needsUpdate = true;
     this.instancedMesh.instanceMatrix.needsUpdate = true;
-    if (this.auraMesh.instanceColor) this.auraMesh.instanceColor.needsUpdate = true;
-    this.auraMesh.instanceMatrix.needsUpdate = true;
 
     this.atualizarPosicoesLinhas();
 

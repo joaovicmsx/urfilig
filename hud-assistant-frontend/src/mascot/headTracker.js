@@ -23,22 +23,14 @@ class OssoRastreado {
   atualizar(pontoAlvoMundial, delta) {
     const posicaoMundial = new THREE.Vector3();
     this.osso.getWorldPosition(posicaoMundial);
-
-    const matrizLookAt = new THREE.Matrix4().lookAt(posicaoMundial, pontoAlvoMundial, this.osso.up);
-    const quaternionMundialDesejado = new THREE.Quaternion().setFromRotationMatrix(matrizLookAt);
-
-    // Converte de rotação mundial pra rotação local (relativa ao pai do osso)
+    const direcaoLocal = pontoAlvoMundial.clone().sub(posicaoMundial).normalize();
     const quaternionPaiMundial = new THREE.Quaternion();
     this.osso.parent.getWorldQuaternion(quaternionPaiMundial);
-    const quaternionLocalDesejado = quaternionPaiMundial.invert().multiply(quaternionMundialDesejado);
-
-    // Limita o desvio em relação à pose de repouso — evita a cabeça girar
-    // além do razoável quando o mouse está numa borda extrema da tela
-    const anguloDesvio = this.quaternionRepouso.angleTo(quaternionLocalDesejado);
-    const quaternionAlvo =
-      anguloDesvio > this.maxAngleRad
-        ? this.quaternionRepouso.clone().slerp(quaternionLocalDesejado, this.maxAngleRad / anguloDesvio)
-        : quaternionLocalDesejado;
+    direcaoLocal.applyQuaternion(quaternionPaiMundial.invert()).normalize();
+    const yaw = THREE.MathUtils.clamp(Math.atan2(direcaoLocal.x, Math.max(.001, direcaoLocal.z)), -this.maxAngleRad, this.maxAngleRad);
+    const pitch = THREE.MathUtils.clamp(-Math.atan2(direcaoLocal.y, Math.hypot(direcaoLocal.x, direcaoLocal.z)), -this.maxAngleRad * .72, this.maxAngleRad * .72);
+    const desvioLocal = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+    const quaternionAlvo = this.quaternionRepouso.clone().multiply(desvioLocal);
 
     this.osso.quaternion.slerp(quaternionAlvo, Math.min(delta * this.lerpSpeed, 1));
   }

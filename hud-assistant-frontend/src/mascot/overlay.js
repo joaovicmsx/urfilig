@@ -5,7 +5,6 @@ import { listen } from '@tauri-apps/api/event';
 import { HeadTracker } from './headTracker.js';
 
 const canvas = document.querySelector('#overlay-canvas');
-const status = document.querySelector('#overlay-status');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(34, 1, .1, 100);
 camera.position.set(0, .35, 5.4);
@@ -28,25 +27,17 @@ new GLTFLoader().load('/models/mascote.glb', ({ scene: model }) => {
   mascot.scale.setScalar(2.25 / (size.y || 1));
   bounds.setFromObject(mascot);
   mascot.position.y -= (bounds.min.y + bounds.max.y) / 2;
-  // Use the same front-facing orientation as the main HUD; do not rotate the entire body.
-  mascot.rotation.y = Math.PI / 2;
+  // The GLB is authored front-facing along +Z; keep the body still and track with the neck bone.
+  mascot.rotation.y = 0;
   scene.add(mascot);
   tracker = new HeadTracker(mascot);
-  if (status) status.textContent = 'Urfilig · mova o mouse';
 }, undefined, (error) => {
   console.error('[mascote-overlay] modelo indisponível:', error);
-  if (status) status.textContent = 'Modelo do mascote indisponível';
-});
-
-window.addEventListener('pointermove', (event) => {
-  target.set((event.clientX / innerWidth) * 2 - 1, -((event.clientY / innerHeight) * 2 - 1));
-  pointerActive = true;
 });
 void listen('mascot:mouse', (event) => {
   target.set(event.payload.x, event.payload.y);
   pointerActive = true;
 });
-window.addEventListener('pointerleave', () => { pointerActive = false; });
 window.addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight, false);

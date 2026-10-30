@@ -26,12 +26,8 @@
     </script>
   </head>
   <body>
-    <!-- Topo HUD Alinhado à Esquerda -->
+    <!-- Navegação fixa à esquerda -->
     <header id="top-hud-bar">
-      <button id="menu-toggle" type="button" aria-label="Abrir menu" aria-expanded="false" title="Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      </button>
-
       <nav class="hud-nav">
         <button id="nav-cerebro" class="nav-item" type="button">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10s10-4.477 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
@@ -49,48 +45,47 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1 0 7.75"/></svg>
           Contatos
         </button>
+        <button id="btn-tendencias" class="nav-item" type="button" title="Tendências">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>Tendências
+        </button>
+        <button id="btn-plano-hoje" class="nav-item" type="button" title="Plano de hoje">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M8 11h8M8 15h5"/></svg>Plano de hoje
+        </button>
+        <button id="btn-revisao-semanal" class="nav-item" type="button" title="Resumo semanal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 15v-3M12 15V8M17 15v-5"/></svg>Resumo semanal
+        </button>
+        <button id="nav-routines" class="nav-item" type="button" title="Criar quadro de rotinas">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Rotinas
+        </button>
+        <button id="nav-profile" class="nav-item" type="button" title="Editar perfil">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Perfil
+        </button>
+        <button id="nav-logout" class="nav-item nav-logout" type="button" title="Sair">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>Sair
+        </button>
       </nav>
+      <section id="hud-quick-controls" aria-label="Controles rápidos">
+        <label for="quick-chat-provider">Assistente</label>
+        <select id="quick-chat-provider" aria-label="Escolher Gemini ou Ollama">
+          <option value="gemini">Gemini</option><option value="ollama">Ollama local</option>
+        </select>
+        <button type="button" id="mascot-overlay-toggle" aria-pressed="false">Sobrepor mascote</button>
+      </section>
     </header>
 
     <canvas id="hud-canvas" aria-label="Urfilig e sua esfera neural. Arraste para girar e selecione memórias." tabindex="0"></canvas>
     <canvas id="labels-canvas"></canvas>
-    <div id="sky-events" aria-hidden="true"><i class="sky-cloud cloud-one"></i><i class="sky-cloud cloud-two"></i><i class="sky-meteor"></i></div>
+    <div id="sky-events" aria-hidden="true"><i class="sky-asteroid asteroid-one"></i><i class="sky-asteroid asteroid-two"></i><i class="sky-asteroid asteroid-three"></i><i class="sky-planet planet-one"></i><i class="sky-planet planet-two"></i></div>
     <section id="routine-board" aria-label="Quadros de rotinas" hidden></section>
     <section id="hud-clock-widget" aria-label="Relógio e clima">
       <div class="hud-clock-time" id="hud-clock-time">--:--:--</div>
       <div class="hud-clock-date" id="hud-clock-date">Carregando data…</div>
       <div class="hud-clock-weather" id="hud-clock-weather">Clima indisponível</div>
     </section>
-    <section id="hud-quick-controls" aria-label="Controles rápidos">
-      <label for="quick-chat-provider">Assistente</label>
-      <select id="quick-chat-provider" aria-label="Escolher Gemini ou Ollama">
-        <option value="gemini">Gemini</option><option value="ollama">Ollama local</option>
-      </select>
-      <button type="button" id="mascot-overlay-toggle" aria-pressed="false">Sobrepor mascote</button>
-    </section>
-
     <div id="hud-response" aria-live="polite"></div>
     <div id="memory-tooltip" role="tooltip" hidden></div>
     <div id="memory-accessibility" aria-label="Memórias da personalidade"></div>
     <div id="hud-live-status" class="visually-hidden" aria-live="polite"></div>
-
-    <div id="menu-backdrop" class="menu-backdrop"></div>
-    
-    <aside id="menu-lateral" aria-hidden="true">
-      <h2>Menu</h2>
-      <button id="menu-editar-perfil" type="button">Editar perfil</button>
-      <button id="menu-abrir-calendario" type="button">Calendário</button>
-      <button id="menu-abrir-contatos" type="button">Contatos</button>
-      <button id="menu-abrir-cerebro" type="button">Notas</button>
-
-      <h2>Dados</h2>
-      <button id="btn-tendencias" type="button">Tendências</button>
-      <button id="btn-plano-hoje" type="button">Plano de Hoje</button>
-      <button id="btn-revisao-semanal" type="button">Resumo Semanal</button>
-
-      <!-- A propriedade margin-top: auto empurra este botão para o rodapé do menu -->
-      <button id="menu-sair" type="button" style="color: #f87171; margin-top: auto;">Sair</button>
-    </aside>
 
     <!-- PAINEL FLUTUANTE DO CALENDÁRIO -->
     <div id="calendario-painel" class="sidebar-cerebro painel-calendario">
@@ -149,7 +144,6 @@
 
       <form id="chat-form" class="chat-form-inferior">
         <input id="chat-input" type="text" placeholder="Falar com a Urfilig..." autocomplete="off" />
-        <select id="chat-provider" aria-label="Provedor de IA" title="Escolher provedor de IA"><option value="gemini">Gemini</option><option value="ollama">Ollama</option></select>
         <button type="submit" class="chat-btn-enviar">Enviar</button>
       </form>
     </div>
