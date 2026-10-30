@@ -227,11 +227,15 @@ function atualizarTemaPorHorario() {
   const uniforms = fundoEtereo.material.uniforms;
   const hora = new Date().getHours();
   const luzDia = Math.max(0, Math.min(1, (hora - 6) / 2, (19 - hora) / 2));
-  const corDia = new THREE.Color('#e4d35c');
-  uniforms.corTopo.value.copy(new THREE.Color('#26385f').lerp(corDia, luzDia * 0.96));
-  uniforms.corMeio.value.copy(new THREE.Color('#1b2a4b').lerp(new THREE.Color('#756a2c'), luzDia * 0.88));
-  uniforms.corBase.value.copy(new THREE.Color('#111d37').lerp(new THREE.Color('#494020'), luzDia * 0.72));
-  uniforms.corVazio.value.copy(new THREE.Color('#0b1428').lerp(new THREE.Color('#2b291b'), luzDia * 0.55));
+  const corTopo = new THREE.Color('#122448').lerp(new THREE.Color('#91c9eb'), luzDia);
+  const corMeio = new THREE.Color('#b96c70').lerp(new THREE.Color('#f4d279'), luzDia);
+  const corBase = new THREE.Color('#382640').lerp(new THREE.Color('#e9a568'), luzDia);
+  const corVazio = new THREE.Color('#17203b').lerp(new THREE.Color('#a78565'), luzDia);
+  uniforms.corTopo.value.copy(corTopo);
+  uniforms.corMeio.value.copy(corMeio);
+  uniforms.corBase.value.copy(corBase);
+  uniforms.corVazio.value.copy(corVazio);
+  document.documentElement.style.setProperty('--cloud-glow', luzDia > .45 ? 'rgba(255,205,129,.6)' : 'rgba(223,91,119,.58)');
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
@@ -600,12 +604,15 @@ carregarMascote('/models/mascote.glb', scene)
 
     mascote.traverse((filho) => {
       if (filho.isMesh && filho.material) {
-        filho.material.metalness = 0.0;
-        filho.material.roughness = 0.85;
-        if (filho.material.emissive) {
-          filho.material.emissive.setHex(0x000000);
-          filho.material.emissiveIntensity = 0.0;
-        }
+        const materiais = Array.isArray(filho.material) ? filho.material : [filho.material];
+        materiais.forEach((material) => {
+          material.metalness = 0.0;
+          material.roughness = 0.85;
+          if (material.emissive) {
+            material.emissive.setHex(0x000000);
+            material.emissiveIntensity = 0.0;
+          }
+        });
       }
     });
 

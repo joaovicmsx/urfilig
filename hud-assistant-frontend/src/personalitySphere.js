@@ -45,11 +45,24 @@ export class PersonalitySphere {
     this.grupo = new THREE.Group();
     scene.add(this.grupo);
 
-    const geometriaCore = new THREE.SphereGeometry(0.115, 32, 24);
-    const materialCore = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.08, clearcoat: 0.8, clearcoatRoughness: 0.18, emissive: 0xffffff, emissiveIntensity: 0.42 });
+    const nodeCanvas = document.createElement('canvas');
+    nodeCanvas.width = nodeCanvas.height = 64;
+    const nodeContext = nodeCanvas.getContext('2d');
+    const nodeGradient = nodeContext.createRadialGradient(32, 32, 4, 32, 32, 32);
+    nodeGradient.addColorStop(0, 'rgba(255,255,255,1)');
+    nodeGradient.addColorStop(.56, 'rgba(255,255,255,.96)');
+    nodeGradient.addColorStop(.88, 'rgba(255,255,255,.78)');
+    nodeGradient.addColorStop(1, 'rgba(255,255,255,0)');
+    nodeContext.fillStyle = nodeGradient;
+    nodeContext.fillRect(0, 0, 64, 64);
+    this.nodeTexture = new THREE.CanvasTexture(nodeCanvas);
+    this.nodeTexture.colorSpace = THREE.SRGBColorSpace;
+    const geometriaCore = new THREE.PlaneGeometry(0.25, 0.25);
+    const materialCore = new THREE.MeshBasicMaterial({ color: 0xffffff, map: this.nodeTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
     this.instancedMesh = new THREE.InstancedMesh(geometriaCore, materialCore, maxParticles);
     this.instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.instancedMesh.count = 0;
+    this.instancedMesh.renderOrder = 2;
     this.grupo.add(this.instancedMesh);
     const glowCanvas = document.createElement('canvas');
     glowCanvas.width = glowCanvas.height = 128;
@@ -424,13 +437,15 @@ export class PersonalitySphere {
 
   garantirAura(particula) {
     if (!particula || particula.aura) return;
-    const material = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, toneMapped: false });
+    const material = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true, toneMapped: false });
     particula.aura = new THREE.Sprite(material);
     particula.aura.scale.set(1.08, 1.08, 1);
+    particula.aura.renderOrder = 1;
     this.grupo.add(particula.aura);
-    const softMaterial = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true, toneMapped: false });
+    const softMaterial = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true, toneMapped: false });
     particula.auraSoft = new THREE.Sprite(softMaterial);
     particula.auraSoft.scale.set(1.85, 1.85, 1);
+    particula.auraSoft.renderOrder = 0;
     this.grupo.add(particula.auraSoft);
   }
 

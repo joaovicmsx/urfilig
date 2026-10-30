@@ -27,7 +27,7 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
   const modal = $('#intel-modal');
   const titulo = $('#intel-modal-titulo');
   const corpo = $('#intel-modal-corpo');
-  const fechar = () => modal?.classList.remove('visible');
+  const fechar = () => modal?.classList.remove('visible', 'trends-wide');
   $('#intel-modal-fechar')?.addEventListener('click', fechar);
   modal?.addEventListener('click', (event) => { if (event.target === modal) fechar(); });
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') fechar(); });
@@ -230,6 +230,14 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
     lead.append(filtro, node('small', '', `Atualizado ${asDate(payload.atualizadoEm, { hour: '2-digit', minute: '2-digit' })}`));
     const grid = node('div', 'intel-trend-grid');
     const trendsFiltradas = focoSelecionado === 'todos' ? trends : trends.filter((trend) => filtros[focoSelecionado]?.test([trend.topico, ...items(trend.noticias).map((news) => news.titulo)].join(' ')));
+    const topics = node('section', 'intel-trend-topics');
+    topics.append(node('strong', '', 'Assuntos em alta agora'));
+    trendsFiltradas.slice(0, 12).forEach((trend) => {
+      const topic = node('a', 'intel-trend-topic', trend.topico);
+      topic.href = `https://trends.google.com/trends/explore?geo=BR&q=${encodeURIComponent(trend.topico)}`;
+      topic.target = '_blank'; topic.rel = 'noopener noreferrer';
+      topics.append(topic);
+    });
     trendsFiltradas.forEach((trend) => {
       const card = node('article', 'intel-trend-card');
       const news = items(trend.noticias);
@@ -263,7 +271,7 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
     });
     const source = node('a', 'intel-source-link', 'Abrir Google Trends'); source.href = 'https://trends.google.com/trending?geo=BR'; source.target = '_blank'; source.rel = 'noopener noreferrer';
     if (!trendsFiltradas.length) grid.append(node('p', 'intel-trend-empty', 'Nenhum assunto dessa categoria está entre as tendências atuais. Escolha outro tema para ver o que está em alta agora.'));
-    corpo.replaceChildren(lead, grid, source);
+    corpo.replaceChildren(lead, topics, grid, source);
   }
 
   const reports = {
@@ -274,6 +282,7 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
   Object.entries(reports).forEach(([id, report]) => {
     $(`#${id}`)?.addEventListener('click', async () => {
       abrir(report.title);
+      modal?.classList.toggle('trends-wide', report.route === 'tendencias');
       try { await report.render(await carregar(report.route)); } catch (error) { exibirErro(error); }
     });
   });

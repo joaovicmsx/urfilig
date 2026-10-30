@@ -432,13 +432,16 @@ body:has(.email-wrapper) { display: flex !important; flex-direction: column !imp
 @media (prefers-reduced-motion: reduce) { .sky-cloud, .sky-meteor { animation: none !important; } }
 
 /* Final dashboard layout: keep every destination in the permanent rail. */
-#top-hud-bar { gap: 8px !important; padding: 10px 6px !important; }
-.hud-nav { flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent; }
-.nav-item { min-height: 46px !important; padding: 5px 1px !important; gap: 3px !important; font-size: 9px !important; }
+#top-hud-bar { gap: 8px !important; padding: 12px 6px !important; overflow: hidden !important; background: rgba(13,14,22,.86) !important; }
+.hud-nav { flex: 1 1 auto !important; min-height: 0 !important; min-width: 0 !important; overflow: auto !important; overflow-x: hidden !important; overscroll-behavior: contain; scrollbar-width: none !important; }
+.hud-nav::-webkit-scrollbar, #top-hud-bar::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+.nav-item { width: 100% !important; min-width: 0 !important; min-height: 44px !important; padding: 4px 0 !important; gap: 3px !important; font-size: 9px !important; white-space: normal !important; overflow-wrap: anywhere; }
 .nav-item svg { width: 14px; height: 14px; }
 .nav-logout { margin-top: auto !important; }
-#hud-quick-controls { position: static !important; z-index: auto !important; flex: 0 0 auto; width: 100%; grid-template-columns: minmax(0,1fr) !important; gap: 5px !important; padding: 8px 2px 2px !important; background: transparent !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; font-size: .62rem !important; }
-#hud-quick-controls label, #quick-chat-provider, #mascot-overlay-toggle { grid-column: 1 !important; }
+#hud-quick-controls { position: fixed !important; z-index: 155 !important; left: calc(var(--rail-width) + 14px) !important; bottom: 16px !important; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; width: max-content !important; max-width: min(360px,calc(100vw - var(--rail-width) - 24px)) !important; padding: 9px 11px !important; color: var(--text-secondary); background: rgba(20,16,30,.66) !important; border: 1px solid rgba(255,255,255,.075) !important; border-radius: 14px !important; box-shadow: 0 12px 35px rgba(0,0,0,.26),0 0 24px rgba(151,79,213,.08) !important; backdrop-filter: blur(22px) saturate(135%) !important; -webkit-backdrop-filter: blur(22px) saturate(135%) !important; font-size: .67rem !important; }
+#hud-quick-controls label { white-space: nowrap; color: var(--text-muted); }
+#quick-chat-provider { flex: 0 1 148px; width: 148px; min-width: 105px; }
+#mascot-overlay-toggle { flex: 0 0 auto; white-space: nowrap; }
 #quick-chat-provider, #chat-provider, select { color-scheme: dark !important; color: var(--text-primary) !important; background-color: #17191e !important; border: 1px solid rgba(255,255,255,.09) !important; }
 select option { color: #f0f1f3 !important; background: #17191e !important; }
 .hud-clock-time { font-family: Inter, ui-sans-serif, system-ui, sans-serif !important; font-weight: 650 !important; letter-spacing: .02em !important; }
@@ -447,25 +450,59 @@ select option { color: #f0f1f3 !important; background: #17191e !important; }
 #chat-restaurar { z-index: 181 !important; }
 #routine-board { bottom: 82px !important; right: 18px !important; width: min(350px, calc(100vw - var(--rail-width) - 30px)) !important; }
 #routine-board.has-unpinned { top: 94px !important; bottom: auto !important; }
-.routine-squares { display: grid !important; grid-auto-flow: column !important; grid-template-rows: repeat(7, 13px) !important; grid-auto-columns: 13px !important; gap: 3px !important; width: max-content; max-width: 100%; margin: 11px 0 !important; overflow-x: auto; }
-.routine-square { width: 13px !important; height: 13px !important; display: block !important; padding: 0 !important; border-radius: 3px !important; color: transparent !important; font-size: 0 !important; }
-.routine-square.done { box-shadow: 0 0 7px color-mix(in srgb,var(--routine-color) 45%,transparent) !important; }
+.routine-squares { display: grid !important; grid-auto-flow: column !important; grid-template-rows: repeat(7, 12px) !important; grid-auto-columns: 12px !important; gap: 3px !important; width: max-content; max-width: 100%; margin: 12px 0 !important; overflow-x: auto; scrollbar-width: none; }
+.routine-squares::-webkit-scrollbar { display: none; }
+.routine-square { width: 12px !important; height: 12px !important; display: block !important; padding: 0 !important; border-radius: 3px !important; color: transparent !important; font-size: 0 !important; }
+.routine-square.done { box-shadow: 0 0 8px color-mix(in srgb,var(--routine-color) 52%,transparent) !important; }
 .routine-square:not(.done) { background: rgba(255,255,255,.1) !important; }
 .routine-square:empty { visibility: hidden; }
 
-/* Space replaces the old cloud layer. Motion stays slow and understated. */
-.sky-cloud, .sky-meteor { display: none !important; }
-#sky-events::before, #sky-events::after { content: ""; position: absolute; inset: 0; pointer-events: none; background-repeat: repeat; }
-#sky-events::before { opacity: .62; background-image: radial-gradient(1px 1px at 14px 28px,rgba(255,255,255,.75) 55%,transparent 100%),radial-gradient(1px 1px at 83px 104px,rgba(211,224,255,.8) 55%,transparent 100%),radial-gradient(1.5px 1.5px at 156px 55px,rgba(255,246,213,.72) 55%,transparent 100%),radial-gradient(1px 1px at 226px 164px,rgba(255,255,255,.62) 55%,transparent 100%); background-size: 260px 210px; animation: star-drift 150s linear infinite; }
-#sky-events::after { opacity: .28; background-image: radial-gradient(1.5px 1.5px at 46px 75px,rgba(210,224,255,.75) 55%,transparent 100%),radial-gradient(1px 1px at 192px 21px,rgba(255,255,255,.75) 55%,transparent 100%); background-size: 310px 260px; animation: star-drift 220s linear infinite reverse; }
-.sky-asteroid { position: absolute; width: 3px; height: 3px; top: -8%; left: 70%; border-radius: 50%; opacity: 0; background: #ded4bc; box-shadow: 0 0 3px 1px rgba(221,211,186,.36); animation: asteroid-fall 64s linear infinite; }
-.asteroid-two { left: 33%; width: 2px; height: 2px; animation-delay: -31s; animation-duration: 79s; }
-.asteroid-three { left: 87%; animation-delay: -53s; animation-duration: 91s; }
-.sky-planet { position: absolute; width: clamp(18px,2.2vw,34px); aspect-ratio: 1; top: -8%; left: 82%; opacity: 0; border-radius: 50%; background: radial-gradient(circle at 32% 28%,#d6c6a0 0 5%,#857c75 22%,#343b55 58%,#151c31 78%); box-shadow: inset -7px -4px 12px rgba(0,0,0,.62),0 0 20px rgba(129,155,218,.2); animation: planet-cross 112s linear infinite; }
-.planet-two { width: clamp(12px,1.4vw,22px); left: 58%; animation-delay: -67s; animation-duration: 137s; filter: hue-rotate(35deg); }
-@keyframes star-drift { to { background-position: 0 210px; } }
-@keyframes asteroid-fall { 0%,72% { opacity: 0; transform: translate3d(0,0,0); } 74% { opacity: .85; } 77% { opacity: 0; transform: translate3d(-44vw,82vh,0); } 100% { opacity: 0; } }
-@keyframes planet-cross { 0%,38% { opacity: 0; transform: translate3d(0,0,0) rotate(0); } 40% { opacity: .8; } 58% { opacity: .72; transform: translate3d(-88vw,70vh,0) rotate(120deg); } 62%,100% { opacity: 0; transform: translate3d(-100vw,78vh,0) rotate(140deg); } }
+/* Layered low clouds recreate the supplied sky reference; the central sky stays clear. */
+#sky-events::before, #sky-events::after { display: none !important; }
+.sky-cloud { position: absolute; z-index: 1; bottom: -4%; left: -24%; width: clamp(300px,42vw,670px); height: clamp(155px,24vh,270px); opacity: 0; border-radius: 50%; filter: blur(12px); background: radial-gradient(ellipse at 32% 76%,rgba(30,31,58,.98) 0 15%,color-mix(in srgb,var(--cloud-glow,#df5b77) 76%,#382640) 31%,color-mix(in srgb,var(--cloud-glow,#df5b77) 82%,transparent) 46%,transparent 72%),radial-gradient(ellipse at 66% 92%,rgba(34,28,54,.95) 0 17%,color-mix(in srgb,var(--cloud-glow,#df5b77) 70%,#382640) 42%,transparent 70%); box-shadow: 0 -18px 55px color-mix(in srgb,var(--cloud-glow,#df5b77) 22%,transparent); animation: cloud-drift 90s linear infinite; }
+.sky-cloud::before,.sky-cloud::after { content:""; position:absolute; inset:8% 3% 12%; border-radius:50%; background:radial-gradient(ellipse at 20% 65%,var(--cloud-glow,rgba(221,87,112,.72)),transparent 40%),radial-gradient(ellipse at 55% 38%,rgba(255,218,183,.25),transparent 38%),radial-gradient(ellipse at 80% 73%,color-mix(in srgb,var(--cloud-glow,#df5b77) 70%,#402b48),transparent 42%); filter:blur(18px); }
+.sky-cloud::after { inset: 24% -8% 0 15%; opacity:.75; filter:blur(28px); }
+.cloud-one { bottom:-6%; left:-22%; animation-delay:-22s; animation-duration:106s; }
+.cloud-two { bottom:-9%; left:52%; width:clamp(390px,52vw,820px); height:clamp(180px,28vh,320px); animation-delay:-57s; animation-duration:122s; transform:scaleX(-1); }
+.cloud-three { bottom:18%; left:82%; width:clamp(150px,22vw,310px); height:clamp(75px,12vh,140px); opacity:0; animation-delay:-39s; animation-duration:144s; }
+.sky-meteor { z-index:2; top:22%; left:76%; animation-duration:52s; }
+@keyframes cloud-drift { 0%,8% { opacity:0; transform:translate3d(-3vw,10px,0) scale(.92); } 20%,76% { opacity:.86; } 100% { opacity:0; transform:translate3d(145vw,-18px,0) scale(1.06); } }
+@keyframes meteor-pass { 0%,72% { opacity:0; transform:translate(0,0) rotate(42deg); } 73% { opacity:.85; } 77% { opacity:0; transform:translate(-46vw,70vh) rotate(42deg); } 100% { opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .sky-cloud,.sky-meteor { animation:none !important; } }
+
+/* Glass-and-glow surfaces from the supplied visual reference. */
+.sidebar-cerebro,.sidebar,#email-painel,.intel-modal-card,.routine-modal,.routine-card,.routine-overlay-card { background:rgba(18,16,27,.68) !important; border:1px solid rgba(255,255,255,.075) !important; box-shadow:0 26px 80px rgba(0,0,0,.42),0 0 38px rgba(131,67,190,.1) !important; backdrop-filter:blur(30px) saturate(145%) !important; -webkit-backdrop-filter:blur(30px) saturate(145%) !important; }
+.routine-card { padding:15px 16px !important; }
+#routine-board { width:min(420px,calc(100vw - var(--rail-width) - 30px)) !important; max-height:calc(100dvh - 125px) !important; overflow-y:auto !important; scrollbar-width:none !important; }
+#routine-board::-webkit-scrollbar { display:none !important; }
+.routine-list-header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 4px 2px; }
+.routine-list-header > div { display:grid; gap:3px; }
+.routine-list-header strong { color:var(--text-primary); font-size:.9rem; }
+.routine-list-header small { color:var(--text-muted); font-size:.66rem; }
+.routine-add { padding:7px 10px !important; color:#f4e9ff !important; background:rgba(161,91,210,.2) !important; border:1px solid rgba(203,150,245,.14) !important; border-radius:9px !important; font-size:.68rem !important; }
+.routine-board-highlight { animation:routine-highlight 1.2s ease both; }
+@keyframes routine-highlight { 0%,100% { filter:none; } 36% { filter:drop-shadow(0 0 16px rgba(174,103,225,.52)); } }
+.routine-card header { align-items:flex-start !important; }
+.routine-card header div { gap:5px !important; }
+.routine-card header small { color:var(--text-muted) !important; line-height:1.45; }
+.routine-progress { height:4px; overflow:hidden; background:rgba(255,255,255,.08); border-radius:99px; }
+.routine-progress span { display:block; height:100%; background:var(--routine-color,#a855f7); border-radius:inherit; box-shadow:0 0 12px color-mix(in srgb,var(--routine-color,#a855f7) 58%,transparent); transition:width .45s ease; }
+.routine-card footer { margin-top:9px; color:var(--text-muted) !important; font-size:.65rem !important; }
+.routine-hint { color:var(--text-muted) !important; }
+.intel-modal.trends-wide .intel-modal-card { width:min(1120px,calc(100vw - var(--rail-width) - 48px)) !important; max-width:1120px !important; max-height:min(86dvh,920px) !important; }
+.intel-modal.trends-wide .intel-trend-grid { grid-template-columns:minmax(0,1fr) !important; gap:14px !important; }
+.intel-trend-card { background:rgba(255,255,255,.04) !important; padding-bottom:14px !important; }
+.intel-trend-card > :not(.intel-trend-image) { margin-left:16px !important; margin-right:16px !important; }
+.intel-trend-image { aspect-ratio:2.3/1 !important; }
+.intel-news-story { grid-template-columns:minmax(110px,150px) minmax(0,1fr) !important; gap:12px !important; margin:12px 16px 0 !important; }
+.intel-news-story img { width:100% !important; height:90px !important; }
+.intel-news-story:not(:has(img)) { grid-template-columns:minmax(0,1fr) !important; }
+.intel-news-copy strong { font-size:.84rem !important; overflow-wrap:anywhere; }
+.intel-news-copy small { font-size:.7rem !important; }
+.intel-trend-topics { display:flex; flex-wrap:wrap; gap:7px; padding:10px 12px; background:rgba(255,255,255,.035); border-radius:12px; }
+.intel-trend-topics strong { flex:0 0 100%; color:var(--text-primary); font-size:.75rem; }
+.intel-trend-topic { padding:5px 9px; color:#e8d9ff !important; background:rgba(159,96,218,.16) !important; border:1px solid rgba(192,138,239,.12) !important; border-radius:99px !important; font-size:.67rem; }
+@media (max-width:700px) { #hud-quick-controls { left:calc(var(--rail-width) + 8px) !important; bottom:10px !important; gap:5px !important; max-width:calc(100vw - var(--rail-width) - 16px) !important; padding:7px !important; } #quick-chat-provider { width:115px; min-width:80px; } #mascot-overlay-toggle { font-size:.62rem !important; padding-inline:7px !important; } .intel-modal.trends-wide .intel-modal-card { width:calc(100vw - 20px) !important; } .intel-trend-grid { grid-template-columns:1fr !important; } }
 @media (max-height: 720px) { #top-hud-bar { padding-block: 6px !important; } .nav-item { min-height: 39px !important; } #hud-quick-controls { gap: 3px !important; } }
 @media (max-width: 700px) { #routine-board { bottom: 76px !important; right: 10px !important; width: min(330px,calc(100vw - var(--rail-width) - 18px)) !important; } }
-@media (prefers-reduced-motion: reduce) { #sky-events::before,#sky-events::after,.sky-asteroid,.sky-planet { animation: none !important; } }
+@media (prefers-reduced-motion: reduce) { .sky-cloud,.sky-meteor,.routine-progress span { animation:none !important; transition:none !important; } }

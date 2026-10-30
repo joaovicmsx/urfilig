@@ -1,7 +1,3 @@
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { isTauri } from '@tauri-apps/api/core';
-import { emitTo } from '@tauri-apps/api/event';
-
 const STORAGE_KEY = 'urfilig_routine_boards_v1';
 const todayKey = () => {
   const now = new Date();
@@ -26,48 +22,45 @@ export function iniciarQuadrosRotina() {
 
   const save = (boards) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
-    void emitTo('routine-overlay', 'routine:refresh', boards).catch(() => {});
   };
-  let routineOverlay = null;
   const render = () => {
     const boards = readBoards();
     boardRoot.replaceChildren();
     boardRoot.hidden = boards.length === 0;
-    boardRoot.classList.toggle('has-unpinned', boards.some((board) => !board.fixed));
+    if (boards.length) {
+      const activeCount = boards.filter((board) => {
+        const end = new Date(board.createdAt); end.setHours(0, 0, 0, 0); end.setDate(end.getDate() + board.days); end.setMilliseconds(-1);
+        return Date.now() <= end.getTime();
+      }).length;
+      const heading = document.createElement('header');
+      heading.className = 'routine-list-header';
+      heading.innerHTML = `<div><strong>Rotinas</strong><small>${activeCount} ativa${activeCount === 1 ? '' : 's'} · ${boards.length} quadro${boards.length === 1 ? '' : 's'} criado${boards.length === 1 ? '' : 's'}</small></div><button type="button" class="routine-add">+ Nova</button>`;
+      heading.querySelector('.routine-add').addEventListener('click', openForm);
+      boardRoot.append(heading);
+    }
     boards.forEach((board) => {
       const card = document.createElement('article');
-      card.className = `routine-card${board.fixed ? ' is-fixed' : ''}`;
-      const elapsed = Math.max(0, Math.floor((Date.now() - board.createdAt) / 86400000));
+      card.className = 'routine-card';
       const inicio = new Date(board.createdAt); inicio.setHours(0, 0, 0, 0);
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      const elapsed = Math.max(0, Math.floor((Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) - Date.UTC(inicio.getFullYear(), inicio.getMonth(), inicio.getDate())) / 86400000));
+      const fim = new Date(inicio); fim.setDate(fim.getDate() + board.days - 1); fim.setHours(23, 59, 59, 999);
+      const ativa = Date.now() <= fim.getTime();
       const dias = Array.from({ length: board.days }, (_, index) => {
         const date = new Date(inicio); date.setDate(inicio.getDate() + index);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
         return { date, key, day: index + 1 };
       });
-      const completed = Object.keys(board.checkins || {}).length;
+      const completed = Object.keys(board.checkins || {}).filter((key) => dias.some((day) => day.key === key)).length;
+      const frequencia = Math.min(100, Math.round((completed / Math.max(1, Math.min(board.days, elapsed + 1))) * 100));
       const blanks = Array.from({ length: inicio.getDay() }, () => '<span class="routine-square routine-square-empty" aria-hidden="true"></span>').join('');
       const diasHtml = dias.map(({ date, key, day }) => {
         const checked = Boolean(board.checkins?.[key]);
         return `<span class="routine-square${checked ? ' done' : ''}" style="--routine-color:${escapeHtml(board.color)}" title="${date.toLocaleDateString('pt-BR')}${checked ? ` · presença ${escapeHtml(board.checkins[key])}` : ''}">${date.getDate()}</span>`;
       }).join('');
-      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>Iniciado em ${inicio.toLocaleDateString('pt-BR', { day:'2-digit', month:'short' })} · ${Math.min(board.days, elapsed + 1)}/${board.days} dias · ${completed} presenças</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-squares" aria-label="Presenças do quadro ${escapeHtml(board.name)}">${blanks}${diasHtml}</div><footer><label><input class="routine-fixed" type="checkbox" ${board.fixed ? 'checked' : ''}> Fixar no canto</label><button type="button" class="routine-overlay-open">Sobrepor na área de trabalho</button></footer><small class="routine-hint">No chat, diga “fiz presença na academia às 9:00”.</small>`;
+      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>${ativa ? 'Rotina ativa' : 'Período encerrado'} · ${completed} de ${Math.min(board.days, elapsed + 1)} presenças até hoje</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-squares" aria-label="Presenças do quadro ${escapeHtml(board.name)}">${blanks}${diasHtml}</div><div class="routine-progress" role="progressbar" aria-label="Frequência da rotina" aria-valuenow="${frequencia}" aria-valuemin="0" aria-valuemax="100"><span style="width:${frequencia}%;--routine-color:${escapeHtml(board.color)}"></span></div><footer><span>${inicio.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })} — ${fim.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })}</span><span>${frequencia}% de presença</span></footer><small class="routine-hint">Registre no chat: “fiz presença ${escapeHtml(board.name)} às 9:00”.</small>`;
       card.querySelector('.routine-remove').addEventListener('click', () => {
         save(readBoards().filter((item) => item.id !== board.id)); render();
-      });
-      card.querySelector('.routine-fixed').addEventListener('change', (event) => {
-        const updated = readBoards().map((item) => item.id === board.id ? { ...item, fixed: event.target.checked } : item);
-        save(updated); render();
-      });
-      card.querySelector('.routine-overlay-open').addEventListener('click', async () => {
-        if (!isTauri()) { card.querySelector('.routine-hint').textContent = 'A sobreposição está disponível no aplicativo desktop.'; return; }
-        try {
-          routineOverlay = await WebviewWindow.getByLabel('routine-overlay');
-          if (!routineOverlay) {
-            routineOverlay = new WebviewWindow('routine-overlay', { url: 'routine-overlay.html', title: 'Rotina Urfilig', width: 360, height: 210, decorations: false, transparent: true, alwaysOnTop: true, focus: false, focusable: false, resizable: true, skipTaskbar: true, shadow: false });
-            routineOverlay.once('tauri://destroyed', () => { routineOverlay = null; });
-          } else await routineOverlay.show();
-          void emitTo('routine-overlay', 'routine:refresh', readBoards());
-        } catch (error) { console.error('[rotinas] erro abrindo sobreposição:', error); }
       });
       boardRoot.append(card);
     });
@@ -76,7 +69,7 @@ export function iniciarQuadrosRotina() {
   const openForm = () => {
     const modal = document.createElement('div');
     modal.className = 'routine-modal-backdrop';
-    modal.innerHTML = `<form class="routine-modal"><header><h2>Novo quadro de rotinas</h2><button type="button" class="routine-close" aria-label="Fechar">×</button></header><label>Nome<input name="name" maxlength="48" placeholder="Ex.: Caminhada diária" required></label><div class="routine-fields"><label>Duração em dias<input name="days" type="number" min="1" max="365" value="30" required></label><label>Cor das presenças<input name="color" type="color" value="#e7c94d"></label></div><label class="routine-pin-choice"><input name="fixed" type="checkbox" checked> Mostrar fixo na tela inicial</label><button class="routine-create" type="submit">Criar quadro</button></form>`;
+    modal.innerHTML = `<form class="routine-modal"><header><h2>Novo quadro de rotinas</h2><button type="button" class="routine-close" aria-label="Fechar">×</button></header><label>Nome<input name="name" maxlength="48" placeholder="Ex.: Caminhada diária" required></label><div class="routine-fields"><label>Duração em dias<input name="days" type="number" min="1" max="365" value="30" required></label><label>Cor das presenças<input name="color" type="color" value="#a855f7"></label></div><p>O quadro ficará visível na tela inicial até o fim do período.</p><button class="routine-create" type="submit">Criar quadro</button></form>`;
     document.body.append(modal);
     const close = () => modal.remove();
     modal.querySelector('.routine-close').addEventListener('click', close);
@@ -85,13 +78,18 @@ export function iniciarQuadrosRotina() {
       event.preventDefault();
       const data = new FormData(event.currentTarget);
       const boards = readBoards();
-      boards.push({ id: crypto.randomUUID(), name: String(data.get('name')).trim(), days: Math.max(1, Math.min(365, Number(data.get('days')) || 30)), color: String(data.get('color') || '#e7c94d'), createdAt: Date.now(), checkins: {}, fixed: data.get('fixed') === 'on' });
+      boards.push({ id: crypto.randomUUID(), name: String(data.get('name')).trim(), days: Math.max(1, Math.min(365, Number(data.get('days')) || 30)), color: String(data.get('color') || '#a855f7'), createdAt: Date.now(), checkins: {} });
       save(boards); close(); render();
     });
     modal.querySelector('[name="name"]').focus();
   };
 
-  addButton.addEventListener('click', openForm);
+  addButton.addEventListener('click', () => {
+    if (!readBoards().length) { openForm(); return; }
+    boardRoot.classList.remove('routine-board-highlight');
+    requestAnimationFrame(() => boardRoot.classList.add('routine-board-highlight'));
+    window.setTimeout(() => boardRoot.classList.remove('routine-board-highlight'), 1200);
+  });
   // The chat hook marks the current day's square only when the user explicitly reports attendance.
   window.registrarPresencaRotina = (message) => {
     if (!/\b(fiz|marcar|registra|completei|conclu[ií])\b.*\b(presen[cç]a|rotina|h[aá]bito)\b/i.test(message)) return false;

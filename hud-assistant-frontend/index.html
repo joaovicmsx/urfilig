@@ -64,18 +64,22 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>Sair
         </button>
       </nav>
-      <section id="hud-quick-controls" aria-label="Controles rápidos">
-        <label for="quick-chat-provider">Assistente</label>
-        <select id="quick-chat-provider" aria-label="Escolher Gemini ou Ollama">
-          <option value="gemini">Gemini</option><option value="ollama">Ollama local</option>
-        </select>
-        <button type="button" id="mascot-overlay-toggle" aria-pressed="false">Sobrepor mascote</button>
-      </section>
     </header>
+
+    <section id="hud-quick-controls" aria-label="Controles rápidos">
+      <label for="quick-chat-provider">Assistente</label>
+      <select id="quick-chat-provider" aria-label="Escolher Gemini ou Ollama">
+        <option value="gemini">Gemini</option><option value="ollama">Ollama local</option>
+      </select>
+      <button type="button" id="mascot-overlay-toggle" aria-pressed="false">Sobrepor mascote</button>
+    </section>
 
     <canvas id="hud-canvas" aria-label="Urfilig e sua esfera neural. Arraste para girar e selecione memórias." tabindex="0"></canvas>
     <canvas id="labels-canvas"></canvas>
-    <div id="sky-events" aria-hidden="true"><i class="sky-asteroid asteroid-one"></i><i class="sky-asteroid asteroid-two"></i><i class="sky-asteroid asteroid-three"></i><i class="sky-planet planet-one"></i><i class="sky-planet planet-two"></i></div>
+    <div id="sky-events" aria-hidden="true">
+      <i class="sky-cloud cloud-one"></i><i class="sky-cloud cloud-two"></i><i class="sky-cloud cloud-three"></i>
+      <i class="sky-meteor"></i>
+    </div>
     <section id="routine-board" aria-label="Quadros de rotinas" hidden></section>
     <section id="hud-clock-widget" aria-label="Relógio e clima">
       <div class="hud-clock-time" id="hud-clock-time">--:--:--</div>
