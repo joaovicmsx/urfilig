@@ -29,8 +29,8 @@ const raycaster = new THREE.Raycaster();
 
 carregarMascote('/models/mascote.glb', scene, 1.6).then(({ mascote, mixer: loadedMixer, clips }) => {
   mascot = mascote;
-  mascot.position.set(0, -.42, 0);
-  mascot.rotation.set(0, 0, 0);
+  mascot.position.set(0, -.05, 0);
+  mascot.rotation.set(0, Math.PI / 2, 0);
   mascot.traverse((child) => {
     if (!child.isMesh || !child.material) return;
     const materials = Array.isArray(child.material) ? child.material : [child.material];
@@ -42,7 +42,7 @@ carregarMascote('/models/mascote.glb', scene, 1.6).then(({ mascote, mixer: loade
   });
   mixer = loadedMixer;
   mascotStateMachine = new MascotStateMachine(mixer, clips);
-  tracker = new HeadTracker(mascot);
+  tracker = new HeadTracker(mascot, { distanciaAlvo: 4 });
 }).catch((error) => {
   console.error('[mascote-overlay] modelo indisponível:', error);
 });

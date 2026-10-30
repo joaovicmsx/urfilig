@@ -51,7 +51,7 @@ comandoRouter.post('/comando/apresentacao', exigirAutenticacao, async (req, res)
  * por fala reconhecida em vez de uma requisição HTTP.
  */
 comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
-  const { texto, provider } = req.body;
+  const { texto, provider, responseStyle, responseTone } = req.body;
 
   if (!texto || typeof texto !== 'string') {
     return res.status(400).json({ erro: 'Campo "texto" (string) é obrigatório' });
@@ -59,7 +59,7 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
 
   try {
     if (provider && !['gemini', 'ollama'].includes(provider)) return res.status(400).json({ erro: 'Provedor inválido. Use gemini ou ollama.' });
-    const resposta = await processarComando(req.usuarioId, texto, { provider });
+    const resposta = await processarComando(req.usuarioId, texto, { provider, responseStyle, responseTone });
     res.json({ resposta });
   } catch (erro) {
     console.error('[erro ao processar comando]', erro.message);

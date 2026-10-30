@@ -23,10 +23,12 @@ export function iniciarQuadrosRotina() {
   const save = (boards) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
   };
+  let listOpen = true;
   const render = () => {
     const boards = readBoards();
     boardRoot.replaceChildren();
-    boardRoot.hidden = boards.length === 0;
+    boardRoot.hidden = boards.length === 0 || !listOpen;
+    addButton.setAttribute('aria-expanded', String(boards.length > 0 && listOpen));
     if (boards.length) {
       const activeCount = boards.filter((board) => {
         const end = new Date(board.createdAt); end.setHours(0, 0, 0, 0); end.setDate(end.getDate() + board.days); end.setMilliseconds(-1);
@@ -34,8 +36,13 @@ export function iniciarQuadrosRotina() {
       }).length;
       const heading = document.createElement('header');
       heading.className = 'routine-list-header';
-      heading.innerHTML = `<div><strong>Rotinas</strong><small>${activeCount} ativa${activeCount === 1 ? '' : 's'} · ${boards.length} quadro${boards.length === 1 ? '' : 's'} criado${boards.length === 1 ? '' : 's'}</small></div><button type="button" class="routine-add">+ Nova</button>`;
+      heading.innerHTML = `<div><strong>Rotinas</strong><small>${activeCount} ativa${activeCount === 1 ? '' : 's'} · ${boards.length} quadro${boards.length === 1 ? '' : 's'} criado${boards.length === 1 ? '' : 's'}</small></div><div class="routine-list-actions"><button type="button" class="routine-list-toggle" aria-label="Ocultar quadros de rotina" title="Ocultar quadros"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m4 12 6-6 6 6"/></svg></button><button type="button" class="routine-add">Nova rotina</button></div>`;
       heading.querySelector('.routine-add').addEventListener('click', openForm);
+      heading.querySelector('.routine-list-toggle').addEventListener('click', () => {
+        listOpen = false;
+        addButton.setAttribute('aria-expanded', 'false');
+        render();
+      });
       boardRoot.append(heading);
     }
     boards.forEach((board) => {
@@ -53,12 +60,13 @@ export function iniciarQuadrosRotina() {
       });
       const completed = Object.keys(board.checkins || {}).filter((key) => dias.some((day) => day.key === key)).length;
       const frequencia = Math.min(100, Math.round((completed / Math.max(1, Math.min(board.days, elapsed + 1))) * 100));
-      const blanks = Array.from({ length: inicio.getDay() }, () => '<span class="routine-square routine-square-empty" aria-hidden="true"></span>').join('');
+      const blanks = Array.from({ length: (inicio.getDay() + 6) % 7 }, () => '<span class="routine-square routine-square-empty" aria-hidden="true"></span>').join('');
       const diasHtml = dias.map(({ date, key, day }) => {
         const checked = Boolean(board.checkins?.[key]);
-        return `<span class="routine-square${checked ? ' done' : ''}" style="--routine-color:${escapeHtml(board.color)}" title="${date.toLocaleDateString('pt-BR')}${checked ? ` · presença ${escapeHtml(board.checkins[key])}` : ''}">${date.getDate()}</span>`;
+        const label = `${date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${checked ? ` · presença às ${escapeHtml(board.checkins[key])}` : ' · sem presença'}`;
+        return `<span class="routine-square${checked ? ' done' : ''}" style="--routine-color:${escapeHtml(board.color)}" role="gridcell" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></span>`;
       }).join('');
-      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>${ativa ? 'Rotina ativa' : 'Período encerrado'} · ${completed} de ${Math.min(board.days, elapsed + 1)} presenças até hoje</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-squares" aria-label="Presenças do quadro ${escapeHtml(board.name)}">${blanks}${diasHtml}</div><div class="routine-progress" role="progressbar" aria-label="Frequência da rotina" aria-valuenow="${frequencia}" aria-valuemin="0" aria-valuemax="100"><span style="width:${frequencia}%;--routine-color:${escapeHtml(board.color)}"></span></div><footer><span>${inicio.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })} — ${fim.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })}</span><span>${frequencia}% de presença</span></footer><small class="routine-hint">Registre no chat: “fiz presença ${escapeHtml(board.name)} às 9:00”.</small>`;
+      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>${ativa ? 'Ativa' : 'Concluída'} · ${completed} presenças em ${Math.min(board.days, elapsed + 1)} dias</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-calendar"><div class="routine-weekdays" aria-hidden="true"><span>seg</span><span></span><span>qua</span><span></span><span>sex</span><span></span><span></span></div><div class="routine-squares" role="grid" aria-label="Presenças de ${escapeHtml(board.name)}">${blanks}${diasHtml}</div></div><div class="routine-progress" role="progressbar" aria-label="Frequência da rotina" aria-valuenow="${frequencia}" aria-valuemin="0" aria-valuemax="100"><span style="width:${frequencia}%;--routine-color:${escapeHtml(board.color)}"></span></div><footer><span>${inicio.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })} — ${fim.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })}</span><span>${frequencia}% de presença</span></footer><small class="routine-hint">Diga no chat: “fiz presença ${escapeHtml(board.name)} às 9:00”.</small>`;
       card.querySelector('.routine-remove').addEventListener('click', () => {
         save(readBoards().filter((item) => item.id !== board.id)); render();
       });
@@ -69,16 +77,23 @@ export function iniciarQuadrosRotina() {
   const openForm = () => {
     const modal = document.createElement('div');
     modal.className = 'routine-modal-backdrop';
-    modal.innerHTML = `<form class="routine-modal"><header><h2>Novo quadro de rotinas</h2><button type="button" class="routine-close" aria-label="Fechar">×</button></header><label>Nome<input name="name" maxlength="48" placeholder="Ex.: Caminhada diária" required></label><div class="routine-fields"><label>Duração em dias<input name="days" type="number" min="1" max="365" value="30" required></label><label>Cor das presenças<input name="color" type="color" value="#a855f7"></label></div><p>O quadro ficará visível na tela inicial até o fim do período.</p><button class="routine-create" type="submit">Criar quadro</button></form>`;
+    modal.innerHTML = `<form class="routine-modal"><header><h2>Novo quadro de rotinas</h2><button type="button" class="routine-close" aria-label="Fechar">×</button></header><label>Nome<input name="name" maxlength="48" required></label><div class="routine-fields"><label>Duração em dias<div class="routine-number-control"><input name="days" type="number" min="1" max="365" value="30" required><span class="routine-number-arrows"><button type="button" data-step="1" aria-label="Aumentar duração"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 12 5-5 5 5"/></svg></button><button type="button" data-step="-1" aria-label="Diminuir duração"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 8 5 5 5-5"/></svg></button></span></div></label><label>Cor das presenças<input name="color" type="color" value="#8b70d6"></label></div><p>O quadro fica disponível na tela inicial durante o período definido.</p><button class="routine-create" type="submit">Criar quadro</button></form>`;
     document.body.append(modal);
     const close = () => modal.remove();
     modal.querySelector('.routine-close').addEventListener('click', close);
     modal.addEventListener('click', (event) => { if (event.target === modal) close(); });
+    const durationInput = modal.querySelector('[name="days"]');
+    modal.querySelectorAll('[data-step]').forEach((button) => button.addEventListener('click', () => {
+      const next = Math.max(1, Math.min(365, (Number(durationInput.value) || 1) + Number(button.dataset.step)));
+      durationInput.value = String(next);
+      durationInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }));
     modal.querySelector('form').addEventListener('submit', (event) => {
       event.preventDefault();
       const data = new FormData(event.currentTarget);
       const boards = readBoards();
       boards.push({ id: crypto.randomUUID(), name: String(data.get('name')).trim(), days: Math.max(1, Math.min(365, Number(data.get('days')) || 30)), color: String(data.get('color') || '#a855f7'), createdAt: Date.now(), checkins: {} });
+      listOpen = true;
       save(boards); close(); render();
     });
     modal.querySelector('[name="name"]').focus();
@@ -86,9 +101,13 @@ export function iniciarQuadrosRotina() {
 
   addButton.addEventListener('click', () => {
     if (!readBoards().length) { openForm(); return; }
+    listOpen = true;
+    addButton.setAttribute('aria-expanded', 'true');
+    render();
     boardRoot.classList.remove('routine-board-highlight');
     requestAnimationFrame(() => boardRoot.classList.add('routine-board-highlight'));
     window.setTimeout(() => boardRoot.classList.remove('routine-board-highlight'), 1200);
+    boardRoot.scrollIntoView({ behavior: 'smooth', block: 'end' });
   });
   // The chat hook marks the current day's square only when the user explicitly reports attendance.
   window.registrarPresencaRotina = (message) => {

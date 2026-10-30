@@ -1,5 +1,5 @@
 import { BACKEND_URL } from './authGuard.js';
-import { showAlert } from './uiDialogs.js';
+import { showAlert, showConfirm } from './uiDialogs.js';
 import { iniciarPaineisDados } from './dataPanels.js';
 
 // =========================================================================
@@ -141,6 +141,129 @@ export function iniciarMenuLateral(socket) {
   const menuToggle = document.querySelector('#menu-toggle');
   const menuLateral = document.querySelector('#menu-lateral');
   const menuBackdrop = document.querySelector('#menu-backdrop');
+  const profileDrawer = document.querySelector('#profile-drawer');
+  const profileBackdrop = document.querySelector('#profile-backdrop');
+  const profileForm = document.querySelector('#profile-form');
+  const profileMessage = document.querySelector('#profile-message');
+  const profileSaveButton = document.querySelector('#profile-save');
+  const accountEmail = document.querySelector('#settings-account-email');
+  const deleteEmailInput = document.querySelector('#settings-delete-email');
+  const deleteAccountButton = document.querySelector('#settings-delete-account');
+  const deleteMessage = document.querySelector('#settings-delete-message');
+  const accountTab = document.querySelector('#settings-account-tab');
+  const pluginsTab = document.querySelector('#settings-plugins-tab');
+  const accountPanel = document.querySelector('#settings-account-panel');
+  const pluginsPanel = document.querySelector('#settings-plugins-panel');
+  const profilePrefs = (() => {
+    try {
+      return { responseStyle: 'equilibrada', responseTone: 'natural', skyMotion: true, showWeather: true,
+        ...JSON.parse(localStorage.getItem('urfilig_preferencias') || '{}') };
+    } catch { return { responseStyle: 'equilibrada', responseTone: 'natural', skyMotion: true, showWeather: true }; }
+  })();
+
+  const aplicarPreferenciasPerfil = (prefs = profilePrefs) => {
+    document.body.classList.toggle('pref-no-sky-motion', !prefs.skyMotion);
+    document.body.classList.toggle('pref-hide-weather', !prefs.showWeather);
+  };
+  aplicarPreferenciasPerfil();
+
+  function fecharPerfil() {
+    profileDrawer?.classList.remove('aberta');
+    profileBackdrop?.classList.remove('visible');
+    profileDrawer?.setAttribute('aria-hidden', 'true');
+  }
+
+  function selecionarAbaConfiguracao(aba) {
+    const pluginsAtivos = aba === 'plugins';
+    if (accountPanel) accountPanel.hidden = pluginsAtivos;
+    if (pluginsPanel) pluginsPanel.hidden = !pluginsAtivos;
+    accountTab?.setAttribute('aria-selected', String(!pluginsAtivos));
+    pluginsTab?.setAttribute('aria-selected', String(pluginsAtivos));
+    if (pluginsAtivos) atualizarStatusPlugins();
+  }
+
+  async function atualizarStatusPlugins() {
+    let usuario = {};
+    try { usuario = JSON.parse(localStorage.getItem('urfilig_usuario') || '{}'); } catch { /* estado conectado pode ficar sem nome */ }
+    let spotifyConectado = false;
+    try {
+      spotifyConectado = Boolean(JSON.parse(localStorage.getItem(`urfilig_spotify_session:${usuario.id || 'local'}`) || 'null')?.refreshToken);
+    } catch { /* conta não conectada */ }
+    const spotifyStatus = document.querySelector('#settings-spotify-status');
+    if (spotifyStatus) spotifyStatus.textContent = spotifyConectado ? 'Conta vinculada neste perfil' : 'Não conectado';
+
+    const gmailStatus = document.querySelector('#settings-gmail-status');
+    if (gmailStatus) gmailStatus.textContent = localStorage.getItem('google_access_token') ? 'Autorização salva; validade verificada ao abrir E-mails' : 'Não conectado';
+
+    const geminiStatus = document.querySelector('#settings-gemini-status');
+    const ollamaStatus = document.querySelector('#settings-ollama-status');
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/inteligencia/llm-status`, { headers: cabecalhoAuth(), cache: 'no-store' });
+      const status = response.ok ? await response.json() : null;
+      if (!status) throw new Error('status indisponível');
+      if (geminiStatus) geminiStatus.textContent = status.gemini ? 'Chave configurada; validação ao enviar mensagem' : 'Configure uma chave da Gemini API';
+      if (ollamaStatus) ollamaStatus.textContent = status.ollama
+        ? `Disponível · ${status.ollamaModel}`
+        : status.ollamaServidor ? `Modelo ${status.ollamaModel} não encontrado` : 'Servidor local indisponível';
+    } catch {
+      if (geminiStatus) geminiStatus.textContent = 'Não foi possível consultar a configuração';
+      if (ollamaStatus) ollamaStatus.textContent = 'Não foi possível consultar o serviço local';
+    }
+  }
+
+  async function abrirPerfil() {
+    fecharMenu();
+    document.querySelectorAll('.sidebar-cerebro.aberta, .sidebar.aberta').forEach((painel) => painel.classList.remove('aberta'));
+    document.querySelector('#email-painel')?.classList.remove('aberta');
+    document.querySelector('#calendario-painel')?.classList.remove('aberta');
+    profileDrawer?.classList.add('aberta');
+    profileBackdrop?.classList.add('visible');
+    profileDrawer?.setAttribute('aria-hidden', 'false');
+    selecionarAbaConfiguracao('account');
+    if (profileMessage) profileMessage.textContent = '';
+    if (deleteMessage) deleteMessage.textContent = '';
+    if (deleteEmailInput) deleteEmailInput.value = '';
+    if (deleteAccountButton) deleteAccountButton.disabled = true;
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/me`, { headers: cabecalhoAuth(), cache: 'no-store' });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.erro || 'Não foi possível carregar o perfil.');
+      const usuario = payload.usuario || {};
+      localStorage.setItem('urfilig_usuario', JSON.stringify(usuario));
+      if (accountEmail) accountEmail.textContent = usuario.email || 'E-mail indisponível';
+      for (const [field, value] of Object.entries({
+        nome: usuario.nome || '', idade: usuario.idade ?? '', localizacao: usuario.localizacao || '',
+        profissao: usuario.profissao || '', hobbies: usuario.hobbies || '',
+      })) {
+        const input = profileForm?.elements.namedItem(field);
+        if (input) input.value = value;
+      }
+    } catch (error) {
+      let usuario = {};
+      try { usuario = JSON.parse(localStorage.getItem('urfilig_usuario') || '{}'); } catch { /* formulário permanece vazio */ }
+      if (accountEmail) accountEmail.textContent = usuario.email || 'E-mail indisponível';
+      for (const [field, value] of Object.entries({
+        nome: usuario.nome || '', idade: usuario.idade ?? '', localizacao: usuario.localizacao || '',
+        profissao: usuario.profissao || '', hobbies: usuario.hobbies || '',
+      })) {
+        const input = profileForm?.elements.namedItem(field);
+        if (input) input.value = value;
+      }
+      if (profileMessage) profileMessage.textContent = 'Dados locais carregados. O perfil precisa de conexão para ser salvo.';
+    }
+
+    const prefs = profilePrefs;
+    const style = document.querySelector('#profile-response-style');
+    const tone = document.querySelector('#profile-response-tone');
+    const skyMotion = document.querySelector('#profile-sky-motion');
+    const showWeather = document.querySelector('#profile-show-weather');
+    if (style) style.value = prefs.responseStyle || 'equilibrada';
+    if (tone) tone.value = prefs.responseTone || 'natural';
+    if (skyMotion) skyMotion.checked = prefs.skyMotion !== false;
+    if (showWeather) showWeather.checked = prefs.showWeather !== false;
+    profileDrawer?.querySelector('#profile-back')?.focus();
+  }
 
   // O menu sempre inicia fechado, inclusive se a WebView restaurar o estado anterior.
   menuLateral?.classList.remove('visible', 'aberto', 'active');
@@ -163,25 +286,114 @@ export function iniciarMenuLateral(socket) {
   }
 
   menuToggle?.addEventListener('click', () => {
+    fecharPerfil();
     menuLateral?.classList.contains('visible') ? fecharMenu() : abrirMenu();
+  });
+  document.querySelectorAll('.hud-nav .nav-item:not(#nav-profile)').forEach((item) => {
+    item.addEventListener('click', fecharPerfil, { capture: true });
   });
 
   menuBackdrop?.addEventListener('click', fecharMenu);
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') fecharMenu();
+    if (event.key === 'Escape') { fecharPerfil(); fecharMenu(); }
   });
 
-  document.querySelector('#menu-editar-perfil')?.addEventListener('click', () => {
-    window.location.href = '/onboarding.html?editar=1';
+  document.querySelector('#menu-editar-perfil')?.addEventListener('click', abrirPerfil);
+  document.querySelector('#nav-profile')?.addEventListener('click', abrirPerfil);
+  profileBackdrop?.addEventListener('click', fecharPerfil);
+  document.querySelector('#profile-back')?.addEventListener('click', fecharPerfil);
+  document.querySelector('#profile-close')?.addEventListener('click', fecharPerfil);
+  document.querySelector('#profile-cancel')?.addEventListener('click', fecharPerfil);
+  accountTab?.addEventListener('click', () => selecionarAbaConfiguracao('account'));
+  pluginsTab?.addEventListener('click', () => selecionarAbaConfiguracao('plugins'));
+  deleteEmailInput?.addEventListener('input', () => {
+    const esperado = accountEmail?.textContent?.trim().toLocaleLowerCase('pt-BR') || '';
+    const digitado = deleteEmailInput.value.trim().toLocaleLowerCase('pt-BR');
+    if (deleteAccountButton) deleteAccountButton.disabled = !esperado || digitado !== esperado;
+    if (deleteMessage) deleteMessage.textContent = '';
   });
-  document.querySelector('#nav-profile')?.addEventListener('click', () => {
-    window.location.href = '/onboarding.html?editar=1';
+  deleteAccountButton?.addEventListener('click', async () => {
+    const email = deleteEmailInput?.value.trim() || '';
+    if (!email || deleteAccountButton.disabled) return;
+    const confirmado = await showConfirm(
+      'Esta ação apaga permanentemente sua conta e os dados associados. Não será possível desfazer.',
+      'Excluir conta permanentemente',
+    );
+    if (!confirmado) return;
+    deleteAccountButton.disabled = true;
+    deleteAccountButton.textContent = 'Excluindo…';
+    if (deleteMessage) deleteMessage.textContent = '';
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/usuario/conta`, {
+        method: 'DELETE', headers: cabecalhoAuth(), body: JSON.stringify({ confirmarEmail: email }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.erro || 'Não foi possível excluir a conta.');
+      let usuario = {};
+      try { usuario = JSON.parse(localStorage.getItem('urfilig_usuario') || '{}'); } catch { /* continua removendo o restante local */ }
+      for (const key of ['urfilig_preferencias', 'urfilig_llm_provider', 'urfilig_prospeccao_nicho', 'urfilig_routine_boards_v1', 'urfilig_contatos_favoritos', 'google_access_token', 'redirect_after_login']) localStorage.removeItem(key);
+      if (usuario.id) localStorage.removeItem(`urfilig_spotify_session:${usuario.id}`);
+      if (deleteMessage) deleteMessage.textContent = 'Conta excluída. Encerrando sessão…';
+      window.setTimeout(() => window.sairDaUrfilig?.(), 350);
+    } catch (error) {
+      if (deleteMessage) deleteMessage.textContent = error.message;
+      deleteAccountButton.disabled = false;
+      deleteAccountButton.textContent = 'Excluir minha conta';
+    }
+  });
+  document.querySelectorAll('[data-settings-plugin]').forEach((button) => button.addEventListener('click', () => {
+    const destination = button.dataset.settingsPlugin === 'spotify' ? '#nav-spotify' : '#nav-emails';
+    fecharPerfil();
+    document.querySelector(destination)?.click();
+  }));
+  document.querySelectorAll('[data-settings-provider]').forEach((button) => button.addEventListener('click', () => {
+    const provider = document.querySelector('#quick-chat-provider');
+    if (!provider) return;
+    provider.value = button.dataset.settingsProvider;
+    provider.dispatchEvent(new Event('change', { bubbles: true }));
+    if (profileMessage) profileMessage.textContent = `${button.dataset.settingsProvider === 'ollama' ? 'Ollama local' : 'Gemini'} selecionado para o chat.`;
+  }));
+  profileForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!profileForm || !profileSaveButton) return;
+    profileMessage.textContent = '';
+    profileSaveButton.disabled = true;
+    profileSaveButton.textContent = 'Salvando…';
+    const formData = new FormData(profileForm);
+    const payload = Object.fromEntries(formData.entries());
+    payload.idade = payload.idade ? Number(payload.idade) : null;
+    payload.hobbies = payload.hobbies.split(',').map((item) => item.trim()).filter(Boolean);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/usuario/perfil`, {
+        method: 'PATCH', headers: cabecalhoAuth(), body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.erro || 'Não foi possível salvar o perfil.');
+      localStorage.setItem('urfilig_usuario', JSON.stringify(result.usuario));
+      Object.assign(profilePrefs, {
+        responseStyle: document.querySelector('#profile-response-style')?.value || 'equilibrada',
+        responseTone: document.querySelector('#profile-response-tone')?.value || 'natural',
+        skyMotion: document.querySelector('#profile-sky-motion')?.checked !== false,
+        showWeather: document.querySelector('#profile-show-weather')?.checked !== false,
+      });
+      localStorage.setItem('urfilig_preferencias', JSON.stringify(profilePrefs));
+      aplicarPreferenciasPerfil();
+      if (profileMessage) profileMessage.textContent = 'Alterações salvas.';
+      setTimeout(fecharPerfil, 450);
+    } catch (error) {
+      if (profileMessage) profileMessage.textContent = error.message || 'Falha ao salvar as alterações.';
+    } finally {
+      profileSaveButton.disabled = false;
+      profileSaveButton.textContent = 'Salvar alterações';
+    }
   });
 
-  document.querySelector('#menu-sair')?.addEventListener('click', () => {
-    window.sairDaUrfilig?.();
-  });
-  document.querySelector('#nav-logout')?.addEventListener('click', () => window.sairDaUrfilig?.());
+  const confirmarSaida = async () => {
+    const confirmado = await showConfirm('Deseja sair da sua conta agora?', 'Sair da Urfilig');
+    if (confirmado) window.sairDaUrfilig?.();
+  };
+  document.querySelector('#menu-sair')?.addEventListener('click', confirmarSaida);
+  document.querySelector('#nav-logout')?.addEventListener('click', confirmarSaida);
   document.querySelector('#nav-contatos')?.addEventListener('click', () => window.alternarPainelContatos?.());
 
   document.querySelector('#menu-abrir-contatos')?.addEventListener('click', () => {

@@ -16,6 +16,8 @@ import { conectarSocket } from './socketClient.js';
 import { falar } from './voice/ttsManager.js';
 import { exigirLogin, validarSessao, sair, BACKEND_URL } from './authGuard.js';
 import { iniciarMenuLateral } from './sideMenu.js';
+import { iniciarProspeccao } from './prospeccao.js';
+import { iniciarSpotify } from './spotify.js';
 import { carregarCalendarioUI } from './calendario.js';
 import { iniciarModuloContatos } from './contatos.js';
 import { iniciarQuadrosRotina } from './routineBoards.js';
@@ -153,7 +155,7 @@ function criarFundoEtereo() {
         float altura = normalize(vPosicao).y;
         vec3 cor = altura > 0.0
           ? mix(corMeio, corTopo, smoothstep(0.0, 1.0, altura))
-          : mix(corMeio, corBase, smoothstep(0.0, -1.0, altura));
+          : mix(corMeio, corBase, 1.0 - smoothstep(-1.0, 0.0, altura));
         float nevoa = 0.15 + sin(vPosicao.x * 0.04) * sin(vPosicao.z * 0.04) * 0.08;
         cor = mix(cor, corVazio, clamp(nevoa, 0.0, 0.4));
         gl_FragColor = vec4(cor, 1.0);
@@ -225,17 +227,33 @@ function atualizarTemaPorHorario() {
   const rgb = getTimeColor();
   const cor = new THREE.Color(`rgb(${rgb.join(',')})`);
   const uniforms = fundoEtereo.material.uniforms;
-  const hora = new Date().getHours();
-  const luzDia = Math.max(0, Math.min(1, (hora - 6) / 2, (19 - hora) / 2));
-  const corTopo = new THREE.Color('#122448').lerp(new THREE.Color('#91c9eb'), luzDia);
-  const corMeio = new THREE.Color('#b96c70').lerp(new THREE.Color('#f4d279'), luzDia);
-  const corBase = new THREE.Color('#382640').lerp(new THREE.Color('#e9a568'), luzDia);
-  const corVazio = new THREE.Color('#17203b').lerp(new THREE.Color('#a78565'), luzDia);
-  uniforms.corTopo.value.copy(corTopo);
-  uniforms.corMeio.value.copy(corMeio);
-  uniforms.corBase.value.copy(corBase);
-  uniforms.corVazio.value.copy(corVazio);
-  document.documentElement.style.setProperty('--cloud-glow', luzDia > .45 ? 'rgba(255,205,129,.6)' : 'rgba(223,91,119,.58)');
+  const hora = new Date().getHours() + new Date().getMinutes() / 60;
+  const paleta = [
+    [0,  ['#243653', '#778195', '#c09279', '#26334b']],
+    [5,  ['#354b69', '#a58b8a', '#d4a17e', '#354257']],
+    [7,  ['#a8c9df', '#e4d9c2', '#e7cda9', '#92b2c9']],
+    [10, ['#b7d7e7', '#eee5d0', '#ead7ad', '#9ebaca']],
+    [14, ['#b0d0e1', '#eee2c1', '#e9d0a6', '#9aafc3']],
+    [16, ['#a1bed5', '#e1c2a9', '#dca589', '#8499ae']],
+    [18, ['#71839d', '#d2a08c', '#d98e75', '#41485c']],
+    [20, ['#344865', '#a18c8d', '#cb987a', '#2d3a53']],
+    [22, ['#263a58', '#788296', '#c09279', '#24344e']],
+    [24, ['#243653', '#778195', '#c09279', '#26334b']],
+  ];
+  let indice = 0;
+  while (indice < paleta.length - 2 && hora > paleta[indice + 1][0]) indice++;
+  const [horaInicial, coresIniciais] = paleta[indice];
+  const [horaFinal, coresFinais] = paleta[indice + 1];
+  const fator = (hora - horaInicial) / (horaFinal - horaInicial);
+  const cores = coresIniciais.map((hex, i) => new THREE.Color(hex).lerp(new THREE.Color(coresFinais[i]), fator));
+  uniforms.corTopo.value.copy(cores[0]);
+  uniforms.corMeio.value.copy(cores[1]);
+  uniforms.corBase.value.copy(cores[2]);
+  uniforms.corVazio.value.copy(cores[3]);
+  const cloudLight = hora >= 7 && hora < 16 ? 'rgba(242,222,190,.48)' : hora >= 16 && hora < 21 ? 'rgba(234,159,132,.52)' : 'rgba(180,135,139,.4)';
+  const cloudShade = hora >= 7 && hora < 16 ? 'rgba(119,143,162,.36)' : hora >= 16 && hora < 21 ? 'rgba(109,73,91,.5)' : 'rgba(54,66,95,.52)';
+  document.documentElement.style.setProperty('--cloud-light', cloudLight);
+  document.documentElement.style.setProperty('--cloud-shade', cloudShade);
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
@@ -289,6 +307,8 @@ const socket = conectarSocket({
 });
 
 iniciarMenuLateral(socket);
+iniciarProspeccao();
+iniciarSpotify();
 
 window.recarregarEsferaNeural = carregarMemoriasECerebro;
 
@@ -479,13 +499,20 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnEnviar) btnEnviar.disabled = true;
 
       try {
+        let preferencias = {};
+        try { preferencias = JSON.parse(localStorage.getItem('urfilig_preferencias') || '{}'); } catch { /* mantém as preferências padrão */ }
         const resp = await fetch(`${BACKEND_URL}/api/comando`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${localStorage.getItem('urfilig_token')}`,
           },
-          body: JSON.stringify({ texto, provider: provider?.value || localStorage.getItem('urfilig_llm_provider') || 'gemini' }),
+          body: JSON.stringify({
+            texto,
+            provider: provider?.value || localStorage.getItem('urfilig_llm_provider') || 'gemini',
+            responseStyle: preferencias.responseStyle || 'equilibrada',
+            responseTone: preferencias.responseTone || 'natural',
+          }),
         });
 
         const dados = await resp.json();
@@ -624,7 +651,8 @@ carregarMascote('/models/mascote.glb', scene)
       posicaoFixa: new THREE.Vector3(-4.8, -1.2, 8.0),
       pontoParaOlhar: new THREE.Vector3(-4.8, -1.2, 20),
     });
-    mascote.rotation.y = 0;
+    mascote.rotation.y = Math.PI / 2;
+    mascote.visible = !mascotOverlayActive;
 
     headTracker = new HeadTracker(mascote);
     faceMesh = encontrarMeshComMorphTargets(mascote);
@@ -691,6 +719,7 @@ if (providerSelect) {
 
 const overlayToggle = document.querySelector('#mascot-overlay-toggle');
 let mascotOverlay = null;
+let mascotOverlayActive = false;
 overlayToggle?.addEventListener('click', async () => {
   if (!isTauri()) {
     overlayToggle.textContent = 'Disponível no aplicativo desktop';
@@ -699,6 +728,8 @@ overlayToggle?.addEventListener('click', async () => {
   try {
     if (mascotOverlay) {
       await mascotOverlay.close(); mascotOverlay = null;
+      mascotOverlayActive = false;
+      if (mascotRef) mascotRef.visible = true;
       overlayToggle.textContent = 'Sobrepor mascote';
       overlayToggle.setAttribute('aria-pressed', 'false');
       return;
@@ -706,20 +737,27 @@ overlayToggle?.addEventListener('click', async () => {
     mascotOverlay = await WebviewWindow.getByLabel('mascote-overlay');
     if (!mascotOverlay) {
       mascotOverlay = new WebviewWindow('mascote-overlay', {
-        url: 'mascote-overlay.html', title: 'Mascote Urfilig', width: 260, height: 320,
+        url: 'mascote-overlay.html', title: 'Mascote Urfilig', width: 340, height: 400,
+        x: 88, y: Math.max(0, window.innerHeight - 420),
         decorations: false, transparent: true, alwaysOnTop: true, focus: false, focusable: false,
         resizable: false, skipTaskbar: true, shadow: false,
       });
       mascotOverlay.once('tauri://destroyed', () => {
         mascotOverlay = null;
+        mascotOverlayActive = false;
+        if (mascotRef) mascotRef.visible = true;
         if (overlayToggle) { overlayToggle.textContent = 'Sobrepor mascote'; overlayToggle.setAttribute('aria-pressed', 'false'); }
       });
       mascotOverlay.once('tauri://error', (error) => console.error('[mascote-overlay] falha ao abrir', error));
     }
+    mascotOverlayActive = true;
+    if (mascotRef) mascotRef.visible = false;
     overlayToggle.textContent = 'Mascote sobreposto: ativado';
     overlayToggle.setAttribute('aria-pressed', 'true');
   } catch (error) {
     console.error('[mascote-overlay] falha:', error);
+    mascotOverlayActive = false;
+    if (mascotRef) mascotRef.visible = true;
     overlayToggle.textContent = 'Não foi possível abrir o mascote';
   }
 });

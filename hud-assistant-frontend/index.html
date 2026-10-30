@@ -41,9 +41,16 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           E-mails
         </button>
+        <button id="nav-spotify" class="nav-item" type="button" title="Spotify" aria-haspopup="dialog" aria-controls="spotify-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M7.2 9.3c3.6-1.1 7.8-.7 10.5 1.1M8 12.2c3-.8 6.4-.4 8.7 1M8.8 15c2.3-.5 4.7-.2 6.8.8"/></svg>
+          Spotify
+        </button>
         <button id="nav-contatos" class="nav-item" type="button">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1 0 7.75"/></svg>
           Contatos
+        </button>
+        <button id="nav-prospeccao" class="nav-item" type="button" title="Prospecção">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5M8 10h5M10.5 7.5v5"/></svg>Prospecção
         </button>
         <button id="btn-tendencias" class="nav-item" type="button" title="Tendências">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>Tendências
@@ -54,11 +61,11 @@
         <button id="btn-revisao-semanal" class="nav-item" type="button" title="Resumo semanal">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 15v-3M12 15V8M17 15v-5"/></svg>Resumo semanal
         </button>
-        <button id="nav-routines" class="nav-item" type="button" title="Criar quadro de rotinas">
+        <button id="nav-routines" class="nav-item" type="button" title="Ver quadros e criar rotina" aria-controls="routine-board" aria-expanded="false">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Rotinas
         </button>
-        <button id="nav-profile" class="nav-item" type="button" title="Editar perfil">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Perfil
+        <button id="nav-profile" class="nav-item" type="button" title="Configurações" aria-haspopup="dialog" aria-controls="profile-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Configurações
         </button>
         <button id="nav-logout" class="nav-item nav-logout" type="button" title="Sair">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>Sair
@@ -66,11 +73,140 @@
       </nav>
     </header>
 
+    <div id="profile-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="profile-drawer" class="profile-drawer" role="dialog" aria-modal="true" aria-labelledby="profile-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="profile-back" type="button" class="profile-back">← Voltar</button>
+        <h2 id="profile-title">Configurações</h2>
+        <button id="profile-close" type="button" class="profile-close" aria-label="Fechar configurações">×</button>
+      </header>
+      <nav class="settings-tabs" role="tablist" aria-label="Seções de configurações">
+        <button id="settings-account-tab" type="button" role="tab" aria-selected="true" aria-controls="settings-account-panel">Conta e perfil</button>
+        <button id="settings-plugins-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-plugins-panel">Plugins disponíveis</button>
+      </nav>
+      <div id="settings-account-panel" class="settings-panel" role="tabpanel" aria-labelledby="settings-account-tab">
+      <form id="profile-form" class="profile-form">
+        <section class="profile-section">
+          <h3>Sobre você</h3>
+          <div class="profile-fields">
+            <label>Nome<input name="nome" id="profile-name" autocomplete="name" required maxlength="80"></label>
+            <label>Idade<input name="idade" id="profile-age" type="number" min="1" max="120"></label>
+            <label>Cidade e estado<input name="localizacao" id="profile-location" maxlength="100"></label>
+            <label>Profissão ou atividade<input name="profissao" id="profile-profession" maxlength="100"></label>
+            <label class="profile-field-wide">Interesses e atividades<textarea name="hobbies" id="profile-interests" rows="3" maxlength="600"></textarea></label>
+          </div>
+        </section>
+        <section class="profile-section">
+          <h3>Como a Urfilig conversa</h3>
+          <div class="profile-fields">
+            <label>Extensão das respostas<select id="profile-response-style"><option value="curta">Curtas</option><option value="equilibrada">Equilibradas</option><option value="detalhada">Detalhadas</option></select></label>
+            <label>Tom de conversa<select id="profile-response-tone"><option value="natural">Natural</option><option value="acolhedor">Acolhedor</option><option value="formal">Formal</option></select></label>
+          </div>
+        </section>
+        <section class="profile-section">
+          <h3>Elementos da tela</h3>
+          <label class="profile-toggle"><input id="profile-sky-motion" type="checkbox"> Movimento das nuvens e do cometa</label>
+          <label class="profile-toggle"><input id="profile-show-weather" type="checkbox"> Mostrar clima no relógio</label>
+        </section>
+        <p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
+        <footer class="profile-actions">
+          <button id="profile-cancel" type="button" class="profile-cancel">Voltar sem salvar</button>
+          <button id="profile-save" type="submit" class="profile-save">Salvar alterações</button>
+        </footer>
+      </form>
+      <section class="settings-danger-zone" aria-labelledby="settings-delete-title">
+        <div><h3 id="settings-delete-title">Excluir conta</h3><p>Apaga permanentemente seu perfil, notas, contatos, eventos e demais dados associados.</p></div>
+        <p class="settings-account-email">Conta: <strong id="settings-account-email">Carregando conta…</strong></p>
+        <label class="settings-delete-field">Digite seu e-mail para confirmar<input id="settings-delete-email" type="email" autocomplete="off"></label>
+        <button id="settings-delete-account" type="button" disabled>Excluir minha conta</button>
+        <p id="settings-delete-message" class="profile-message" role="status" aria-live="polite"></p>
+      </section>
+      </div>
+      <section id="settings-plugins-panel" class="settings-panel settings-plugins-panel" role="tabpanel" aria-labelledby="settings-plugins-tab" hidden>
+        <p class="settings-plugins-intro">Integrações e provedores já disponíveis na Urfilig.</p>
+        <article class="settings-plugin-card">
+          <div><h3>Spotify</h3><p>Playlists, faixa atual e mini player.</p><small id="settings-spotify-status">Verificando conexão…</small></div>
+          <button type="button" data-settings-plugin="spotify">Abrir Spotify</button>
+        </article>
+        <article class="settings-plugin-card">
+          <div><h3>Gmail</h3><p>Caixas de entrada e leitura de mensagens.</p><small id="settings-gmail-status">Verificando autorização…</small></div>
+          <button type="button" data-settings-plugin="gmail">Abrir E-mails</button>
+        </article>
+        <article class="settings-plugin-card">
+          <div><h3>Gemini</h3><p>Provedor de IA configurado no backend.</p><small id="settings-gemini-status">Verificando configuração…</small></div>
+          <button type="button" data-settings-provider="gemini">Selecionar Gemini</button>
+        </article>
+        <article class="settings-plugin-card">
+          <div><h3>Ollama local</h3><p>Modelos de IA disponíveis nesta máquina.</p><small id="settings-ollama-status">Verificando serviço local…</small></div>
+          <button type="button" data-settings-provider="ollama">Selecionar Ollama</button>
+        </article>
+      </section>
+    </aside>
+
+    <div id="prospeccao-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="prospeccao-drawer" class="profile-drawer prospeccao-drawer" role="dialog" aria-modal="true" aria-labelledby="prospeccao-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="prospeccao-back" type="button" class="profile-back">← Voltar</button>
+        <h2 id="prospeccao-title">Prospecção no Maps</h2>
+        <button id="prospeccao-close" type="button" class="profile-close" aria-label="Fechar prospecção">×</button>
+      </header>
+      <div class="profile-form prospeccao-content">
+        <form id="prospeccao-search-form" class="profile-section">
+          <h3>Pesquisar empresas</h3>
+          <label class="prospeccao-field">Nicho<input id="prospeccao-nicho" maxlength="100" required></label>
+          <div class="prospeccao-location"><span>Localização</span><strong id="prospeccao-localizacao">Carregando cidade do perfil…</strong></div>
+          <a id="prospeccao-open-maps" class="profile-save prospeccao-maps-link" href="#" aria-disabled="true" tabindex="-1" target="_blank" rel="noopener noreferrer">Abrir busca no Google Maps</a>
+          <p class="prospeccao-note">A busca abre no Maps. Antes de cadastrar, confirme os dados no site oficial da empresa ou em uma fonte autorizada; não copie conteúdo da ficha do Maps.</p>
+          <p id="prospeccao-status" class="profile-message" role="status" aria-live="polite"></p>
+        </form>
+        <form id="prospeccao-lead-form" class="profile-section">
+          <h3>Adicionar lead confirmado</h3>
+          <label class="prospeccao-field">Empresa<input id="prospeccao-lead-name" maxlength="120" required></label>
+          <label class="prospeccao-field">Contato confirmado<input id="prospeccao-lead-contact" maxlength="180" required></label>
+          <label class="prospeccao-field">Contexto comercial<textarea id="prospeccao-lead-bio" rows="3" maxlength="1200"></textarea></label>
+          <button id="prospeccao-save-lead" type="submit" class="profile-save">Salvar para revisão</button>
+        </form>
+        <section class="profile-section">
+          <h3>Leads aguardando revisão</h3>
+          <div id="prospeccao-leads" class="prospeccao-leads"><p class="profile-message">Carregando leads…</p></div>
+        </section>
+      </div>
+    </aside>
+
+    <div id="spotify-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="spotify-drawer" class="profile-drawer spotify-drawer" role="dialog" aria-modal="true" aria-labelledby="spotify-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="spotify-back" type="button" class="profile-back">Voltar</button>
+        <h2 id="spotify-title">Spotify</h2>
+        <button id="spotify-close" type="button" class="profile-close" aria-label="Fechar Spotify">×</button>
+      </header>
+      <div class="profile-form spotify-content">
+        <section id="spotify-connect-panel" class="profile-section spotify-connect-panel">
+          <h3>Conectar conta</h3>
+          <a class="spotify-dashboard-link" href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer">Abrir Spotify Developer Dashboard</a>
+          <label class="spotify-field">Client ID do Spotify<input id="spotify-client-id" inputmode="latin" autocomplete="off" maxlength="32" placeholder="Cole o Client ID do Spotify Developer"></label>
+          <div class="spotify-redirect"><span>Endereço de retorno para cadastrar no Spotify</span><code id="spotify-redirect-uri">http://127.0.0.1:3000/api/spotify/callback</code><button id="spotify-copy-redirect" type="button">Copiar</button></div>
+          <p class="spotify-note">No Spotify Developer Dashboard, crie um app e cadastre o endereço acima em Redirect URIs. A reprodução dentro da Urfilig requer Spotify Premium.</p>
+          <button id="spotify-connect" type="button" class="profile-save">Conectar ao Spotify</button>
+          <p id="spotify-status" class="profile-message" role="status" aria-live="polite">Sua conta ainda não está conectada.</p>
+        </section>
+        <section id="spotify-library-panel" class="profile-section spotify-library-panel" hidden>
+          <div class="spotify-account-row"><span id="spotify-account-label">Conta Spotify conectada</span><button id="spotify-disconnect" type="button" class="profile-cancel">Desconectar</button></div>
+          <article class="spotify-now-playing">
+            <img id="spotify-track-image" alt="Capa do álbum" hidden>
+            <div id="spotify-track-placeholder" class="spotify-track-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2Zm12-2c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2ZM9 9l12-2"/></svg></div>
+            <div class="spotify-track-copy"><strong id="spotify-track-name">Nada tocando</strong><span id="spotify-track-artists">Escolha uma playlist para começar</span><small id="spotify-track-album"></small></div>
+          </article>
+          <div class="spotify-progress-row"><span id="spotify-progress-current">0:00</span><input id="spotify-progress" type="range" min="0" max="1000" value="0" aria-label="Posição da música"><span id="spotify-progress-total">0:00</span></div>
+          <div class="spotify-playback-controls"><button id="spotify-previous" type="button" aria-label="Faixa anterior">‹</button><button id="spotify-toggle" type="button" aria-label="Reproduzir ou pausar">Reproduzir</button><button id="spotify-next" type="button" aria-label="Próxima faixa">›</button><label>Volume<input id="spotify-volume" type="range" min="0" max="100" value="60" aria-label="Volume"></label></div>
+          <div class="spotify-playlist-heading"><h3>Suas playlists</h3><button id="spotify-refresh" type="button">Atualizar</button></div>
+          <div id="spotify-playlists" class="spotify-playlists"><p class="profile-message">Carregando playlists…</p></div>
+          <p class="spotify-note">O mini player da Urfilig cria um dispositivo Spotify no próprio app. O app Spotify não precisa ficar aberto. A reprodução depende do Premium e do suporte de áudio do dispositivo.</p>
+        </section>
+      </div>
+    </aside>
+
     <section id="hud-quick-controls" aria-label="Controles rápidos">
-      <label for="quick-chat-provider">Assistente</label>
-      <select id="quick-chat-provider" aria-label="Escolher Gemini ou Ollama">
-        <option value="gemini">Gemini</option><option value="ollama">Ollama local</option>
-      </select>
       <button type="button" id="mascot-overlay-toggle" aria-pressed="false">Sobrepor mascote</button>
     </section>
 
@@ -81,6 +217,12 @@
       <i class="sky-meteor"></i>
     </div>
     <section id="routine-board" aria-label="Quadros de rotinas" hidden></section>
+    <section id="spotify-mini-player" class="spotify-mini-player" aria-label="Mini player Spotify" hidden>
+      <img id="spotify-mini-image" alt="" hidden>
+      <div class="spotify-mini-copy"><strong id="spotify-mini-name">Nada tocando</strong><span id="spotify-mini-artist">Conecte sua conta Spotify</span></div>
+      <button id="spotify-mini-toggle" type="button" aria-label="Reproduzir ou pausar">▶</button>
+      <button id="spotify-mini-open" type="button" aria-label="Abrir Spotify">···</button>
+    </section>
     <section id="hud-clock-widget" aria-label="Relógio e clima">
       <div class="hud-clock-time" id="hud-clock-time">--:--:--</div>
       <div class="hud-clock-date" id="hud-clock-date">Carregando data…</div>
@@ -150,6 +292,12 @@
         <input id="chat-input" type="text" placeholder="Falar com a Urfilig..." autocomplete="off" />
         <button type="submit" class="chat-btn-enviar">Enviar</button>
       </form>
+      <label id="chat-model-control" aria-label="Modelo de conversa">
+        <span class="visually-hidden">Modelo de conversa</span>
+        <select id="quick-chat-provider" aria-label="Mudar modelo de conversa">
+          <option value="gemini">Gemini</option><option value="ollama">Ollama local</option>
+        </select>
+      </label>
     </div>
 
     <div id="cerebro-painel" class="sidebar-cerebro">

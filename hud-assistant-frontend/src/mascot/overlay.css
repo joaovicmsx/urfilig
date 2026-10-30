@@ -1,4 +1,5 @@
 html, body, #mascot-overlay { width: 100%; height: 100%; margin: 0; overflow: hidden; background: transparent !important; }
+body, body * { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; font-weight: 400 !important; }
 #mascot-overlay { position: relative; isolation: isolate; }
 #overlay-canvas { width: 100%; height: 100%; display: block; }
 #overlay-close { position: absolute; z-index: 2; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; color: rgba(255,255,255,.78); background: rgba(15,16,20,.34); border: 0; border-radius: 50%; font: 20px/1 system-ui; cursor: pointer; backdrop-filter: blur(10px); opacity: .5; transition: opacity .18s ease; }

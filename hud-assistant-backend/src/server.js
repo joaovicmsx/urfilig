@@ -14,6 +14,7 @@ import { cerebroRouter } from './persona/cerebroRouter.js';
 import { eventosRouter } from './router/eventosRouter.js';
 import { authRouter } from './auth/authRouter.js';
 import { perfilRouter } from './auth/perfilRouter.js';
+import { spotifyRouter } from './spotify/spotifyRouter.js';
 import inteligenciaRouter from './router/inteligenciaRouter.js';
 
 // Middlewares e Jobs
@@ -34,6 +35,7 @@ const io = configurarSocket(httpServer);
 // Rotas da API
 app.use('/api', authRouter);
 app.use('/api', perfilRouter);
+app.use('/api', spotifyRouter);
 app.use('/api', comandoRouter);
 app.use('/api', leadsRouter);
 app.use('/api', agendaRouter);

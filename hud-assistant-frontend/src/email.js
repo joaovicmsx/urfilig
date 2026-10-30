@@ -1,5 +1,4 @@
 import './timeTheme.js';
-import './windowChrome.js';
 import { BACKEND_URL, exigirLogin, validarSessao } from './authGuard.js';
 import { showAlert, showToast } from './uiDialogs.js';
 
@@ -27,6 +26,8 @@ const leitorAssunto = document.getElementById('leitor-assunto');
 const leitorRemetente = document.getElementById('leitor-remetente');
 const leitorData = document.getElementById('leitor-data');
 const leitorCorpo = document.getElementById('leitor-corpo');
+const emailWrapper = document.querySelector('.email-wrapper');
+const btnVoltarLista = document.getElementById('btn-voltar-lista');
 
 let btnSalvarTxt = document.getElementById('btn-salvar-txt');
 let btnSalvarNotas = document.getElementById('btn-salvar-notas');
@@ -268,6 +269,7 @@ async function carregarEmails(pasta = 'INBOX') {
       div.addEventListener('click', () => {
         document.querySelectorAll('.email-item').forEach(el => el.classList.remove('selecionado'));
         div.classList.add('selecionado');
+        emailWrapper?.classList.add('email-lendo');
         abrirEmail(id, assunto, de, dataStr);
       });
       listaEmailsEl.appendChild(div);
@@ -280,6 +282,18 @@ async function carregarEmails(pasta = 'INBOX') {
     listaEmailsEl.replaceChildren(estado);
   }
 }
+
+btnVoltarLista?.addEventListener('click', () => {
+  emailWrapper?.classList.remove('email-lendo');
+  document.querySelectorAll('.email-item').forEach(el => el.classList.remove('selecionado'));
+  if (leitorAssunto) leitorAssunto.textContent = 'Selecione uma mensagem';
+  if (leitorRemetente) leitorRemetente.textContent = '';
+  if (leitorData) leitorData.textContent = '';
+  if (leitorCorpo) leitorCorpo.textContent = 'Selecione um e-mail da lista para visualizar seu conteúdo.';
+  emailAbertoAtual = null;
+  if (btnSalvarTxt) btnSalvarTxt.disabled = true;
+  if (btnSalvarNotas) btnSalvarNotas.disabled = true;
+});
 
 async function abrirEmail(id, assunto, remetente, dataStr) {
   if (!leitorAssunto || !leitorCorpo) return;

@@ -13,11 +13,19 @@ import * as THREE from 'three';
  * rápido acompanha).
  */
 class OssoRastreado {
-  constructor(osso, { maxAngleRad, lerpSpeed }) {
+  constructor(osso, { maxAngleRad, lerpSpeed, frenteMundial, cimaMundial }) {
     this.osso = osso;
     this.maxAngleRad = maxAngleRad;
     this.lerpSpeed = lerpSpeed;
     this.quaternionRepouso = osso.quaternion.clone();
+    const quaternionPai = new THREE.Quaternion();
+    osso.parent.getWorldQuaternion(quaternionPai);
+    quaternionPai.invert();
+    const frente = frenteMundial.clone().applyQuaternion(quaternionPai).normalize();
+    const cima = cimaMundial.clone().applyQuaternion(quaternionPai).normalize();
+    const direita = cima.clone().cross(frente).normalize();
+    cima.crossVectors(frente, direita).normalize();
+    this.quadroFrontal = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(direita, cima, frente));
   }
 
   atualizar(pontoAlvoMundial, delta) {
@@ -27,10 +35,13 @@ class OssoRastreado {
     const quaternionPaiMundial = new THREE.Quaternion();
     this.osso.parent.getWorldQuaternion(quaternionPaiMundial);
     direcaoLocal.applyQuaternion(quaternionPaiMundial.invert()).normalize();
-    const yaw = THREE.MathUtils.clamp(Math.atan2(direcaoLocal.x, Math.max(.001, direcaoLocal.z)), -this.maxAngleRad, this.maxAngleRad);
-    const pitch = THREE.MathUtils.clamp(-Math.atan2(direcaoLocal.y, Math.hypot(direcaoLocal.x, direcaoLocal.z)), -this.maxAngleRad * .72, this.maxAngleRad * .72);
-    const desvioLocal = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
-    const quaternionAlvo = this.quaternionRepouso.clone().multiply(desvioLocal);
+    const direcaoFrontal = direcaoLocal.applyQuaternion(this.quadroFrontal.clone().invert());
+    const yaw = THREE.MathUtils.clamp(Math.atan2(direcaoFrontal.x, Math.max(.001, direcaoFrontal.z)), -this.maxAngleRad, this.maxAngleRad);
+    const pitch = THREE.MathUtils.clamp(-Math.atan2(direcaoFrontal.y, Math.hypot(direcaoFrontal.x, direcaoFrontal.z)), -this.maxAngleRad * .72, this.maxAngleRad * .72);
+    const desvioFrontal = new THREE.Quaternion().setFromEuler(new THREE.Euler(pitch, yaw, 0, 'YXZ'));
+    const quadroFrontalInverso = this.quadroFrontal.clone().invert();
+    const desvioLocal = this.quadroFrontal.clone().multiply(desvioFrontal).multiply(quadroFrontalInverso);
+    const quaternionAlvo = desvioLocal.multiply(this.quaternionRepouso);
 
     this.osso.quaternion.slerp(quaternionAlvo, Math.min(delta * this.lerpSpeed, 1));
   }
@@ -43,23 +54,33 @@ class OssoRastreado {
 export class HeadTracker {
   constructor(mascote, {
     nomesOssos = { cabeca: 'cabeca', olhoEsquerdo: 'olho.L', olhoDireito: 'olho.R' },
-    distanciaAlvo = 8, // o quão "à frente" no raio do mouse o alvo 3D fica
+    frenteModelo = new THREE.Vector3(-1, 0, 0),
+    distanciaAlvo = 4,
   } = {}) {
     this.distanciaAlvo = distanciaAlvo;
     this.pontoAlvo = new THREE.Vector3();
     this.ativo = false;
+    const quaternionMascote = mascote.getWorldQuaternion(new THREE.Quaternion());
+    const frenteMundial = frenteModelo.clone().applyQuaternion(quaternionMascote).normalize();
+    const cimaMundial = new THREE.Vector3(0, 1, 0).applyQuaternion(quaternionMascote).normalize();
 
     this.cabeca = this._tentarRastrear(mascote, nomesOssos.cabeca, {
-      maxAngleRad: THREE.MathUtils.degToRad(22),
-      lerpSpeed: 4,
+      maxAngleRad: THREE.MathUtils.degToRad(38),
+      lerpSpeed: 8,
+      frenteMundial,
+      cimaMundial,
     });
     this.olhoEsquerdo = this._tentarRastrear(mascote, nomesOssos.olhoEsquerdo, {
       maxAngleRad: THREE.MathUtils.degToRad(12),
       lerpSpeed: 8,
+      frenteMundial,
+      cimaMundial,
     });
     this.olhoDireito = this._tentarRastrear(mascote, nomesOssos.olhoDireito, {
       maxAngleRad: THREE.MathUtils.degToRad(12),
       lerpSpeed: 8,
+      frenteMundial,
+      cimaMundial,
     });
 
     this.ativo = Boolean(this.cabeca || this.olhoEsquerdo || this.olhoDireito);
@@ -95,9 +116,14 @@ export class HeadTracker {
 
   /** Chamado a cada movimento do mouse — recalcula o ponto-alvo em 3D. */
   atualizarAlvoComRaycaster(raycaster) {
-    this.pontoAlvo
-      .copy(raycaster.ray.origin)
-      .addScaledVector(raycaster.ray.direction, this.distanciaAlvo);
+    const cabeca = this.cabeca?.osso || this.olhoEsquerdo?.osso || this.olhoDireito?.osso;
+    if (cabeca) {
+      const posicao = cabeca.getWorldPosition(new THREE.Vector3());
+      const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(cabeca.parent.getWorldQuaternion(new THREE.Quaternion())).normalize();
+      const plano = new THREE.Plane().setFromNormalAndCoplanarPoint(frente, posicao.addScaledVector(frente, 1.25));
+      if (raycaster.ray.intersectPlane(plano, this.pontoAlvo)) return;
+    }
+    this.pontoAlvo.copy(raycaster.ray.origin).addScaledVector(raycaster.ray.direction, this.distanciaAlvo);
   }
 
   /** Chamado a cada frame de animação. */

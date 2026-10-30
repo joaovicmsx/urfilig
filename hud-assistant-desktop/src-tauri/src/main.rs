@@ -93,8 +93,10 @@ fn main() {
                             if let (Ok(position), Ok(size)) = (overlay.outer_position(), overlay.outer_size()) {
                                 let width = size.width.max(1) as f64;
                                 let height = size.height.max(1) as f64;
-                                let overlay_x = (((cursor.x - position.x) as f64 / width) * 2.0 - 1.0).clamp(-1.0, 1.0);
-                                let overlay_y = -(((cursor.y - position.y) as f64 / height) * 2.0 - 1.0).clamp(-1.0, 1.0);
+                                // Mantém coordenadas fora de [-1, 1] quando o cursor está
+                                // fora da janela para que o mascote continue seguindo-o na tela.
+                                let overlay_x = ((cursor.x - position.x) as f64 / width) * 2.0 - 1.0;
+                                let overlay_y = -((cursor.y - position.y) as f64 / height) * 2.0 + 1.0;
                                 overlay_payload["x"] = serde_json::json!(overlay_x);
                                 overlay_payload["y"] = serde_json::json!(overlay_y);
                             }
@@ -211,8 +213,10 @@ fn autorizar_microfone(consentimento: tauri::State<'_, PermissaoMicrofone>) -> R
 #[tauri::command]
 fn abrir_url_externa(url: String) -> Result<(), String> {
     let url = Url::parse(&url).map_err(|erro| erro.to_string())?;
-    if url.scheme() != "https" || url.host_str() != Some("accounts.google.com") {
-        return Err("Somente URLs oficiais de autenticação do Google são permitidas".into());
+    if url.scheme() != "https"
+        || !matches!(url.host_str(), Some("accounts.google.com") | Some("accounts.spotify.com"))
+    {
+        return Err("Somente URLs oficiais de autenticação do Google ou Spotify são permitidas".into());
     }
 
     #[cfg(target_os = "windows")]

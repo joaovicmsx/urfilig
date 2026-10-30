@@ -81,8 +81,12 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
     textoParaGemini = `O usuário pediu pra você guardar isto: "${conteudoNota}". Você já salvou. Confirme isso de forma breve.`;
   }
 
-  const systemPrompt = await montarSystemPrompt(usuarioId, { sentimento, prioridade });
-  const resposta = await perguntarLLM(textoParaGemini, systemPrompt, opcoesLLM);
+  const systemPrompt = await montarSystemPrompt(usuarioId, {
+    sentimento, prioridade,
+    responseStyle: opcoesLLM.responseStyle,
+    responseTone: opcoesLLM.responseTone,
+  });
+  const resposta = await perguntarLLM(textoParaGemini, systemPrompt, { provider: opcoesLLM.provider });
 
   emitirEstado(usuarioId, 'SPEAKING');
   const audioBase64 = await sintetizarFala(resposta);

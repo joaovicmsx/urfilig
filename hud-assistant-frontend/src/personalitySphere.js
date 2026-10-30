@@ -58,7 +58,7 @@ export class PersonalitySphere {
     this.nodeTexture = new THREE.CanvasTexture(nodeCanvas);
     this.nodeTexture.colorSpace = THREE.SRGBColorSpace;
     const geometriaCore = new THREE.PlaneGeometry(0.25, 0.25);
-    const materialCore = new THREE.MeshBasicMaterial({ color: 0xffffff, map: this.nodeTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false });
+    const materialCore = new THREE.MeshBasicMaterial({ color: 0xffffff, map: this.nodeTexture, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: true });
     this.instancedMesh = new THREE.InstancedMesh(geometriaCore, materialCore, maxParticles);
     this.instancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.instancedMesh.count = 0;
@@ -185,7 +185,6 @@ export class PersonalitySphere {
         this.emitDust(p.posicaoAtual, p.corAtual, 50, 'explode');
         this.playParticleSound('explode');
         if (p.aura) { this.grupo.remove(p.aura); p.aura.material.dispose(); }
-        if (p.auraSoft) { this.grupo.remove(p.auraSoft); p.auraSoft.material.dispose(); }
       }
       return mantida;
     });
@@ -432,21 +431,16 @@ export class PersonalitySphere {
   }
 
   setTimeColor(color) {
-    this.corHorario.copy(color);
+    this.corHorario.copy(color.clone().lerp(new THREE.Color('#aeb8c6'), .34).multiplyScalar(.76));
   }
 
   garantirAura(particula) {
     if (!particula || particula.aura) return;
-    const material = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true, toneMapped: false });
+    const material = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true, toneMapped: false });
     particula.aura = new THREE.Sprite(material);
-    particula.aura.scale.set(1.08, 1.08, 1);
+    particula.aura.scale.set(.44, .44, 1);
     particula.aura.renderOrder = 1;
     this.grupo.add(particula.aura);
-    const softMaterial = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.28, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true, toneMapped: false });
-    particula.auraSoft = new THREE.Sprite(softMaterial);
-    particula.auraSoft.scale.set(1.85, 1.85, 1);
-    particula.auraSoft.renderOrder = 0;
-    this.grupo.add(particula.auraSoft);
   }
 
   update(delta) {
@@ -501,8 +495,8 @@ export class PersonalitySphere {
         }
       }
 
-      const pulsacao = this.reducedMotion ? 1 : 0.97 + Math.sin(tempo * 0.72 + p.fase) * 0.055;
-      p.corAtual.copy(this.corHorario).multiplyScalar((0.94 + (i % 4) * 0.035) * pulsacao);
+      const pulsacao = this.reducedMotion ? 1 : 0.985 + Math.sin(tempo * 0.5 + p.fase) * 0.025;
+      p.corAtual.copy(this.corHorario).multiplyScalar((0.9 + (i % 4) * 0.025) * pulsacao);
 
       const corRender = p.corAtual.clone().multiplyScalar(1.05);
       if (this.hoverIndex === i || this.nodeArrastado === p) {
@@ -511,20 +505,14 @@ export class PersonalitySphere {
 
       this.instancedMesh.setColorAt(i, corRender);
       if (p.aura) {
-        const brilho = this.reducedMotion ? 1 : .91 + Math.sin(tempo * .62 + p.fase) * .14;
+        const brilho = this.reducedMotion ? 1 : .96 + Math.sin(tempo * .5 + p.fase) * .045;
         p.aura.position.copy(p.position);
-        p.aura.material.color.copy(this.corHorario).multiplyScalar(1.9);
-        p.aura.material.opacity = .86 + Math.sin(tempo * .52 + p.fase) * .13;
-        p.aura.scale.setScalar(1.08 * brilho);
-        if (p.auraSoft) {
-          p.auraSoft.position.copy(p.position);
-          p.auraSoft.material.color.copy(this.corHorario).multiplyScalar(1.55);
-          p.auraSoft.material.opacity = .25 + Math.sin(tempo * .52 + p.fase) * .07;
-          p.auraSoft.scale.setScalar(1.85 * brilho);
-        }
+        p.aura.material.color.copy(this.corHorario).multiplyScalar(.78);
+        p.aura.material.opacity = .19 + Math.sin(tempo * .5 + p.fase) * .035;
+        p.aura.scale.setScalar(.44 * brilho);
       }
 
-      const tamanhoPulsado = this.reducedMotion ? 1 : 0.97 + Math.sin(tempo * 0.72 + p.fase) * 0.045;
+      const tamanhoPulsado = this.reducedMotion ? 1 : 0.99 + Math.sin(tempo * 0.5 + p.fase) * 0.025;
       matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(tamanhoPulsado, tamanhoPulsado, tamanhoPulsado));
       this.instancedMesh.setMatrixAt(i, matriz);
     });

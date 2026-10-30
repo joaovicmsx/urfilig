@@ -51,10 +51,17 @@ leadsRouter.post('/leads/novo', async (req, res) => {
   const score = calcularScore(bio, nicho);
 
   try {
-    const pitch = await perguntarOllama(
-      `Nicho: ${nicho || 'não informado'}\nBio: ${bio || ''}`,
-      SYSTEM_PROMPT_PITCH
-    );
+    let pitch = null;
+    try {
+      pitch = await perguntarOllama(
+        `Nicho: ${nicho || 'não informado'}\nBio: ${bio || ''}`,
+        SYSTEM_PROMPT_PITCH
+      );
+    } catch {
+      // A indisponibilidade do modelo não deve impedir o usuário de registrar
+      // um lead; ele ainda pode revisar os dados e preparar o contato manualmente.
+      console.warn('[leads] Ollama indisponível; lead será salvo sem rascunho.');
+    }
 
     const lead = await prisma.lead.create({
       data: { usuarioId: req.usuarioId, nome, contato, nicho, bio, score, pitch },

@@ -10,7 +10,7 @@ import { prisma } from '../db/client.js';
 function montarBase(usuario) {
   const referenciaAoUsuario = usuario?.nome ? `de ${usuario.nome}` : 'do usuário';
   let base = `Você é a Urfilig, o assistente pessoal ${referenciaAoUsuario}, rodando localmente.
-Responda sempre em português, de forma direta e curta (2-4 frases no máximo).`;
+Responda sempre em português, com clareza e sem repetir informações.`;
 
   const fatosPerfil = [];
   if (usuario?.idade) fatosPerfil.push(`${usuario.idade} anos`);
@@ -39,7 +39,7 @@ Responda sempre em português, de forma direta e curta (2-4 frases no máximo).`
  * futuro, só vale a pena quando o volume de diretrizes/reflexões crescer
  * o bastante pra esse filtro simples não dar conta mais.
  */
-export async function montarSystemPrompt(usuarioId, { sentimento, prioridade }) {
+export async function montarSystemPrompt(usuarioId, { sentimento, prioridade, responseStyle = 'equilibrada', responseTone = 'natural' }) {
   const [usuario, tracos, bordoes, diretrizes, reflexoes] = await Promise.all([
     prisma.usuario.findUnique({ where: { id: usuarioId } }),
     prisma.temperamento.findMany({ where: { usuarioId, ativo: true }, orderBy: { intensidade: 'desc' }, take: 5 }),
@@ -49,6 +49,18 @@ export async function montarSystemPrompt(usuarioId, { sentimento, prioridade }) 
   ]);
 
   let prompt = montarBase(usuario);
+
+  const estilosResposta = {
+    curta: 'Prefira respostas curtas, com uma ou duas frases, sem omitir a informação principal.',
+    equilibrada: 'Responda com clareza e concisão, normalmente em duas a quatro frases; detalhe quando a pergunta exigir.',
+    detalhada: 'Explique com mais contexto e passos claros quando isso ajudar a pessoa; evite repetir a mesma ideia.',
+  };
+  const tonsResposta = {
+    natural: 'Use um tom natural e direto.',
+    acolhedor: 'Use um tom acolhedor e paciente, sem exagerar na intimidade.',
+    formal: 'Use um tom profissional e respeitoso.',
+  };
+  prompt += `\n\nPreferências de conversa: ${estilosResposta[responseStyle] || estilosResposta.equilibrada} ${tonsResposta[responseTone] || tonsResposta.natural}`;
 
   if (diretrizes.length > 0) {
     const listaDiretrizes = diretrizes.map((d) => `- ${d.conteudo}`).join('\n');
