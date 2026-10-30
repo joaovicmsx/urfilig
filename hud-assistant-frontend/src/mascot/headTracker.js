@@ -43,11 +43,13 @@ class OssoRastreado {
     const desvioLocal = this.quadroFrontal.clone().multiply(desvioFrontal).multiply(quadroFrontalInverso);
     const quaternionAlvo = desvioLocal.multiply(this.quaternionRepouso);
 
-    this.osso.quaternion.slerp(quaternionAlvo, Math.min(delta * this.lerpSpeed, 1));
+    const suavizacao = 1 - Math.exp(-this.lerpSpeed * Math.max(0, delta));
+    this.osso.quaternion.slerp(quaternionAlvo, suavizacao);
   }
 
   voltarAoRepouso(delta) {
-    this.osso.quaternion.slerp(this.quaternionRepouso, Math.min(delta * this.lerpSpeed, 1));
+    const suavizacao = 1 - Math.exp(-this.lerpSpeed * Math.max(0, delta));
+    this.osso.quaternion.slerp(this.quaternionRepouso, suavizacao);
   }
 }
 
@@ -66,19 +68,19 @@ export class HeadTracker {
 
     this.cabeca = this._tentarRastrear(mascote, nomesOssos.cabeca, {
       maxAngleRad: THREE.MathUtils.degToRad(38),
-      lerpSpeed: 8,
+      lerpSpeed: 12,
       frenteMundial,
       cimaMundial,
     });
     this.olhoEsquerdo = this._tentarRastrear(mascote, nomesOssos.olhoEsquerdo, {
       maxAngleRad: THREE.MathUtils.degToRad(12),
-      lerpSpeed: 8,
+      lerpSpeed: 12,
       frenteMundial,
       cimaMundial,
     });
     this.olhoDireito = this._tentarRastrear(mascote, nomesOssos.olhoDireito, {
       maxAngleRad: THREE.MathUtils.degToRad(12),
-      lerpSpeed: 8,
+      lerpSpeed: 12,
       frenteMundial,
       cimaMundial,
     });
@@ -119,8 +121,15 @@ export class HeadTracker {
     const cabeca = this.cabeca?.osso || this.olhoEsquerdo?.osso || this.olhoDireito?.osso;
     if (cabeca) {
       const posicao = cabeca.getWorldPosition(new THREE.Vector3());
-      const frente = new THREE.Vector3(0, 0, 1).applyQuaternion(cabeca.parent.getWorldQuaternion(new THREE.Quaternion())).normalize();
-      const plano = new THREE.Plane().setFromNormalAndCoplanarPoint(frente, posicao.addScaledVector(frente, 1.25));
+      // Use the camera plane so each screen position maps consistently to
+      // the same direction, independent of the rig's parent-bone rotation.
+      const normalCamera = raycaster.camera
+        ? raycaster.camera.getWorldDirection(new THREE.Vector3())
+        : new THREE.Vector3(0, 0, 1).applyQuaternion(cabeca.parent.getWorldQuaternion(new THREE.Quaternion()));
+      const plano = new THREE.Plane().setFromNormalAndCoplanarPoint(
+        normalCamera,
+        posicao.clone().addScaledVector(normalCamera, -1.25),
+      );
       if (raycaster.ray.intersectPlane(plano, this.pontoAlvo)) return;
     }
     this.pontoAlvo.copy(raycaster.ray.origin).addScaledVector(raycaster.ray.direction, this.distanciaAlvo);

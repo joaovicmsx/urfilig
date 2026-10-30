@@ -25,13 +25,12 @@ function formatTime(milliseconds = 0) {
 export function iniciarSpotify() {
   const drawer = el('#spotify-drawer');
   const backdrop = el('#spotify-backdrop');
-  const clientIdInput = el('#spotify-client-id');
   const status = el('#spotify-status');
   const connectPanel = el('#spotify-connect-panel');
   const libraryPanel = el('#spotify-library-panel');
   const playlists = el('#spotify-playlists');
   const mini = el('#spotify-mini-player');
-  if (!drawer || !backdrop || !clientIdInput || !playlists || !mini) return;
+  if (!drawer || !backdrop || !playlists || !mini) return;
 
   let credentials = null;
   let player = null;
@@ -42,7 +41,19 @@ export function iniciarSpotify() {
   let playbackDuration = 0;
   let sdkPromise = null;
 
-  const say = (message) => { if (status) status.textContent = message; };
+  const say = (message) => {
+    if (status) status.textContent = message;
+    const button = el('#spotify-connect');
+    if (button && message) button.title = message;
+  };
+  const showConnection = (connected) => {
+    const button = el('#spotify-connect');
+    connectPanel.hidden = false;
+    libraryPanel.hidden = true;
+    button?.classList.toggle('conectado', connected);
+    button?.setAttribute('aria-label', connected ? 'Spotify conectado' : 'Conectar ao Spotify');
+    button?.setAttribute('title', connected ? 'Spotify conectado' : 'Conectar ao Spotify');
+  };
   const tokenKey = () => `${TOKEN_PREFIX}${getUserKey()}`;
   const readCredentials = () => {
     try { return JSON.parse(localStorage.getItem(tokenKey()) || 'null'); }
@@ -275,8 +286,8 @@ export function iniciarSpotify() {
     mini.hidden = true;
     libraryPanel.hidden = true;
     connectPanel.hidden = false;
-    clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
     say('Conta Spotify desconectada da Urfilig.');
+    showConnection(false);
   }
 
   async function pollAuthorization(state, popup) {
@@ -301,8 +312,7 @@ export function iniciarSpotify() {
           refreshToken: result.refreshToken,
           expiresAt: Date.now() + result.expiresIn * 1000,
         });
-        connectPanel.hidden = true;
-        libraryPanel.hidden = false;
+        showConnection(true);
         mini.hidden = false;
         say('Conta Spotify conectada. Carregando suas playlists…');
         await Promise.allSettled([initializePlayer(), loadPlaylists(), loadCurrentPlayback()]);
@@ -317,10 +327,11 @@ export function iniciarSpotify() {
   }
 
   async function connectSpotify() {
-    const clientId = clientIdInput.value.trim();
+    const savedClientId = localStorage.getItem(CLIENT_ID_KEY) || '';
+    const clientId = (savedClientId || window.prompt('Informe o Client ID do Spotify Developer Dashboard:') || '').trim();
+    if (!clientId) return;
     if (!/^[A-Za-z0-9]{32}$/.test(clientId)) {
       say('O Client ID deve ter 32 letras ou números.');
-      clientIdInput.focus();
       return;
     }
     const popup = isTauri() ? null : window.open('about:blank', 'urfilig-spotify-auth', 'popup,width=520,height=720');
@@ -350,17 +361,14 @@ export function iniciarSpotify() {
     backdrop.classList.add('visible');
     drawer.setAttribute('aria-hidden', 'false');
     backdrop.setAttribute('aria-hidden', 'false');
-    clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
     credentials = readCredentials();
     if (credentials) {
-      connectPanel.hidden = true;
-      libraryPanel.hidden = false;
+      showConnection(true);
       mini.hidden = false;
       Promise.allSettled([initializePlayer(), loadPlaylists(), loadCurrentPlayback()]);
       if (!playbackPollTimer) playbackPollTimer = window.setInterval(loadCurrentPlayback, 8000);
     } else {
-      connectPanel.hidden = false;
-      libraryPanel.hidden = true;
+      showConnection(false);
     }
     el('#spotify-back')?.focus();
   }
@@ -372,15 +380,13 @@ export function iniciarSpotify() {
     backdrop.setAttribute('aria-hidden', 'true');
   }
 
-  clientIdInput.value = localStorage.getItem(CLIENT_ID_KEY) || '';
   credentials = readCredentials();
   if (credentials) {
-    connectPanel.hidden = true;
-    libraryPanel.hidden = false;
+    showConnection(true);
     mini.hidden = false;
     Promise.allSettled([initializePlayer(), loadCurrentPlayback()]);
     playbackPollTimer = window.setInterval(loadCurrentPlayback, 8000);
-  }
+  } else showConnection(false);
 
   el('#nav-spotify')?.addEventListener('click', openDrawer);
   el('#spotify-back')?.addEventListener('click', closeDrawer);

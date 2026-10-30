@@ -229,16 +229,16 @@ function atualizarTemaPorHorario() {
   const uniforms = fundoEtereo.material.uniforms;
   const hora = new Date().getHours() + new Date().getMinutes() / 60;
   const paleta = [
-    [0,  ['#243653', '#778195', '#c09279', '#26334b']],
-    [5,  ['#354b69', '#a58b8a', '#d4a17e', '#354257']],
-    [7,  ['#a8c9df', '#e4d9c2', '#e7cda9', '#92b2c9']],
-    [10, ['#b7d7e7', '#eee5d0', '#ead7ad', '#9ebaca']],
-    [14, ['#b0d0e1', '#eee2c1', '#e9d0a6', '#9aafc3']],
-    [16, ['#a1bed5', '#e1c2a9', '#dca589', '#8499ae']],
-    [18, ['#71839d', '#d2a08c', '#d98e75', '#41485c']],
-    [20, ['#344865', '#a18c8d', '#cb987a', '#2d3a53']],
-    [22, ['#263a58', '#788296', '#c09279', '#24344e']],
-    [24, ['#243653', '#778195', '#c09279', '#26334b']],
+    [0,  ['#263957', '#7d89a7', '#b99191', '#263650']],
+    [5,  ['#354b69', '#a18ca5', '#d49a7d', '#34445d']],
+    [7,  ['#9fc4df', '#c6bad5', '#e1c2a5', '#819fbe']],
+    [10, ['#aacde6', '#c9c5dc', '#e4d2b8', '#95b5d1']],
+    [14, ['#a6c5df', '#c9bfd9', '#e2c9ae', '#91a9c8']],
+    [16, ['#91afd0', '#c5a7be', '#dfa783', '#788fac']],
+    [18, ['#5d7399', '#b98e9e', '#d28e73', '#3c4b68']],
+    [20, ['#354a67', '#9c8ba5', '#ca967d', '#30405d']],
+    [22, ['#293c5a', '#818ba8', '#b88f88', '#293a55']],
+    [24, ['#263957', '#7d89a7', '#b99191', '#263650']],
   ];
   let indice = 0;
   while (indice < paleta.length - 2 && hora > paleta[indice + 1][0]) indice++;
@@ -250,10 +250,6 @@ function atualizarTemaPorHorario() {
   uniforms.corMeio.value.copy(cores[1]);
   uniforms.corBase.value.copy(cores[2]);
   uniforms.corVazio.value.copy(cores[3]);
-  const cloudLight = hora >= 7 && hora < 16 ? 'rgba(242,222,190,.48)' : hora >= 16 && hora < 21 ? 'rgba(234,159,132,.52)' : 'rgba(180,135,139,.4)';
-  const cloudShade = hora >= 7 && hora < 16 ? 'rgba(119,143,162,.36)' : hora >= 16 && hora < 21 ? 'rgba(109,73,91,.5)' : 'rgba(54,66,95,.52)';
-  document.documentElement.style.setProperty('--cloud-light', cloudLight);
-  document.documentElement.style.setProperty('--cloud-shade', cloudShade);
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
@@ -317,6 +313,14 @@ function atualizarBolinhasDaEsfera(particulas) {
   syncAccessibleParticles(particulas);
 }
 
+function ehParticulaDoCerebro(particula) {
+  const id = String(particula?.id || '');
+  const label = String(particula?.label || '');
+  return Boolean(particula?.isNote || particula?.isFolder)
+    || /^(hobby|pasta|nota)-/.test(id)
+    || label.startsWith('Hobby: ');
+}
+
 async function carregarMemoriasECerebro() {
   const token = localStorage.getItem('urfilig_token');
   if (!token) return;
@@ -327,6 +331,7 @@ async function carregarMemoriasECerebro() {
     const respMe = await fetch(`${BACKEND_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!respMe.ok) return;
     if (respMe.ok) {
       const { usuario } = await respMe.json();
       if (usuario?.hobbies) {
@@ -353,6 +358,7 @@ async function carregarMemoriasECerebro() {
     const respCerebro = await fetch(`${BACKEND_URL}/api/cerebro/pastas`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!respCerebro.ok) return;
     if (respCerebro.ok) {
       const pastas = await respCerebro.json();
       if (Array.isArray(pastas)) {
@@ -387,6 +393,7 @@ async function carregarMemoriasECerebro() {
     const respNotasSoltas = await fetch(`${BACKEND_URL}/api/cerebro/notas-soltas`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    if (!respNotasSoltas.ok) return;
     if (respNotasSoltas.ok) {
       const notasSoltas = await respNotasSoltas.json();
       if (Array.isArray(notasSoltas)) {
@@ -404,9 +411,14 @@ async function carregarMemoriasECerebro() {
       }
     }
 
-    if (particulas.length > 0) {
-      atualizarBolinhasDaEsfera(particulas);
-    }
+    const outrasParticulas = memorySphere.particulas.filter((particula) => !ehParticulaDoCerebro(particula));
+    const mescladas = [...outrasParticulas, ...particulas];
+    const unicas = new Map();
+    mescladas.forEach((particula) => {
+      const chave = particula.id || `${particula.isFolder ? 'pasta' : particula.isNote ? 'nota' : 'no'}:${particula.label}`;
+      unicas.set(chave, particula);
+    });
+    atualizarBolinhasDaEsfera([...unicas.values()]);
   } catch (erro) {
     console.warn('[main] Erro ao carregar esfera neural:', erro.message);
   }
@@ -469,10 +481,12 @@ document.addEventListener('DOMContentLoaded', () => {
     btnMinimizar.addEventListener('click', () => {
       chatHistorico.style.display = 'none';
       btnRestaurar.hidden = false;
+      document.getElementById('chat-painel')?.classList.remove('chat-expanded');
     });
     btnRestaurar.addEventListener('click', () => {
       chatHistorico.style.display = 'flex';
       btnRestaurar.hidden = true;
+      document.getElementById('chat-painel')?.classList.add('chat-expanded');
     });
   }
 
@@ -705,16 +719,6 @@ setInterval(atualizarRelogio, 1000);
 const providerSelect = document.querySelector('#quick-chat-provider');
 if (providerSelect) {
   providerSelect.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
-  fetch(`${BACKEND_URL}/api/inteligencia/llm-status`, { headers: { Authorization: `Bearer ${localStorage.getItem('urfilig_token')}` } })
-    .then((response) => response.ok ? response.json() : null)
-    .then((status) => {
-      const activeSelect = document.querySelector('#quick-chat-provider');
-      if (!status || !activeSelect) return;
-      const ollamaOption = activeSelect.querySelector('option[value="ollama"]');
-      if (ollamaOption) ollamaOption.textContent = status.ollama ? `Ollama · ${status.ollamaModel}` : status.ollamaServidor ? `Instale ${status.ollamaModel}` : 'Inicie Ollama local';
-      const geminiOption = activeSelect.querySelector('option[value="gemini"]');
-      if (geminiOption && !status.gemini) geminiOption.textContent = 'Gemini · configure API key';
-    }).catch(() => {});
 }
 
 const overlayToggle = document.querySelector('#mascot-overlay-toggle');
@@ -722,7 +726,8 @@ let mascotOverlay = null;
 let mascotOverlayActive = false;
 overlayToggle?.addEventListener('click', async () => {
   if (!isTauri()) {
-    overlayToggle.textContent = 'Disponível no aplicativo desktop';
+    overlayToggle.title = 'A sobreposição está disponível no aplicativo desktop';
+    overlayToggle.setAttribute('aria-label', 'A sobreposição está disponível no aplicativo desktop');
     return;
   }
   try {
@@ -730,7 +735,8 @@ overlayToggle?.addEventListener('click', async () => {
       await mascotOverlay.close(); mascotOverlay = null;
       mascotOverlayActive = false;
       if (mascotRef) mascotRef.visible = true;
-      overlayToggle.textContent = 'Sobrepor mascote';
+      overlayToggle.title = 'Sobrepor mascote';
+      overlayToggle.setAttribute('aria-label', 'Sobrepor mascote');
       overlayToggle.setAttribute('aria-pressed', 'false');
       return;
     }
@@ -746,19 +752,21 @@ overlayToggle?.addEventListener('click', async () => {
         mascotOverlay = null;
         mascotOverlayActive = false;
         if (mascotRef) mascotRef.visible = true;
-        if (overlayToggle) { overlayToggle.textContent = 'Sobrepor mascote'; overlayToggle.setAttribute('aria-pressed', 'false'); }
+        if (overlayToggle) { overlayToggle.title = 'Sobrepor mascote'; overlayToggle.setAttribute('aria-label', 'Sobrepor mascote'); overlayToggle.setAttribute('aria-pressed', 'false'); }
       });
       mascotOverlay.once('tauri://error', (error) => console.error('[mascote-overlay] falha ao abrir', error));
     }
     mascotOverlayActive = true;
     if (mascotRef) mascotRef.visible = false;
-    overlayToggle.textContent = 'Mascote sobreposto: ativado';
+    overlayToggle.title = 'Desativar sobreposição do mascote';
+    overlayToggle.setAttribute('aria-label', 'Desativar sobreposição do mascote');
     overlayToggle.setAttribute('aria-pressed', 'true');
   } catch (error) {
     console.error('[mascote-overlay] falha:', error);
     mascotOverlayActive = false;
     if (mascotRef) mascotRef.visible = true;
-    overlayToggle.textContent = 'Não foi possível abrir o mascote';
+    overlayToggle.title = 'Não foi possível abrir o mascote';
+    overlayToggle.setAttribute('aria-label', 'Não foi possível abrir o mascote');
   }
 });
 

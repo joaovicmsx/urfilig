@@ -193,6 +193,71 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
     );
   }
 
+  function renderReminders(source = {}) {
+    const reminders = items(source.tarefas);
+    const events = items(source.compromissosHoje);
+    const day = dateInputValue(source.data);
+    corpo.replaceChildren();
+
+    const heading = node('div', 'intel-plan-header');
+    heading.append(node('strong', '', source.dataTexto || new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { dateStyle: 'full' })));
+    const picker = document.createElement('input');
+    picker.type = 'date'; picker.value = day; picker.setAttribute('aria-label', 'Escolher dia dos lembretes');
+    picker.addEventListener('change', () => atualizarLembretes(picker.value));
+    heading.append(picker);
+
+    const section = node('section', 'intel-simple-section intel-plan-tasks');
+    section.append(node('h4', '', 'Meus lembretes'));
+    const form = node('form', 'intel-task-form');
+    const titleInput = document.createElement('input');
+    titleInput.name = 'titulo'; titleInput.placeholder = 'Adicionar lembrete'; titleInput.setAttribute('aria-label', 'Texto do lembrete');
+    titleInput.required = true; titleInput.maxLength = 140;
+    const timeInput = document.createElement('input');
+    timeInput.name = 'horario'; timeInput.type = 'time'; timeInput.setAttribute('aria-label', 'Horário do lembrete');
+    const save = node('button', '', 'Adicionar'); save.type = 'submit';
+    form.append(titleInput, timeInput, save);
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault(); save.disabled = true;
+      try {
+        const response = await fetch(`${backendUrl}/api/agenda`, {
+          method: 'POST', headers: cabecalhoAuth(),
+          body: JSON.stringify({ titulo: titleInput.value.trim(), horario: timeInput.value || undefined, data: `${day}T12:00:00` }),
+        });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.erro || 'Não foi possível salvar o lembrete.');
+        await atualizarLembretes(day);
+      } catch (error) { exibirErro(error); } finally { save.disabled = false; }
+    });
+    section.append(form);
+    if (!reminders.length) section.append(node('p', 'intel-empty', 'Nenhum lembrete para este dia.'));
+    reminders.forEach((reminder) => {
+      const row = node('label', `intel-task${reminder.concluido ? ' concluida' : ''}`);
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox'; checkbox.checked = Boolean(reminder.concluido); checkbox.disabled = Boolean(reminder.concluido);
+      checkbox.setAttribute('aria-label', `Marcar como concluído: ${reminder.titulo}`);
+      checkbox.addEventListener('change', async () => {
+        try {
+          const response = await fetch(`${backendUrl}/api/agenda/${encodeURIComponent(reminder.id)}/concluir`, { method: 'POST', headers: cabecalhoAuth() });
+          if (!response.ok) throw new Error('Não foi possível concluir o lembrete.');
+          await atualizarLembretes(day);
+        } catch (error) { exibirErro(error); }
+      });
+      row.append(checkbox, node('span', '', reminder.titulo), node('small', '', reminder.horario || ''));
+      section.append(row);
+    });
+    corpo.append(heading, section,
+      criarSecao('Compromissos', events, (event) => ({ title: event.titulo, meta: asDate(event.dataInicio, { hour: '2-digit', minute: '2-digit' }) })),
+    );
+  }
+
+  async function atualizarLembretes(day) {
+    try {
+      const payload = await carregar('plano-hoje', day ? { data: day } : {});
+      if (!payload.plano) throw new Error('Não foi possível carregar os lembretes.');
+      renderReminders(payload.plano);
+    } catch (error) { exibirErro(error); }
+  }
+
   async function atualizarPlano(day) {
     try {
       const payload = await carregar('plano-hoje', day ? { data: day } : {});
@@ -276,6 +341,7 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
 
   const reports = {
     'btn-tendencias': { title: 'Notícias em alta', route: 'tendencias', render: renderTrends },
+    'btn-lembretes': { title: 'Lembretes', route: 'plano-hoje', render: (payload) => renderReminders(payload.plano) },
     'btn-plano-hoje': { title: 'Plano de hoje', route: 'plano-hoje', render: (payload) => renderPlan(payload.plano) },
     'btn-revisao-semanal': { title: 'Resumo semanal', route: 'revisao-semanal', render: renderWeekly },
   };

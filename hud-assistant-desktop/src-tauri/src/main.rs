@@ -91,12 +91,17 @@ fn main() {
                         if let Some(overlay) = app_handle.get_webview_window("mascote-overlay") {
                             let mut overlay_payload = payload.clone();
                             if let (Ok(position), Ok(size)) = (overlay.outer_position(), overlay.outer_size()) {
-                                let width = size.width.max(1) as f64;
-                                let height = size.height.max(1) as f64;
-                                // Mantém coordenadas fora de [-1, 1] quando o cursor está
-                                // fora da janela para que o mascote continue seguindo-o na tela.
-                                let overlay_x = ((cursor.x - position.x) as f64 / width) * 2.0 - 1.0;
-                                let overlay_y = -((cursor.y - position.y) as f64 / height) * 2.0 + 1.0;
+                                let overlay_width = size.width.max(1) as f64;
+                                let overlay_height = size.height.max(1) as f64;
+                                let screen_height = unsafe { GetSystemMetrics(79) }.max(1) as f64;
+                                let overlay_aspect = (overlay_width / overlay_height).max(0.1);
+                                let center_x = position.x as f64 + overlay_width / 2.0;
+                                let center_y = position.y as f64 + overlay_height / 2.0;
+                                // A janela do mascote é pequena, mas o cursor pode estar em
+                                // qualquer parte da tela. Normalize pelo tamanho do monitor,
+                                // senão o alvo satura quase sempre no limite da cabeça.
+                                let overlay_x = (cursor.x as f64 - center_x) / (screen_height / 2.0) / overlay_aspect;
+                                let overlay_y = -(cursor.y as f64 - center_y) / (screen_height / 2.0);
                                 overlay_payload["x"] = serde_json::json!(overlay_x);
                                 overlay_payload["y"] = serde_json::json!(overlay_y);
                             }
@@ -106,7 +111,7 @@ fn main() {
                             let _ = app_handle.emit_to("routine-overlay", "desktop:mouse", payload);
                         }
                     }
-                    std::thread::sleep(Duration::from_millis(50));
+                    std::thread::sleep(Duration::from_millis(16));
                 });
             }
             // Em desenvolvimento (`cargo tauri dev`), o mais simples é você

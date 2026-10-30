@@ -24,11 +24,53 @@ export function iniciarQuadrosRotina() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
   };
   let listOpen = true;
+
+  const sidebarList = document.createElement('aside');
+  sidebarList.id = 'routine-sidebar-list';
+  sidebarList.className = 'routine-sidebar-list';
+  sidebarList.hidden = true;
+  sidebarList.setAttribute('aria-label', 'Rotinas existentes');
+  document.body.append(sidebarList);
+  let sidebarListOpen = false;
+
+  function renderSidebarList(boards) {
+    sidebarList.hidden = !sidebarListOpen;
+    if (!sidebarListOpen) return;
+
+    const rows = boards.map((board) => {
+      const inicio = new Date(board.createdAt); inicio.setHours(0, 0, 0, 0);
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      const elapsed = Math.max(0, Math.floor((Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) - Date.UTC(inicio.getFullYear(), inicio.getMonth(), inicio.getDate())) / 86400000));
+      const diaAtual = Math.min(board.days, elapsed + 1);
+      const fim = new Date(inicio); fim.setDate(fim.getDate() + board.days - 1); fim.setHours(23, 59, 59, 999);
+      const ativa = Date.now() <= fim.getTime();
+      const presencas = Object.keys(board.checkins || {}).length;
+      return `<button type="button" class="routine-sidebar-item" data-routine-id="${escapeHtml(board.id)}"><span>${escapeHtml(board.name)}</span><small>${ativa ? 'Ativa' : 'Concluída'} · dia ${diaAtual}/${board.days} · ${presencas} ${presencas === 1 ? 'presença' : 'presenças'}</small></button>`;
+    }).join('');
+
+    sidebarList.innerHTML = `<header><span>Minhas rotinas</span><button type="button" class="routine-sidebar-add">Nova</button></header>${rows || '<p class="routine-sidebar-empty">Nenhuma rotina criada.</p>'}`;
+    sidebarList.querySelector('.routine-sidebar-add').addEventListener('click', openForm);
+    sidebarList.querySelectorAll('.routine-sidebar-item').forEach((button) => button.addEventListener('click', () => {
+      const routineId = button.dataset.routineId;
+      listOpen = true;
+      sidebarListOpen = false;
+      render();
+      const card = [...boardRoot.querySelectorAll('.routine-card')].find((item) => item.dataset.boardId === routineId);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        card.classList.remove('routine-board-highlight');
+        requestAnimationFrame(() => card.classList.add('routine-board-highlight'));
+        window.setTimeout(() => card.classList.remove('routine-board-highlight'), 1200);
+      }
+    }));
+  }
+
   const render = () => {
     const boards = readBoards();
     boardRoot.replaceChildren();
     boardRoot.hidden = boards.length === 0 || !listOpen;
     addButton.setAttribute('aria-expanded', String(boards.length > 0 && listOpen));
+    renderSidebarList(boards);
     if (boards.length) {
       const activeCount = boards.filter((board) => {
         const end = new Date(board.createdAt); end.setHours(0, 0, 0, 0); end.setDate(end.getDate() + board.days); end.setMilliseconds(-1);
@@ -40,6 +82,7 @@ export function iniciarQuadrosRotina() {
       heading.querySelector('.routine-add').addEventListener('click', openForm);
       heading.querySelector('.routine-list-toggle').addEventListener('click', () => {
         listOpen = false;
+        sidebarListOpen = false;
         addButton.setAttribute('aria-expanded', 'false');
         render();
       });
@@ -60,13 +103,15 @@ export function iniciarQuadrosRotina() {
       });
       const completed = Object.keys(board.checkins || {}).filter((key) => dias.some((day) => day.key === key)).length;
       const frequencia = Math.min(100, Math.round((completed / Math.max(1, Math.min(board.days, elapsed + 1))) * 100));
+      const diaAtual = Math.min(board.days, elapsed + 1);
       const blanks = Array.from({ length: (inicio.getDay() + 6) % 7 }, () => '<span class="routine-square routine-square-empty" aria-hidden="true"></span>').join('');
       const diasHtml = dias.map(({ date, key, day }) => {
         const checked = Boolean(board.checkins?.[key]);
         const label = `${date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${checked ? ` · presença às ${escapeHtml(board.checkins[key])}` : ' · sem presença'}`;
         return `<span class="routine-square${checked ? ' done' : ''}" style="--routine-color:${escapeHtml(board.color)}" role="gridcell" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></span>`;
       }).join('');
-      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>${ativa ? 'Ativa' : 'Concluída'} · ${completed} presenças em ${Math.min(board.days, elapsed + 1)} dias</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-calendar"><div class="routine-weekdays" aria-hidden="true"><span>seg</span><span></span><span>qua</span><span></span><span>sex</span><span></span><span></span></div><div class="routine-squares" role="grid" aria-label="Presenças de ${escapeHtml(board.name)}">${blanks}${diasHtml}</div></div><div class="routine-progress" role="progressbar" aria-label="Frequência da rotina" aria-valuenow="${frequencia}" aria-valuemin="0" aria-valuemax="100"><span style="width:${frequencia}%;--routine-color:${escapeHtml(board.color)}"></span></div><footer><span>${inicio.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })} — ${fim.toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' })}</span><span>${frequencia}% de presença</span></footer><small class="routine-hint">Diga no chat: “fiz presença ${escapeHtml(board.name)} às 9:00”.</small>`;
+      card.dataset.boardId = board.id;
+      card.innerHTML = `<header><div><strong>${escapeHtml(board.name)}</strong><small>${ativa ? 'Ativa' : 'Concluída'} · ${completed} ${completed === 1 ? 'presença' : 'presenças'} · dia ${diaAtual}/${board.days}</small></div><button type="button" class="routine-remove" aria-label="Excluir quadro">×</button></header><div class="routine-calendar"><div class="routine-weekdays" aria-hidden="true"><span>seg</span><span></span><span>qua</span><span></span><span>sex</span><span></span><span></span></div><div class="routine-squares" role="grid" aria-label="Presenças de ${escapeHtml(board.name)}">${blanks}${diasHtml}</div></div><div class="routine-progress" role="progressbar" aria-label="Frequência até hoje" aria-valuenow="${frequencia}" aria-valuemin="0" aria-valuemax="100"><span style="width:${frequencia}%;--routine-color:${escapeHtml(board.color)}"></span></div><footer><span>${frequencia}% dos dias até hoje</span></footer>`;
       card.querySelector('.routine-remove').addEventListener('click', () => {
         save(readBoards().filter((item) => item.id !== board.id)); render();
       });
@@ -102,12 +147,25 @@ export function iniciarQuadrosRotina() {
   addButton.addEventListener('click', () => {
     if (!readBoards().length) { openForm(); return; }
     listOpen = true;
+    sidebarListOpen = true;
+    const rect = addButton.getBoundingClientRect();
+    sidebarList.style.top = `${Math.max(12, Math.min(rect.top, window.innerHeight - 300))}px`;
     addButton.setAttribute('aria-expanded', 'true');
     render();
     boardRoot.classList.remove('routine-board-highlight');
     requestAnimationFrame(() => boardRoot.classList.add('routine-board-highlight'));
     window.setTimeout(() => boardRoot.classList.remove('routine-board-highlight'), 1200);
     boardRoot.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  });
+  document.addEventListener('pointerdown', (event) => {
+    if (!sidebarListOpen || sidebarList.contains(event.target) || addButton.contains(event.target)) return;
+    sidebarListOpen = false;
+    renderSidebarList(readBoards());
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !sidebarListOpen) return;
+    sidebarListOpen = false;
+    renderSidebarList(readBoards());
   });
   // The chat hook marks the current day's square only when the user explicitly reports attendance.
   window.registrarPresencaRotina = (message) => {

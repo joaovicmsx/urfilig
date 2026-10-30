@@ -65,12 +65,12 @@ export function iniciarProspeccao() {
   }
 
   async function loadLeads() {
-    leadsContainer.replaceChildren(create('p', 'profile-message', 'Carregando leads…'));
+    leadsContainer.replaceChildren(create('p', 'profile-message', 'Carregando empresas…'));
     try {
       const leads = await api('/api/leads?status=AGUARDANDO_APROVACAO', { cache: 'no-store' });
       leadsContainer.replaceChildren();
       if (!Array.isArray(leads) || !leads.length) {
-        leadsContainer.append(create('p', 'profile-message', 'Nenhum lead aguardando revisão.'));
+        leadsContainer.append(create('p', 'profile-message', 'Nenhuma empresa salva ainda.'));
         return;
       }
       for (const lead of leads) {
@@ -78,18 +78,18 @@ export function iniciarProspeccao() {
         card.append(
           create('h4', '', lead.nome || 'Empresa'),
           create('p', 'prospeccao-lead-meta', [lead.nicho, lead.contato].filter(Boolean).join(' · ')),
-          create('p', 'prospeccao-lead-bio', lead.bio || 'Sem contexto adicional.'),
+          create('p', 'prospeccao-lead-bio', lead.bio || 'Nenhuma observação.'),
         );
         if (lead.pitch) {
-          card.append(create('small', '', 'Rascunho de abordagem para revisar'), create('p', 'prospeccao-lead-pitch', lead.pitch));
+          card.append(create('small', '', 'Sugestão de mensagem (rascunho)'), create('p', 'prospeccao-lead-pitch', lead.pitch));
         }
-        const approve = create('button', 'profile-cancel', 'Aprovar lead');
+        const approve = create('button', 'profile-cancel', 'Marcar como revisada');
         approve.type = 'button';
         approve.addEventListener('click', async () => {
           approve.disabled = true;
           try {
             await api(`/api/leads/${encodeURIComponent(lead.id)}/aprovar`, { method: 'POST' });
-            say('Lead aprovado para revisão de contato. Nenhuma mensagem foi enviada.');
+            say('Empresa marcada como revisada. Nenhuma mensagem foi enviada.');
             await loadLeads();
           } catch (error) { say(error.message); approve.disabled = false; }
         });
@@ -133,7 +133,7 @@ export function iniciarProspeccao() {
   mapsLink.addEventListener('click', (event) => {
     if (!nicheInput.value.trim()) {
       event.preventDefault();
-      say('Informe um nicho para pesquisar.');
+      say('Digite o tipo de empresa que procura.');
     } else if (!location) {
       event.preventDefault();
       say('Defina cidade e estado no perfil para pesquisar nessa localização.');
@@ -146,7 +146,7 @@ export function iniciarProspeccao() {
     const contato = document.querySelector('#prospeccao-lead-contact').value.trim();
     const bio = document.querySelector('#prospeccao-lead-bio').value.trim();
     const nicho = nicheInput.value.trim();
-    if (!nicho) { say('Informe o nicho antes de cadastrar um lead.'); return; }
+    if (!nicho) { say('Digite o tipo de empresa antes de salvar.'); return; }
     saveButton.disabled = true;
     saveButton.textContent = 'Salvando…';
     try {
@@ -154,10 +154,10 @@ export function iniciarProspeccao() {
       leadForm.reset();
       localStorage.setItem(NICHE_KEY, nicho);
       say(lead.pitch
-        ? 'Lead salvo com rascunho para sua revisão.'
-        : 'Lead salvo. O rascunho não foi gerado; verifique a conexão local do Ollama.');
+        ? 'Empresa salva. A sugestão de mensagem está pronta para revisar.'
+        : 'Empresa salva. Não foi possível gerar uma sugestão de mensagem agora.');
       await loadLeads();
     } catch (error) { say(error.message); }
-    finally { saveButton.disabled = false; saveButton.textContent = 'Salvar para revisão'; }
+    finally { saveButton.disabled = false; saveButton.textContent = 'Salvar'; }
   });
 }

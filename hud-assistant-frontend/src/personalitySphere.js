@@ -220,7 +220,7 @@ export class PersonalitySphere {
           id: dado.id,
           strength: dado.strength ?? 0.8,
           isFolder: dado.isFolder,
-          isNote: false,
+          isNote: Boolean(dado.isNote),
           folderRef: null,
           corAzul,
           corAmarelo,
@@ -244,7 +244,7 @@ export class PersonalitySphere {
         
         const eraNota = existente.isNote;
         existente.isFolder = dado.isFolder;
-        existente.isNote = false;
+        existente.isNote = Boolean(dado.isNote);
         existente.folderRef = null;
 
         if (eraNota) {
@@ -451,6 +451,9 @@ export class PersonalitySphere {
 
     const matriz = new THREE.Matrix4();
     const tempo = performance.now() / 1000;
+    // As partículas são planos 2D posicionados na esfera. Compensar a rotação
+    // do grupo mantém cada plano voltado para a câmera em vez de deixá-lo de perfil.
+    const orientacaoCamera = this.grupo.quaternion.clone().invert();
 
     const agora = new Date();
     const hora = agora.getHours() + agora.getMinutes() / 60;
@@ -513,7 +516,7 @@ export class PersonalitySphere {
       }
 
       const tamanhoPulsado = this.reducedMotion ? 1 : 0.99 + Math.sin(tempo * 0.5 + p.fase) * 0.025;
-      matriz.compose(p.position, new THREE.Quaternion(), new THREE.Vector3(tamanhoPulsado, tamanhoPulsado, tamanhoPulsado));
+      matriz.compose(p.position, orientacaoCamera, new THREE.Vector3(tamanhoPulsado, tamanhoPulsado, tamanhoPulsado));
       this.instancedMesh.setMatrixAt(i, matriz);
     });
 

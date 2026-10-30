@@ -12,8 +12,17 @@ import { prisma } from '../db/client.js';
  * memoryIntent.js).
  */
 export async function montarParticulas(usuarioId) {
-  const [usuario, bordoes, tracos, leads, diretrizes, reflexoes, memorias] = await Promise.all([
+  const [usuario, pastas, notasSoltas, bordoes, tracos, leads, diretrizes, reflexoes, memorias] = await Promise.all([
     prisma.usuario.findUnique({ where: { id: usuarioId } }),
+    prisma.pasta.findMany({
+      where: { usuarioId },
+      include: { notas: { orderBy: [{ ordem: 'asc' }, { dataCriacao: 'desc' }] } },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.nota.findMany({
+      where: { usuarioId, pastaId: null },
+      orderBy: [{ ordem: 'asc' }, { dataCriacao: 'desc' }],
+    }),
     prisma.bordao.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' }, take: 40 }),
     prisma.temperamento.findMany({ where: { usuarioId, ativo: true } }),
     prisma.lead.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' }, take: 40 }),
@@ -26,7 +35,36 @@ export async function montarParticulas(usuarioId) {
     .split(',')
     .map((h) => h.trim())
     .filter(Boolean)
-    .map((hobby) => ({ label: `Hobby: ${hobby}`, strength: 0.6 }));
+    .map((hobby) => ({ id: `hobby-${hobby}`, label: hobby, strength: 0.6 }));
+
+  const particulasPastas = pastas.map((pasta) => ({
+    id: `pasta-${pasta.id}`,
+    label: pasta.nome,
+    strength: 0.9,
+    isFolder: true,
+    isNote: false,
+  }));
+
+  const particulasNotas = pastas.flatMap((pasta) => {
+    const pastaRef = { id: `pasta-${pasta.id}`, label: pasta.nome };
+    return pasta.notas.map((nota) => ({
+      id: `nota-${nota.id}`,
+      label: nota.titulo,
+      strength: nota.importante ? 0.7 : 0.5,
+      isFolder: false,
+      isNote: true,
+      folderRef: pastaRef,
+    }));
+  });
+
+  const particulasNotasSoltas = notasSoltas.map((nota) => ({
+    id: `nota-${nota.id}`,
+    label: nota.titulo,
+    strength: nota.importante ? 0.6 : 0.4,
+    isFolder: false,
+    isNote: true,
+    folderRef: null,
+  }));
 
   const particulasTracos = tracos.map((t) => ({
     label: `Traço: ${t.traco}`,
@@ -60,6 +98,9 @@ export async function montarParticulas(usuarioId) {
 
   return [
     ...particulasHobbies,
+    ...particulasPastas,
+    ...particulasNotas,
+    ...particulasNotasSoltas,
     ...particulasTracos,
     ...particulasBordoes,
     ...particulasLeads,
