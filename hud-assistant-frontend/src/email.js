@@ -286,10 +286,10 @@ async function carregarEmails(pasta = 'INBOX') {
 btnVoltarLista?.addEventListener('click', () => {
   emailWrapper?.classList.remove('email-lendo');
   document.querySelectorAll('.email-item').forEach(el => el.classList.remove('selecionado'));
-  if (leitorAssunto) leitorAssunto.textContent = 'Selecione uma mensagem';
+  if (leitorAssunto) leitorAssunto.textContent = '';
   if (leitorRemetente) leitorRemetente.textContent = '';
   if (leitorData) leitorData.textContent = '';
-  if (leitorCorpo) leitorCorpo.textContent = 'Selecione um e-mail da lista para visualizar seu conteúdo.';
+  if (leitorCorpo) leitorCorpo.textContent = 'Selecione um e-mail para abrir.';
   emailAbertoAtual = null;
   if (btnSalvarTxt) btnSalvarTxt.disabled = true;
   if (btnSalvarNotas) btnSalvarNotas.disabled = true;

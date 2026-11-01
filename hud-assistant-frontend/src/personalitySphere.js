@@ -50,8 +50,8 @@ export class PersonalitySphere {
     const nodeContext = nodeCanvas.getContext('2d');
     const nodeGradient = nodeContext.createRadialGradient(32, 32, 4, 32, 32, 32);
     nodeGradient.addColorStop(0, 'rgba(255,255,255,1)');
-    nodeGradient.addColorStop(.56, 'rgba(255,255,255,.96)');
-    nodeGradient.addColorStop(.88, 'rgba(255,255,255,.78)');
+    nodeGradient.addColorStop(.62, 'rgba(255,255,255,1)');
+    nodeGradient.addColorStop(.9, 'rgba(255,255,255,.94)');
     nodeGradient.addColorStop(1, 'rgba(255,255,255,0)');
     nodeContext.fillStyle = nodeGradient;
     nodeContext.fillRect(0, 0, 64, 64);
@@ -431,14 +431,19 @@ export class PersonalitySphere {
   }
 
   setTimeColor(color) {
-    this.corHorario.copy(color.clone().lerp(new THREE.Color('#aeb8c6'), .34).multiplyScalar(.76));
+    const cor = color.clone();
+    const hsl = { h: 0, s: 0, l: 0 };
+    cor.getHSL(hsl);
+    // Preserve the time-of-day hue while restoring enough saturation and depth
+    // for the nodes to remain visible over both pale and dark sky backgrounds.
+    this.corHorario.setHSL(hsl.h, Math.max(.58, hsl.s), .48);
   }
 
   garantirAura(particula) {
     if (!particula || particula.aura) return;
-    const material = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true, toneMapped: false });
+    const material = new THREE.SpriteMaterial({ map: this.glowTexture, color: this.corHorario, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false, sizeAttenuation: true, toneMapped: false });
     particula.aura = new THREE.Sprite(material);
-    particula.aura.scale.set(.44, .44, 1);
+    particula.aura.scale.set(.62, .62, 1);
     particula.aura.renderOrder = 1;
     this.grupo.add(particula.aura);
   }
@@ -498,8 +503,9 @@ export class PersonalitySphere {
         }
       }
 
-      const pulsacao = this.reducedMotion ? 1 : 0.985 + Math.sin(tempo * 0.5 + p.fase) * 0.025;
-      p.corAtual.copy(this.corHorario).multiplyScalar((0.9 + (i % 4) * 0.025) * pulsacao);
+      const onda = this.reducedMotion ? 0 : Math.sin(tempo * 0.72 + p.fase);
+      const pulsacao = 0.96 + onda * 0.04;
+      p.corAtual.copy(this.corHorario).multiplyScalar((0.96 + (i % 4) * 0.015) * pulsacao);
 
       const corRender = p.corAtual.clone().multiplyScalar(1.05);
       if (this.hoverIndex === i || this.nodeArrastado === p) {
@@ -508,14 +514,14 @@ export class PersonalitySphere {
 
       this.instancedMesh.setColorAt(i, corRender);
       if (p.aura) {
-        const brilho = this.reducedMotion ? 1 : .96 + Math.sin(tempo * .5 + p.fase) * .045;
+        const brilho = 1 + onda * .055;
         p.aura.position.copy(p.position);
-        p.aura.material.color.copy(this.corHorario).multiplyScalar(.78);
-        p.aura.material.opacity = .19 + Math.sin(tempo * .5 + p.fase) * .035;
-        p.aura.scale.setScalar(.44 * brilho);
+        p.aura.material.color.copy(this.corHorario).multiplyScalar(.9);
+        p.aura.material.opacity = .29 + onda * .045;
+        p.aura.scale.setScalar(.62 * brilho);
       }
 
-      const tamanhoPulsado = this.reducedMotion ? 1 : 0.99 + Math.sin(tempo * 0.5 + p.fase) * 0.025;
+      const tamanhoPulsado = 1 + onda * 0.045;
       matriz.compose(p.position, orientacaoCamera, new THREE.Vector3(tamanhoPulsado, tamanhoPulsado, tamanhoPulsado));
       this.instancedMesh.setMatrixAt(i, matriz);
     });

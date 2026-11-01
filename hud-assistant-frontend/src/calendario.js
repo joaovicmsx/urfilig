@@ -4,14 +4,6 @@ import { showAlert, showConfirm } from './uiDialogs.js';
 let dataAtual = new Date();
 let eventosCache = [];
 let filtroEtiqueta = '__todas__';
-const ETIQUETAS_EVENTO = [
-  { nome: 'Sem etiqueta', cor: '#aeb8c4', valor: '' },
-  { nome: 'Pessoal', cor: '#a78bfa' },
-  { nome: 'Trabalho', cor: '#7aa2f7' },
-  { nome: 'Saúde', cor: '#69b99c' },
-  { nome: 'Estudo', cor: '#e2b86b' },
-  { nome: 'Lazer', cor: '#df8d9c' },
-];
 
 function escaparHtml(valor = '') {
   return String(valor).replace(/[&<>"']/g, (caractere) => ({
@@ -21,6 +13,10 @@ function escaparHtml(valor = '') {
 
 function corSegura(cor) {
   return /^#[0-9a-f]{6}$/i.test(String(cor || '')) ? cor : '#aeb8c4';
+}
+
+function normalizarEtiqueta(valor) {
+  return String(valor || '').trim().replace(/\s+/g, ' ');
 }
 
 const cabecalhoAuth = () => ({
@@ -60,9 +56,10 @@ function renderizarEstrutura() {
   const nomeMes = dataAtual.toLocaleString('pt-BR', { month: 'long' });
   const etiquetas = new Map();
   eventosCache.forEach((evento) => {
-    const nome = String(evento.etiqueta || '').trim();
-    const chave = nome || '__sem_etiqueta__';
-    if (!etiquetas.has(chave)) etiquetas.set(chave, { nome: nome || 'Sem etiqueta', cor: corSegura(evento.cor) });
+    const nome = normalizarEtiqueta(evento.etiqueta);
+    if (!nome) return;
+    const chave = nome.toLocaleLowerCase('pt-BR');
+    if (!etiquetas.has(chave)) etiquetas.set(chave, { nome, cor: corSegura(evento.cor) });
   });
   const filtrosHtml = [
     `<button type="button" class="evento-filtro" data-filtro="__todas__" aria-pressed="${filtroEtiqueta === '__todas__'}">Todos</button>`,
@@ -84,8 +81,7 @@ function renderizarEstrutura() {
     const eventosDoDia = eventosCache.filter((e) => {
       if (!e.dataInicio || !e.dataInicio.startsWith(dataIso)) return false;
       if (filtroEtiqueta === '__todas__') return true;
-      if (filtroEtiqueta === '__sem_etiqueta__') return !String(e.etiqueta || '').trim();
-      return String(e.etiqueta || '').trim() === filtroEtiqueta;
+      return normalizarEtiqueta(e.etiqueta).toLocaleLowerCase('pt-BR') === filtroEtiqueta;
     });
 
     const htmlEventos = eventosDoDia
@@ -169,11 +165,7 @@ function abrirModalEvento(evento = {}) {
   const isEdicao = !!evento.id;
   const dataValida = evento.dataInicio ? evento.dataInicio.split('T')[0] : '';
   const corInicial = corSegura(evento.cor);
-  const etiquetaInicial = evento.etiqueta || '';
-  const opcoesEtiqueta = ETIQUETAS_EVENTO.map(({ nome, cor, valor = nome }) => `
-    <button type="button" class="evento-etiqueta-opcao" data-etiqueta="${valor}" data-cor="${cor}" aria-pressed="${etiquetaInicial === valor}" style="--etiqueta-cor:${cor}">
-      <span aria-hidden="true"></span>${nome}
-    </button>`).join('');
+  const etiquetaInicial = normalizarEtiqueta(evento.etiqueta);
 
   const modalHtml = `
     <div id="modal-evento-overlay" class="evento-overlay">
@@ -183,9 +175,8 @@ function abrirModalEvento(evento = {}) {
           <input type="text" id="ev-titulo" placeholder="Título do evento" value="${escaparHtml(evento.titulo || '')}" required />
           <textarea id="ev-desc" placeholder="Descrição (opcional)">${escaparHtml(evento.descricao || '')}</textarea>
           <label class="evento-campo-data">Data<input type="date" id="ev-data" value="${dataValida}" required /></label>
-          <fieldset class="evento-etiquetas"><legend>Cor rápida</legend><div class="evento-etiquetas-opcoes">${opcoesEtiqueta}</div></fieldset>
-          <label class="evento-campo-etiqueta">Etiqueta<input type="text" id="ev-etiqueta" maxlength="32" list="evento-etiquetas-sugestoes" placeholder="Ex.: projeto, pessoal..." value="${escaparHtml(etiquetaInicial)}" /><datalist id="evento-etiquetas-sugestoes">${ETIQUETAS_EVENTO.filter((item) => item.valor !== '').map((item) => `<option value="${item.nome}"></option>`).join('')}</datalist></label>
-          <label class="evento-cor-personalizada">Outra cor<input type="color" id="ev-cor" value="${corInicial}" /></label>
+          <label class="evento-campo-etiqueta">Etiqueta<input type="text" id="ev-etiqueta" maxlength="32" placeholder="Nome da etiqueta" value="${escaparHtml(etiquetaInicial)}" /></label>
+          <label class="evento-cor-personalizada">Cor do evento<input type="color" id="ev-cor" value="${corInicial}" /></label>
           <div class="evento-preview" id="evento-cor-preview" style="--evento-cor:${corInicial}" aria-live="polite"><span class="evento-preview-ponto"></span><span class="evento-preview-etiqueta">${escaparHtml(etiquetaInicial || 'Sem etiqueta')}</span><span class="evento-preview-titulo">${escaparHtml(evento.titulo || 'Seu evento')}</span></div>
           <div class="evento-acoes">
             <button type="button" id="btn-fechar-modal">Cancelar</button>
@@ -211,17 +202,7 @@ function abrirModalEvento(evento = {}) {
     const cor = corSegura(seletorCor.value);
     previewCor.style.setProperty('--evento-cor', cor);
     previewEtiqueta.textContent = campoEtiqueta.value.trim() || 'Sem etiqueta';
-    modal.querySelectorAll('.evento-etiqueta-opcao').forEach((button) => {
-      button.setAttribute('aria-pressed', String(button.dataset.etiqueta === campoEtiqueta.value.trim()));
-    });
   };
-  modal.querySelectorAll('.evento-etiqueta-opcao').forEach((button) => {
-    button.addEventListener('click', () => {
-      seletorCor.value = button.dataset.cor;
-      campoEtiqueta.value = button.dataset.etiqueta;
-      atualizarPreview();
-    });
-  });
   seletorCor.addEventListener('input', atualizarPreview);
   campoEtiqueta.addEventListener('input', atualizarPreview);
   document.querySelector('#ev-titulo').addEventListener('input', (event) => {
@@ -259,7 +240,7 @@ function abrirModalEvento(evento = {}) {
       dataInicio: dataInicioIso,
       dataFim: dataFimIso,
       cor: corSegura(document.querySelector('#ev-cor').value),
-      etiqueta: campoEtiqueta.value.trim() || null,
+      etiqueta: normalizarEtiqueta(campoEtiqueta.value).slice(0, 32) || null,
     };
 
     const url = isEdicao ? `${BACKEND_URL}/api/eventos/${evento.id}` : `${BACKEND_URL}/api/eventos`;

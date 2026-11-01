@@ -14,6 +14,59 @@ function limitesDoDia(dataString) {
   return { inicio, fim };
 }
 
+function dataDoLembrete(dataString, horario) {
+  const base = dataString ? new Date(dataString) : new Date();
+  if (horario && /^\d{2}:\d{2}$/.test(horario)) {
+    const [hora, minuto] = horario.split(':').map(Number);
+    base.setHours(hora, minuto, 0, 0);
+  }
+  return base;
+}
+
+/** Cria um lembrete e o registra também nas Notas e no Calendário. */
+agendaRouter.post('/lembretes', async (req, res) => {
+  const titulo = String(req.body?.titulo || '').trim();
+  const horario = String(req.body?.horario || '').trim();
+  const data = req.body?.data;
+  if (!titulo || !data || !horario) {
+    return res.status(400).json({ erro: 'Informe o nome, o dia e o horário do lembrete.' });
+  }
+
+  const dataLembrete = dataDoLembrete(data, horario);
+  if (Number.isNaN(dataLembrete.getTime())) {
+    return res.status(400).json({ erro: 'A data do lembrete é inválida.' });
+  }
+
+  const item = await prisma.$transaction(async (tx) => {
+    const lembrete = await tx.agendaItem.create({
+      data: { usuarioId: req.usuarioId, titulo, horario, data: dataLembrete },
+    });
+    let pasta = await tx.pasta.findFirst({ where: { usuarioId: req.usuarioId, nome: 'Lembretes' } });
+    if (!pasta) pasta = await tx.pasta.create({ data: { usuarioId: req.usuarioId, nome: 'Lembretes' } });
+    await tx.nota.create({
+      data: {
+        usuarioId: req.usuarioId,
+        pastaId: pasta.id,
+        titulo,
+        conteudo: `Lembrete para ${dataLembrete.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`,
+      },
+    });
+    await tx.evento.create({
+      data: {
+        usuarioId: req.usuarioId,
+        titulo,
+        descricao: 'Lembrete',
+        dataInicio: dataLembrete,
+        etiqueta: 'Lembrete',
+        cor: '#c58ad8',
+      },
+    });
+    return lembrete;
+  });
+
+  res.status(201).json(item);
+});
+
 /**
  * POST /api/agenda  { titulo, horario?, data? }
  */
@@ -40,11 +93,24 @@ agendaRouter.post('/agenda', async (req, res) => {
  * GET /api/agenda?data=2026-09-12  — lista os itens de um dia (padrão: hoje)
  */
 agendaRouter.get('/agenda', async (req, res) => {
-  const { inicio, fim } = limitesDoDia(req.query.data);
+  if (req.query.lembretes === '1') {
+    const [itens, eventos] = await Promise.all([
+      prisma.agendaItem.findMany({ where: { usuarioId: req.usuarioId }, orderBy: [{ data: 'asc' }, { horario: 'asc' }] }),
+      prisma.evento.findMany({ where: { usuarioId: req.usuarioId, etiqueta: 'Lembrete' }, select: { titulo: true, dataInicio: true } }),
+    ]);
+    const chaves = new Set(eventos.map((evento) => `${evento.titulo}|${evento.dataInicio.getTime()}`));
+    return res.json(itens.filter((item) => chaves.has(`${item.titulo}|${item.data.getTime()}`)));
+  }
+
+  const where = { usuarioId: req.usuarioId };
+  if (req.query.todos !== '1') {
+    const { inicio, fim } = limitesDoDia(req.query.data);
+    where.data = { gte: inicio, lte: fim };
+  }
 
   const itens = await prisma.agendaItem.findMany({
-    where: { usuarioId: req.usuarioId, data: { gte: inicio, lte: fim } },
-    orderBy: { horario: 'asc' },
+    where,
+    orderBy: [{ data: 'asc' }, { horario: 'asc' }],
   });
 
   res.json(itens);

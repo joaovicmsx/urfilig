@@ -319,6 +319,7 @@ function ehParticulaDoCerebro(particula) {
   const label = String(particula?.label || '');
   return Boolean(particula?.isNote || particula?.isFolder)
     || /^(hobby|pasta|nota)-/.test(id)
+    || id.startsWith('lembrete-')
     || label.startsWith('Hobby: ');
 }
 
@@ -407,6 +408,26 @@ async function carregarMemoriasECerebro() {
             isFolder: false,
             isNote: true,
             folderRef: null,
+          });
+        });
+      }
+    }
+
+    const respLembretes = await fetch(`${BACKEND_URL}/api/agenda?lembretes=1`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (respLembretes.ok) {
+      const lembretes = await respLembretes.json();
+      if (Array.isArray(lembretes)) {
+        lembretes.filter((lembrete) => !lembrete.concluido).forEach((lembrete) => {
+          particulas.push({
+            id: `lembrete-${lembrete.id}`,
+            titulo: lembrete.titulo,
+            label: `Lembrete: ${lembrete.titulo}`,
+            strength: 0.65,
+            isFolder: false,
+            isNote: false,
+            isReminder: true,
           });
         });
       }

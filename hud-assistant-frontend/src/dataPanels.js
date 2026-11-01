@@ -194,42 +194,41 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
   }
 
   function renderReminders(source = {}) {
-    const reminders = items(source.tarefas);
-    const events = items(source.compromissosHoje);
+    const reminders = items(source.todasTarefas || source.tarefas);
     const day = dateInputValue(source.data);
     corpo.replaceChildren();
 
-    const heading = node('div', 'intel-plan-header');
-    heading.append(node('strong', '', source.dataTexto || new Date(`${day}T12:00:00`).toLocaleDateString('pt-BR', { dateStyle: 'full' })));
-    const picker = document.createElement('input');
-    picker.type = 'date'; picker.value = day; picker.setAttribute('aria-label', 'Escolher dia dos lembretes');
-    picker.addEventListener('change', () => atualizarLembretes(picker.value));
-    heading.append(picker);
-
-    const section = node('section', 'intel-simple-section intel-plan-tasks');
-    section.append(node('h4', '', 'Meus lembretes'));
-    const form = node('form', 'intel-task-form');
+    const section = node('section', 'intel-simple-section intel-reminders-section');
+    const form = node('form', 'intel-task-form intel-reminder-form');
     const titleInput = document.createElement('input');
-    titleInput.name = 'titulo'; titleInput.placeholder = 'Adicionar lembrete'; titleInput.setAttribute('aria-label', 'Texto do lembrete');
+    titleInput.name = 'titulo'; titleInput.placeholder = 'Nome do lembrete'; titleInput.setAttribute('aria-label', 'Nome do lembrete');
     titleInput.required = true; titleInput.maxLength = 140;
+    const dateInput = document.createElement('input');
+    dateInput.name = 'data'; dateInput.type = 'date'; dateInput.value = day; dateInput.required = true;
+    dateInput.setAttribute('aria-label', 'Dia do lembrete');
     const timeInput = document.createElement('input');
     timeInput.name = 'horario'; timeInput.type = 'time'; timeInput.setAttribute('aria-label', 'Horário do lembrete');
+    timeInput.required = true;
     const save = node('button', '', 'Adicionar'); save.type = 'submit';
-    form.append(titleInput, timeInput, save);
+    form.append(titleInput, dateInput, timeInput, save);
     form.addEventListener('submit', async (event) => {
       event.preventDefault(); save.disabled = true;
       try {
-        const response = await fetch(`${backendUrl}/api/agenda`, {
+        const reminderDay = dateInput.value;
+        const response = await fetch(`${backendUrl}/api/lembretes`, {
           method: 'POST', headers: cabecalhoAuth(),
-          body: JSON.stringify({ titulo: titleInput.value.trim(), horario: timeInput.value || undefined, data: `${day}T12:00:00` }),
+          body: JSON.stringify({ titulo: titleInput.value.trim(), horario: timeInput.value, data: `${reminderDay}T12:00:00` }),
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.erro || 'Não foi possível salvar o lembrete.');
-        await atualizarLembretes(day);
+        window.recarregarEsferaNeural?.();
+        window.carregarCalendarioUI?.();
+        await atualizarLembretes(reminderDay);
       } catch (error) { exibirErro(error); } finally { save.disabled = false; }
     });
-    section.append(form);
-    if (!reminders.length) section.append(node('p', 'intel-empty', 'Nenhum lembrete para este dia.'));
+    const listHeading = node('h4', '', 'Lembretes criados');
+    const list = node('div', 'intel-reminder-list');
+    if (!reminders.length) list.append(node('p', 'intel-empty', 'Nenhum lembrete criado.'));
     reminders.forEach((reminder) => {
       const row = node('label', `intel-task${reminder.concluido ? ' concluida' : ''}`);
       const checkbox = document.createElement('input');
@@ -242,19 +241,25 @@ export function iniciarPaineisDados({ backendUrl, cabecalhoAuth, fecharMenu }) {
           await atualizarLembretes(day);
         } catch (error) { exibirErro(error); }
       });
-      row.append(checkbox, node('span', '', reminder.titulo), node('small', '', reminder.horario || ''));
-      section.append(row);
+      const details = node('span', 'intel-reminder-details');
+      details.append(node('span', '', reminder.titulo));
+      details.append(node('small', '', `${asDate(reminder.data, { dateStyle: 'short' })} · ${reminder.horario || ''}`));
+      row.append(checkbox, details);
+      list.append(row);
     });
-    corpo.append(heading, section,
-      criarSecao('Compromissos', events, (event) => ({ title: event.titulo, meta: asDate(event.dataInicio, { hour: '2-digit', minute: '2-digit' }) })),
-    );
+    section.append(form, listHeading, list);
+    corpo.append(section);
   }
 
   async function atualizarLembretes(day) {
     try {
-      const payload = await carregar('plano-hoje', day ? { data: day } : {});
+      const [payload, response] = await Promise.all([
+        carregar('plano-hoje', day ? { data: day } : {}),
+        fetch(`${backendUrl}/api/agenda?lembretes=1`, { headers: cabecalhoAuth(), cache: 'no-store' }),
+      ]);
       if (!payload.plano) throw new Error('Não foi possível carregar os lembretes.');
-      renderReminders(payload.plano);
+      if (!response.ok) throw new Error('Não foi possível carregar a lista de lembretes.');
+      renderReminders({ ...payload.plano, todasTarefas: await response.json() });
     } catch (error) { exibirErro(error); }
   }
 
