@@ -54,6 +54,7 @@ model Evento {
   dataInicio  DateTime
   dataFim     DateTime?
   cor         String?   @default("#3b82f6")
+  etiqueta    String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

@@ -138,7 +138,7 @@
       </section>
       </div>
       <section id="settings-plugins-panel" class="settings-panel settings-plugins-panel" role="tabpanel" aria-labelledby="settings-plugins-tab" hidden>
-        <p class="settings-plugins-intro">Integrações e provedores já disponíveis na Urfilig.</p>
+        <p class="settings-plugins-intro">Serviços conectados e opções para abrir ou configurar novas integrações.</p>
         <article class="settings-plugin-card">
           <div><h3>Spotify</h3><p>Playlists, faixa atual e mini player.</p><small id="settings-spotify-status">Verificando conexão…</small></div>
           <button type="button" data-settings-plugin="spotify">Abrir Spotify</button>
@@ -154,6 +154,22 @@
         <article class="settings-plugin-card">
           <div><h3>Ollama local</h3><p>Modelos de IA disponíveis nesta máquina.</p><small id="settings-ollama-status">Verificando serviço local…</small></div>
           <button type="button" data-settings-provider="ollama">Selecionar Ollama</button>
+        </article>
+        <article class="settings-plugin-card">
+          <div><h3>Obsidian</h3><p>Notas e cofre local.</p><small id="settings-obsidian-status">Não vinculado · API local não configurada</small></div>
+          <button type="button" data-settings-service="obsidian">Abrir Obsidian</button>
+        </article>
+        <article class="settings-plugin-card">
+          <div><h3>Notion</h3><p>Espaços de trabalho e páginas.</p><small id="settings-notion-status">Não vinculado · integração OAuth não configurada</small></div>
+          <button type="button" data-settings-service="notion">Abrir Notion</button>
+        </article>
+        <article class="settings-plugin-card">
+          <div><h3>Claude</h3><p>Assistente de IA da Anthropic.</p><small id="settings-claude-status">Não vinculado · provedor e chave de API necessários</small></div>
+          <button type="button" data-settings-service="claude">Abrir Claude</button>
+        </article>
+        <article class="settings-plugin-card">
+          <div><h3>GPT / Codex</h3><p>Serviços de IA da OpenAI.</p><small id="settings-openai-status">Não vinculado · provedor e chave de API necessários</small></div>
+          <button type="button" data-settings-service="openai">Abrir GPT / Codex</button>
         </article>
       </section>
     </aside>

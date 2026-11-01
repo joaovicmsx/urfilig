@@ -1,7 +1,6 @@
 import { BACKEND_URL } from './authGuard.js';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 
-const CLIENT_ID_KEY = 'urfilig_spotify_client_id';
 const TOKEN_PREFIX = 'urfilig_spotify_session:';
 const REDIRECT_URI = `http://127.0.0.1:${new URL(BACKEND_URL).port || '3000'}/api/spotify/callback`;
 const el = (selector) => document.querySelector(selector);
@@ -42,7 +41,10 @@ export function iniciarSpotify() {
   let sdkPromise = null;
 
   const say = (message) => {
-    if (status) status.textContent = message;
+    if (status) {
+      status.textContent = message;
+      status.classList.toggle('spotify-status-visible', Boolean(message));
+    }
     const button = el('#spotify-connect');
     if (button && message) button.title = message;
   };
@@ -307,7 +309,7 @@ export function iniciarSpotify() {
         popup?.close();
         if (result.status !== 'connected') { say('A autorização não foi concluída. Confira o Redirect URI e tente novamente.'); return; }
         saveCredentials({
-          clientId: localStorage.getItem(CLIENT_ID_KEY),
+          clientId: result.clientId,
           accessToken: result.accessToken,
           refreshToken: result.refreshToken,
           expiresAt: Date.now() + result.expiresIn * 1000,
@@ -327,19 +329,11 @@ export function iniciarSpotify() {
   }
 
   async function connectSpotify() {
-    const savedClientId = localStorage.getItem(CLIENT_ID_KEY) || '';
-    const clientId = (savedClientId || window.prompt('Informe o Client ID do Spotify Developer Dashboard:') || '').trim();
-    if (!clientId) return;
-    if (!/^[A-Za-z0-9]{32}$/.test(clientId)) {
-      say('O Client ID deve ter 32 letras ou números.');
-      return;
-    }
     const popup = isTauri() ? null : window.open('about:blank', 'urfilig-spotify-auth', 'popup,width=520,height=720');
-    localStorage.setItem(CLIENT_ID_KEY, clientId);
     say('Abrindo autorização segura do Spotify…');
     el('#spotify-connect').disabled = true;
     try {
-      const result = await api('/api/spotify/auth/start', { method: 'POST', body: JSON.stringify({ clientId }) });
+      const result = await api('/api/spotify/auth/start', { method: 'POST' });
       if (isTauri()) await invoke('abrir_url_externa', { url: result.authorizationUrl });
       else if (popup) popup.location.href = result.authorizationUrl;
       else throw new Error('O navegador bloqueou a janela de autorização. Permita pop-ups e tente novamente.');

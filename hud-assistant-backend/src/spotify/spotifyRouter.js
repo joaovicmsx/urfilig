@@ -6,6 +6,7 @@ export const spotifyRouter = Router();
 
 const authRequests = new Map();
 const PORT = process.env.PORT || 3000;
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID?.trim() || '';
 const REDIRECT_URI = `http://127.0.0.1:${PORT}/api/spotify/callback`;
 const SCOPES = [
   'streaming',
@@ -38,20 +39,19 @@ function callbackPage(message, success) {
 
 spotifyRouter.post('/spotify/auth/start', exigirAutenticacao, (req, res) => {
   clearExpiredRequests();
-  const clientId = typeof req.body?.clientId === 'string' ? req.body.clientId.trim() : '';
-  if (!/^[A-Za-z0-9]{32}$/.test(clientId)) {
-    return res.status(400).json({ erro: 'Informe um Client ID válido do Spotify Developer Dashboard.' });
+  if (!/^[A-Za-z0-9]{32}$/.test(SPOTIFY_CLIENT_ID)) {
+    return res.status(503).json({ erro: 'A conexão com o Spotify ainda não está configurada.' });
   }
 
   const state = randomUrlSafe(32);
   const verifier = randomUrlSafe(64);
   const challenge = createHash('sha256').update(verifier).digest('base64url');
-  authRequests.set(state, { userId: req.usuarioId, clientId, verifier, createdAt: Date.now(), status: 'pending' });
+  authRequests.set(state, { userId: req.usuarioId, clientId: SPOTIFY_CLIENT_ID, verifier, createdAt: Date.now(), status: 'pending' });
 
   const url = new URL('https://accounts.spotify.com/authorize');
   url.search = new URLSearchParams({
     response_type: 'code',
-    client_id: clientId,
+    client_id: SPOTIFY_CLIENT_ID,
     redirect_uri: REDIRECT_URI,
     scope: SCOPES,
     state,
@@ -88,7 +88,7 @@ spotifyRouter.get('/spotify/callback', async (req, res) => {
     const tokens = await response.json().catch(() => ({}));
     if (!response.ok || !tokens.access_token || !tokens.refresh_token) {
       session.status = 'error';
-      return res.status(400).type('html').send(callbackPage('O Spotify não concluiu a autorização. Confira o Client ID e o endereço de retorno configurado e tente novamente.', false));
+      return res.status(400).type('html').send(callbackPage('O Spotify não concluiu a autorização. Volte à Urfilig e tente conectar novamente.', false));
     }
     session.tokens = {
       accessToken: tokens.access_token,
@@ -111,5 +111,5 @@ spotifyRouter.get('/spotify/auth/status', exigirAutenticacao, (req, res) => {
   if (session.status === 'pending') return res.json({ status: 'pending' });
   authRequests.delete(state);
   if (session.status !== 'connected') return res.json({ status: session.status });
-  return res.json({ status: 'connected', ...session.tokens });
+  return res.json({ status: 'connected', clientId: session.clientId, ...session.tokens });
 });

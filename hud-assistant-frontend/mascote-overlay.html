@@ -9,6 +9,14 @@
   <body>
     <main id="mascot-overlay" aria-label="Mascote Urfilig sobreposto">
       <button id="overlay-close" type="button" aria-label="Fechar mascote sobreposto" title="Fechar">×</button>
+      <button id="overlay-chat-toggle" type="button" aria-label="Abrir chat" title="Chat" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </button>
+      <section id="overlay-chat" aria-label="Chat da Urfilig" hidden>
+        <header><span>Conversa</span><button id="overlay-chat-close" type="button" aria-label="Fechar chat">×</button></header>
+        <div id="overlay-chat-messages" aria-live="polite"><p class="overlay-chat-empty">Converse com a Urfilig usando o mesmo modelo da janela principal.</p></div>
+        <form id="overlay-chat-form"><input id="overlay-chat-input" type="text" placeholder="Falar com a Urfilig…" autocomplete="off"><button type="submit">Enviar</button></form>
+      </section>
       <canvas id="overlay-canvas"></canvas>
     </main>
     <script type="module" src="./src/mascot/overlay.js"></script>

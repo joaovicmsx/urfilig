@@ -3,6 +3,25 @@ import { showAlert, showConfirm } from './uiDialogs.js';
 
 let dataAtual = new Date();
 let eventosCache = [];
+let filtroEtiqueta = '__todas__';
+const ETIQUETAS_EVENTO = [
+  { nome: 'Sem etiqueta', cor: '#aeb8c4', valor: '' },
+  { nome: 'Pessoal', cor: '#a78bfa' },
+  { nome: 'Trabalho', cor: '#7aa2f7' },
+  { nome: 'Saúde', cor: '#69b99c' },
+  { nome: 'Estudo', cor: '#e2b86b' },
+  { nome: 'Lazer', cor: '#df8d9c' },
+];
+
+function escaparHtml(valor = '') {
+  return String(valor).replace(/[&<>"']/g, (caractere) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[caractere]);
+}
+
+function corSegura(cor) {
+  return /^#[0-9a-f]{6}$/i.test(String(cor || '')) ? cor : '#aeb8c4';
+}
 
 const cabecalhoAuth = () => ({
   'Content-Type': 'application/json',
@@ -39,6 +58,16 @@ function renderizarEstrutura() {
   const primeiroDia = new Date(ano, mes, 1).getDay();
   const totalDias = new Date(ano, mes + 1, 0).getDate();
   const nomeMes = dataAtual.toLocaleString('pt-BR', { month: 'long' });
+  const etiquetas = new Map();
+  eventosCache.forEach((evento) => {
+    const nome = String(evento.etiqueta || '').trim();
+    const chave = nome || '__sem_etiqueta__';
+    if (!etiquetas.has(chave)) etiquetas.set(chave, { nome: nome || 'Sem etiqueta', cor: corSegura(evento.cor) });
+  });
+  const filtrosHtml = [
+    `<button type="button" class="evento-filtro" data-filtro="__todas__" aria-pressed="${filtroEtiqueta === '__todas__'}">Todos</button>`,
+    ...[...etiquetas.entries()].map(([chave, item]) => `<button type="button" class="evento-filtro" data-filtro="${escaparHtml(chave)}" aria-pressed="${filtroEtiqueta === chave}" style="--filtro-cor:${item.cor}"><span aria-hidden="true"></span>${escaparHtml(item.nome)}</button>`),
+  ].join('');
 
   let htmlDias = '';
 
@@ -52,12 +81,18 @@ function renderizarEstrutura() {
     const dataIso = `${ano}-${mesFormatado}-${diaFormatado}`;
 
     // Procura eventos cuja data comece com YYYY-MM-DD
-    const eventosDoDia = eventosCache.filter((e) => e.dataInicio && e.dataInicio.startsWith(dataIso));
+    const eventosDoDia = eventosCache.filter((e) => {
+      if (!e.dataInicio || !e.dataInicio.startsWith(dataIso)) return false;
+      if (filtroEtiqueta === '__todas__') return true;
+      if (filtroEtiqueta === '__sem_etiqueta__') return !String(e.etiqueta || '').trim();
+      return String(e.etiqueta || '').trim() === filtroEtiqueta;
+    });
 
     const htmlEventos = eventosDoDia
-      .map(
-        (ev) => `<div class="item-evento" data-id="${ev.id}" style="border-left: 2px solid ${ev.cor || '#ffffff'}; background: #121215; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; color: #f8fafc; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ev.titulo}">${ev.titulo}</div>`
-      )
+      .map((ev) => {
+        const etiqueta = ev.etiqueta ? `<span class="evento-etiqueta">${escaparHtml(ev.etiqueta)}</span>` : '';
+        return `<button type="button" class="item-evento" data-id="${escaparHtml(ev.id)}" style="--evento-cor:${corSegura(ev.cor)}" title="${escaparHtml(ev.titulo)}">${etiqueta}<span class="evento-titulo">${escaparHtml(ev.titulo)}</span></button>`;
+      })
       .join('');
 
     htmlDias += `
@@ -81,6 +116,8 @@ function renderizarEstrutura() {
         <button id="btn-proximo-mes" type="button" style="background: #09090b; border: none; color: #94a3b8; padding: 6px 12px; border-radius: 6px; cursor: pointer;">▶</button>
       </div>
 
+      <div class="evento-filtros" aria-label="Filtrar compromissos por etiqueta">${filtrosHtml || '<span>Sem etiquetas</span>'}</div>
+
       <div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 0.75rem; font-weight: 500; color: #475569;">
         <span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
       </div>
@@ -95,6 +132,13 @@ function renderizarEstrutura() {
 }
 
 function configurarEventosDOM() {
+  document.querySelectorAll('.evento-filtro').forEach((button) => {
+    button.addEventListener('click', () => {
+      filtroEtiqueta = button.dataset.filtro || '__todas__';
+      renderizarEstrutura();
+    });
+  });
+
   document.querySelector('#btn-mes-anterior')?.addEventListener('click', () => {
     dataAtual.setMonth(dataAtual.getMonth() - 1);
     renderizarEstrutura();
@@ -124,26 +168,32 @@ function configurarEventosDOM() {
 function abrirModalEvento(evento = {}) {
   const isEdicao = !!evento.id;
   const dataValida = evento.dataInicio ? evento.dataInicio.split('T')[0] : '';
+  const corInicial = corSegura(evento.cor);
+  const etiquetaInicial = evento.etiqueta || '';
+  const opcoesEtiqueta = ETIQUETAS_EVENTO.map(({ nome, cor, valor = nome }) => `
+    <button type="button" class="evento-etiqueta-opcao" data-etiqueta="${valor}" data-cor="${cor}" aria-pressed="${etiquetaInicial === valor}" style="--etiqueta-cor:${cor}">
+      <span aria-hidden="true"></span>${nome}
+    </button>`).join('');
 
   const modalHtml = `
-    <div id="modal-evento-overlay" style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 9999;">
-      <div style="background: #09090b; border-radius: 12px; padding: 1.8rem; width: 90%; max-width: 360px;">
-        <h4 style="margin: 0 0 1.2rem 0; color: #ffffff; font-size: 1rem; font-weight: 600;">${isEdicao ? 'Editar Evento' : 'Novo Evento'}</h4>
-        <form id="form-evento" style="display: flex; flex-direction: column; gap: 0.8rem;">
-          <input type="text" id="ev-titulo" placeholder="Título do evento" value="${evento.titulo || ''}" required style="background: #121215; border: none; color: #ffffff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; outline: none;" />
-          <textarea id="ev-desc" placeholder="Descrição (opcional)" style="background: #121215; border: none; color: #ffffff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; resize: vertical; min-height: 60px; outline: none;">${evento.descricao || ''}</textarea>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            <input type="date" id="ev-data" value="${dataValida}" required style="background: #121215; border: none; color: #ffffff; padding: 10px 12px; border-radius: 8px; font-size: 0.85rem; flex: 1; outline: none;" />
-            <input type="color" id="ev-cor" value="${evento.cor || '#ffffff'}" style="background: none; border: none; width: 32px; height: 32px; cursor: pointer;" />
-          </div>
-
-          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.2rem;">
-            <button type="button" id="btn-fechar-modal" style="background: #121215; border: none; color: #94a3b8; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Cancelar</button>
-            ${isEdicao ? `<button type="button" id="btn-apagar-ev" style="background: #ef4444; border: none; color: #ffffff; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Apagar</button>` : ''}
-            <button type="submit" id="btn-salvar-ev" style="background: #1e293b; border: none; color: #ffffff; padding: 9px 14px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 500;">Salvar</button>
+    <div id="modal-evento-overlay" class="evento-overlay">
+      <section class="evento-dialog" role="dialog" aria-modal="true" aria-labelledby="evento-form-titulo">
+        <h4 id="evento-form-titulo">${isEdicao ? 'Editar evento' : 'Novo evento'}</h4>
+        <form id="form-evento" class="evento-form">
+          <input type="text" id="ev-titulo" placeholder="Título do evento" value="${escaparHtml(evento.titulo || '')}" required />
+          <textarea id="ev-desc" placeholder="Descrição (opcional)">${escaparHtml(evento.descricao || '')}</textarea>
+          <label class="evento-campo-data">Data<input type="date" id="ev-data" value="${dataValida}" required /></label>
+          <fieldset class="evento-etiquetas"><legend>Cor rápida</legend><div class="evento-etiquetas-opcoes">${opcoesEtiqueta}</div></fieldset>
+          <label class="evento-campo-etiqueta">Etiqueta<input type="text" id="ev-etiqueta" maxlength="32" list="evento-etiquetas-sugestoes" placeholder="Ex.: projeto, pessoal..." value="${escaparHtml(etiquetaInicial)}" /><datalist id="evento-etiquetas-sugestoes">${ETIQUETAS_EVENTO.filter((item) => item.valor !== '').map((item) => `<option value="${item.nome}"></option>`).join('')}</datalist></label>
+          <label class="evento-cor-personalizada">Outra cor<input type="color" id="ev-cor" value="${corInicial}" /></label>
+          <div class="evento-preview" id="evento-cor-preview" style="--evento-cor:${corInicial}" aria-live="polite"><span class="evento-preview-ponto"></span><span class="evento-preview-etiqueta">${escaparHtml(etiquetaInicial || 'Sem etiqueta')}</span><span class="evento-preview-titulo">${escaparHtml(evento.titulo || 'Seu evento')}</span></div>
+          <div class="evento-acoes">
+            <button type="button" id="btn-fechar-modal">Cancelar</button>
+            ${isEdicao ? `<button type="button" id="btn-apagar-ev" class="evento-apagar">Apagar</button>` : ''}
+            <button type="submit" id="btn-salvar-ev" class="evento-salvar">Salvar</button>
           </div>
         </form>
-      </div>
+      </section>
     </div>
   `;
 
@@ -151,6 +201,32 @@ function abrirModalEvento(evento = {}) {
 
   const modal = document.querySelector('#modal-evento-overlay');
   document.querySelector('#btn-fechar-modal').onclick = () => modal.remove();
+  modal.addEventListener('click', (event) => { if (event.target === modal) modal.remove(); });
+
+  const seletorCor = document.querySelector('#ev-cor');
+  const campoEtiqueta = document.querySelector('#ev-etiqueta');
+  const previewCor = document.querySelector('#evento-cor-preview');
+  const previewEtiqueta = previewCor.querySelector('.evento-preview-etiqueta');
+  const atualizarPreview = () => {
+    const cor = corSegura(seletorCor.value);
+    previewCor.style.setProperty('--evento-cor', cor);
+    previewEtiqueta.textContent = campoEtiqueta.value.trim() || 'Sem etiqueta';
+    modal.querySelectorAll('.evento-etiqueta-opcao').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.etiqueta === campoEtiqueta.value.trim()));
+    });
+  };
+  modal.querySelectorAll('.evento-etiqueta-opcao').forEach((button) => {
+    button.addEventListener('click', () => {
+      seletorCor.value = button.dataset.cor;
+      campoEtiqueta.value = button.dataset.etiqueta;
+      atualizarPreview();
+    });
+  });
+  seletorCor.addEventListener('input', atualizarPreview);
+  campoEtiqueta.addEventListener('input', atualizarPreview);
+  document.querySelector('#ev-titulo').addEventListener('input', (event) => {
+    previewCor.querySelector('.evento-preview-titulo').textContent = event.currentTarget.value.trim() || 'Seu evento';
+  });
 
   if (isEdicao) {
     document.querySelector('#btn-apagar-ev').onclick = async () => {
@@ -182,7 +258,8 @@ function abrirModalEvento(evento = {}) {
       descricao: document.querySelector('#ev-desc').value.trim() || null,
       dataInicio: dataInicioIso,
       dataFim: dataFimIso,
-      cor: document.querySelector('#ev-cor').value,
+      cor: corSegura(document.querySelector('#ev-cor').value),
+      etiqueta: campoEtiqueta.value.trim() || null,
     };
 
     const url = isEdicao ? `${BACKEND_URL}/api/eventos/${evento.id}` : `${BACKEND_URL}/api/eventos`;

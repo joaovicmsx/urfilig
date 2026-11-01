@@ -1,6 +1,7 @@
 import { BACKEND_URL } from './authGuard.js';
 import { showAlert, showConfirm } from './uiDialogs.js';
 import { iniciarPaineisDados } from './dataPanels.js';
+import { invoke, isTauri } from '@tauri-apps/api/core';
 
 // =========================================================================
 // MODAIS CUSTOMIZADOS (FONTE PADRÃO DA APLICAÇÃO - CLEAN DARK)
@@ -412,6 +413,25 @@ export function iniciarMenuLateral(socket) {
     provider.dispatchEvent(new Event('change', { bubbles: true }));
     if (profileMessage) profileMessage.textContent = `${button.dataset.settingsProvider === 'ollama' ? 'Ollama local' : 'Gemini'} selecionado para o chat.`;
   }));
+  const linksServicos = {
+    obsidian: ['https://obsidian.md', 'Obsidian', '#settings-obsidian-status'],
+    notion: ['https://www.notion.so/login', 'Notion', '#settings-notion-status'],
+    claude: ['https://claude.ai/login', 'Claude', '#settings-claude-status'],
+    openai: ['https://chatgpt.com', 'GPT / Codex', '#settings-openai-status'],
+  };
+  document.querySelectorAll('[data-settings-service]').forEach((button) => button.addEventListener('click', async () => {
+    const servico = linksServicos[button.dataset.settingsService];
+    if (!servico) return;
+    try {
+      if (isTauri()) await invoke('abrir_url_externa', { url: servico[0] });
+      else window.open(servico[0], '_blank', 'noopener,noreferrer');
+      const status = document.querySelector(servico[2]);
+      if (status) status.textContent = `Serviço aberto · conta ainda não vinculada à Urfilig`;
+      if (profileMessage) profileMessage.textContent = `${servico[1]} aberto. A conta ainda não está vinculada à Urfilig; veja o requisito indicado no cartão.`;
+    } catch {
+      if (profileMessage) profileMessage.textContent = `Não foi possível abrir ${servico[1]}.`;
+    }
+  }));
   profileForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!profileForm || !profileSaveButton) return;
@@ -498,6 +518,34 @@ export function iniciarMenuLateral(socket) {
   });
   document.querySelector('#email-fechar')?.addEventListener('click', fecharEmail);
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape') fecharEmail(); });
+  // Fecha painéis laterais ao clicar fora deles; a captura acontece antes de
+  // os botões de navegação abrirem outro painel.
+  document.addEventListener('click', (event) => {
+    if (event.button !== 0 || !(event.target instanceof Element)) return;
+    const target = event.target;
+    const closeIfOutside = (selector, isOpen, close) => {
+      const panel = document.querySelector(selector);
+      if (panel && isOpen(panel) && !panel.contains(target)) close(panel);
+    };
+
+    closeIfOutside('#menu-lateral', (panel) => panel.classList.contains('visible'), fecharMenu);
+    closeIfOutside('#profile-drawer', (panel) => panel.classList.contains('aberta'), fecharPerfil);
+    closeIfOutside('#prospeccao-drawer', (panel) => panel.classList.contains('aberta'), (panel) => {
+      panel.classList.remove('aberta');
+      document.querySelector('#prospeccao-backdrop')?.classList.remove('visible');
+      panel.setAttribute('aria-hidden', 'true');
+    });
+    closeIfOutside('#spotify-drawer', (panel) => panel.classList.contains('aberta'), (panel) => {
+      panel.classList.remove('aberta');
+      document.querySelector('#spotify-backdrop')?.classList.remove('visible');
+      panel.setAttribute('aria-hidden', 'true');
+      document.querySelector('#spotify-backdrop')?.setAttribute('aria-hidden', 'true');
+    });
+    closeIfOutside('#email-painel', (panel) => panel.classList.contains('aberta'), fecharEmail);
+    closeIfOutside('#calendario-painel', (panel) => panel.classList.contains('aberta'), (panel) => panel.classList.remove('aberta'));
+    closeIfOutside('#cerebro-painel', (panel) => panel.classList.contains('aberta'), (panel) => panel.classList.remove('aberta'));
+    closeIfOutside('#contatos-painel', (panel) => panel.classList.contains('aberta'), (panel) => panel.classList.remove('aberta'));
+  }, true);
   window.addEventListener('message', (event) => {
     if (event.origin === window.location.origin && event.data?.type === 'urfilig:close-email') fecharEmail();
   });

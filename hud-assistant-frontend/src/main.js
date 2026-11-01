@@ -22,6 +22,7 @@ import { carregarCalendarioUI } from './calendario.js';
 import { iniciarModuloContatos } from './contatos.js';
 import { iniciarQuadrosRotina } from './routineBoards.js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { emitTo, listen as listenTauri } from '@tauri-apps/api/event';
 
 exigirLogin();
 validarSessao();
@@ -488,6 +489,12 @@ document.addEventListener('DOMContentLoaded', () => {
       btnRestaurar.hidden = true;
       document.getElementById('chat-painel')?.classList.add('chat-expanded');
     });
+    document.addEventListener('click', (event) => {
+      if (chatHistorico.style.display === 'none' || chatHistorico.contains(event.target)) return;
+      chatHistorico.style.display = 'none';
+      btnRestaurar.hidden = false;
+      document.getElementById('chat-painel')?.classList.remove('chat-expanded');
+    }, true);
   }
 
   if (chatForm) {
@@ -549,6 +556,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (isTauri()) {
+    void listenTauri('mascot:chat-send', (event) => {
+      const text = String(event.payload?.text || '').trim();
+      const input = document.getElementById('chat-input');
+      const form = document.getElementById('chat-form');
+      if (!text || !input || !form) return;
+      input.value = text;
+      form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
+    });
+    void listenTauri('mascot:chat-history-request', () => {
+      const messages = [...document.querySelectorAll('#chat-mensagens .chat-msg')].map((node) => {
+        const autor = node.querySelector('strong')?.textContent?.replace(/:\s*$/, '') || 'Urfilig';
+        return { autor, texto: node.textContent.replace(/^.*?:\s*/, '') };
+      });
+      void emitTo('mascote-overlay', 'mascot:chat-history', messages);
+    });
+  }
+
   carregarMemoriasECerebro();
 });
 
@@ -563,6 +588,7 @@ function adicionarMensagemChat(autor, texto) {
   msgDiv.append(autorEl, document.createTextNode(` ${texto}`));
   chatMensagens.appendChild(msgDiv);
   chatMensagens.scrollTop = chatMensagens.scrollHeight;
+  if (isTauri()) void emitTo('mascote-overlay', 'mascot:chat-message', { autor, texto });
 }
 
 socket.on('connect', () => {
@@ -662,8 +688,9 @@ carregarMascote('/models/mascote.glb', scene)
     mascotStateMachine = new MascotStateMachine(mixer, clips);
     motionController = new MascotMotionController(mascote, {
       modo: 'fixo',
-      posicaoFixa: new THREE.Vector3(-4.8, -1.2, 8.0),
-      pontoParaOlhar: new THREE.Vector3(-4.8, -1.2, 20),
+      // Mantém o mascote centralizado logo acima da barra do chat.
+      posicaoFixa: new THREE.Vector3(0, -0.9, 8.0),
+      pontoParaOlhar: new THREE.Vector3(0, -0.9, 20),
     });
     mascote.rotation.y = Math.PI / 2;
     mascote.visible = !mascotOverlayActive;
@@ -743,8 +770,8 @@ overlayToggle?.addEventListener('click', async () => {
     mascotOverlay = await WebviewWindow.getByLabel('mascote-overlay');
     if (!mascotOverlay) {
       mascotOverlay = new WebviewWindow('mascote-overlay', {
-        url: 'mascote-overlay.html', title: 'Mascote Urfilig', width: 340, height: 400,
-        x: 88, y: Math.max(0, window.innerHeight - 420),
+        url: 'mascote-overlay.html', title: 'Mascote Urfilig', width: 360, height: 520,
+        x: 88, y: Math.max(0, window.innerHeight - 540),
         decorations: false, transparent: true, alwaysOnTop: true, focus: false, focusable: false,
         resizable: false, skipTaskbar: true, shadow: false,
       });

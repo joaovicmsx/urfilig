@@ -26,7 +26,7 @@ eventosRouter.get('/eventos', async (req, res) => {
 // Criar evento
 eventosRouter.post('/eventos', async (req, res) => {
   // Agora recebemos o dataFim também
-  const { titulo, descricao, dataInicio, dataFim, cor } = req.body;
+  const { titulo, descricao, dataInicio, dataFim, cor, etiqueta } = req.body;
   const usuarioId = req.usuarioId || req.userId || (req.user && req.user.id);
 
   if (!titulo || !dataInicio) {
@@ -47,6 +47,7 @@ eventosRouter.post('/eventos', async (req, res) => {
         dataInicio: new Date(dataInicio),
         dataFim: dataFim ? new Date(dataFim) : undefined, // Salva o dataFim se ele existir
         cor: cor || '#3b82f6',
+        etiqueta: typeof etiqueta === 'string' && etiqueta.trim() ? etiqueta.trim().slice(0, 32) : null,
       },
     });
     res.status(201).json(novoEvento);
@@ -60,7 +61,7 @@ eventosRouter.post('/eventos', async (req, res) => {
 // Editar evento
 eventosRouter.put('/eventos/:id', async (req, res) => {
   const { id } = req.params;
-  const { titulo, descricao, dataInicio, dataFim, cor } = req.body;
+  const { titulo, descricao, dataInicio, dataFim, cor, etiqueta } = req.body;
   const usuarioId = req.usuarioId || req.userId || (req.user && req.user.id);
 
   try {
@@ -72,6 +73,7 @@ eventosRouter.put('/eventos/:id', async (req, res) => {
         dataInicio: new Date(dataInicio),
         dataFim: dataFim ? new Date(dataFim) : undefined,
         cor,
+        etiqueta: typeof etiqueta === 'string' && etiqueta.trim() ? etiqueta.trim().slice(0, 32) : null,
       },
     });
 
