@@ -138,39 +138,38 @@
       </section>
       </div>
       <section id="settings-plugins-panel" class="settings-panel settings-plugins-panel" role="tabpanel" aria-labelledby="settings-plugins-tab" hidden>
-        <p class="settings-plugins-intro">Serviços conectados e opções para abrir ou configurar novas integrações.</p>
-        <article class="settings-plugin-card">
-          <div><h3>Spotify</h3><p>Playlists, faixa atual e mini player.</p><small id="settings-spotify-status">Verificando conexão…</small></div>
-          <button type="button" data-settings-plugin="spotify">Abrir Spotify</button>
-        </article>
-        <article class="settings-plugin-card">
-          <div><h3>Gmail</h3><p>Caixas de entrada e leitura de mensagens.</p><small id="settings-gmail-status">Verificando autorização…</small></div>
-          <button type="button" data-settings-plugin="gmail">Abrir E-mails</button>
-        </article>
-        <article class="settings-plugin-card">
-          <div><h3>Gemini</h3><p>Provedor de IA configurado no backend.</p><small id="settings-gemini-status">Verificando configuração…</small></div>
-          <button type="button" data-settings-provider="gemini">Selecionar Gemini</button>
-        </article>
-        <article class="settings-plugin-card">
-          <div><h3>Ollama local</h3><p>Modelos de IA disponíveis nesta máquina.</p><small id="settings-ollama-status">Verificando serviço local…</small></div>
-          <button type="button" data-settings-provider="ollama">Selecionar Ollama</button>
-        </article>
-        <article class="settings-plugin-card">
-          <div><h3>Obsidian</h3><p>Notas e cofre local.</p><small id="settings-obsidian-status">Não vinculado · API local não configurada</small></div>
-          <button type="button" data-settings-service="obsidian">Abrir Obsidian</button>
-        </article>
-        <article class="settings-plugin-card">
-          <div><h3>Notion</h3><p>Espaços de trabalho e páginas.</p><small id="settings-notion-status">Não vinculado · integração OAuth não configurada</small></div>
-          <button type="button" data-settings-service="notion">Abrir Notion</button>
-        </article>
-        <article class="settings-plugin-card">
-          <div><h3>Claude</h3><p>Assistente de IA da Anthropic.</p><small id="settings-claude-status">Não vinculado · provedor e chave de API necessários</small></div>
-          <button type="button" data-settings-service="claude">Abrir Claude</button>
-        </article>
-        <article class="settings-plugin-card">
-          <div><h3>GPT / Codex</h3><p>Serviços de IA da OpenAI.</p><small id="settings-openai-status">Não vinculado · provedor e chave de API necessários</small></div>
-          <button type="button" data-settings-service="openai">Abrir GPT / Codex</button>
-        </article>
+        <button class="settings-plugin-option" type="button" data-settings-plugin="spotify" aria-label="Conectar Spotify">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1ed760"/><path d="M8 12.2c5.3-1.6 11.6-.9 16 1.9M9.1 16.2c4.4-1.3 9.5-.7 13.2 1.6m-12.1 2.1c3.4-1 7.2-.5 10 1.2" fill="none" stroke="#102016" stroke-width="2.2" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-plugin="gmail" aria-label="Conectar Gmail">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 25V8.5a2.5 2.5 0 0 1 4-2l8 6 8-6a2.5 2.5 0 0 1 4 2V25" fill="none" stroke="#ea4335" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13v12" stroke="#4285f4" stroke-width="4" stroke-linecap="round"/><path d="M28 13v12" stroke="#34a853" stroke-width="4" stroke-linecap="round"/><path d="M4 8.5v4" stroke="#fbbc04" stroke-width="4" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-provider="gemini" aria-label="Conectar Gemini">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5c2.3 7 4.2 9 13.5 13.5C20.2 20.5 18.3 22.5 16 29.5 13.7 22.5 11.8 20.5 2.5 16 11.8 11.5 13.7 9.5 16 2.5Z" fill="#9b7bff"/><path d="M25.5 3v7M22 6.5h7M6 22v7M2.5 25.5h7" stroke="#d9ccff" stroke-width="1.5" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-provider="ollama" aria-label="Conectar Ollama local">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 12 5 6l8 3M23 12l4-6-8 3" fill="none" stroke="#d6a16a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 15c0-5 3.8-8 9-8s9 3 9 8v5a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8v-5Z" fill="#bd7954"/><path d="M11 18h.1M21 18h.1M13 23c1.8 1.4 4.2 1.4 6 0" fill="none" stroke="#241912" stroke-width="2.5" stroke-linecap="round"/><path d="M5 15h3m16 0h3" stroke="#d6a16a" stroke-width="2" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="obsidian" aria-label="Conectar Obsidian">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m14 2 5 2 2 6 5 5-2 10-7 5-5-3-6-1-2-8 4-7 1-6Z" fill="#8e69cf"/><path d="m14 2 2 9-7 8-5-1 4-7 1-6ZM16 11l10 4-2 10-7 5-1-10-7-1Z" fill="#b695ff"/><path d="m9 19 7 1 1 10-5-3-6-1Z" fill="#65469e"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="notion" aria-label="Conectar Notion">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="3" fill="#f4f2ee"/><path d="M10 8.5c.7.6 1.5.8 2.5.7l11-1.1v16.1l-3.2.7V13.2l-8.8 11.2-3.3-.8V12.1l-2.4-.6v-2l4.2-1Z" fill="#191919"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="claude" aria-label="Conectar Claude">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><g stroke="#e58e56" stroke-width="2.2" stroke-linecap="round"><path d="M16 3v6M16 23v6M3 16h6M23 16h6M6.8 6.8l4.2 4.2m10 10 4.2 4.2m0-18.4L21 11M11 21l-4.2 4.2M10.7 4.5l2 5.6m6.6 11.8 2 5.6M4.5 10.7l5.6 2m11.8 6.6 5.6 2m-23 0 5.6-2m11.8-6.6 5.6-2m-16.2 17 2-5.6M19.3 10.1l2-5.6"/></g></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="openai" aria-label="Conectar GPT / Codex">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3.5a7 7 0 0 1 6.7 5.2 6.6 6.6 0 0 1 3.9 11.8 7 7 0 0 1-10.6 7.3 7 7 0 0 1-10.9-7.3 6.6 6.6 0 0 1 3.9-11.8A7 7 0 0 1 16 3.5Z" fill="none" stroke="#d6d2e3" stroke-width="1.8"/><path d="m10 10 12 12m0-12L10 22m-1-7h14m-7-7v16" fill="none" stroke="#d6d2e3" stroke-width="1.55" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <small id="settings-spotify-status" hidden>Verificando conexão…</small>
+        <small id="settings-gmail-status" hidden>Verificando autorização…</small>
+        <small id="settings-gemini-status" hidden>Verificando configuração…</small>
+        <small id="settings-ollama-status" hidden>Verificando serviço local…</small>
+        <small id="settings-obsidian-status" hidden>Não vinculado</small>
+        <small id="settings-notion-status" hidden>Não vinculado</small>
+        <small id="settings-claude-status" hidden>Não vinculado</small>
+        <small id="settings-openai-status" hidden>Não vinculado</small>
       </section>
     </aside>
 
@@ -311,15 +310,22 @@
       </button>
 
       <form id="chat-form" class="chat-form-inferior">
-        <input id="chat-input" type="text" placeholder="Falar com a Urfilig..." autocomplete="off" />
+        <input id="chat-input" type="text" placeholder="Digite aqui" autocomplete="off" />
         <button type="submit" class="chat-btn-enviar">Enviar</button>
       </form>
-      <label id="chat-model-control" aria-label="Modelo de conversa">
-        <span class="visually-hidden">Modelo de conversa</span>
-        <select id="quick-chat-provider" aria-label="Mudar modelo de conversa">
+      <div id="chat-model-control" aria-label="Modelo de conversa">
+        <button id="chat-model-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Mudar modelo de conversa">
+          <span id="chat-model-label">Gemini</span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+        </button>
+        <div id="chat-model-menu" role="menu" aria-label="Escolher modelo" hidden>
+          <button type="button" role="menuitemradio" data-chat-provider="gemini" aria-checked="true">Gemini</button>
+          <button type="button" role="menuitemradio" data-chat-provider="ollama" aria-checked="false">Local</button>
+        </div>
+        <select id="quick-chat-provider" class="visually-hidden" aria-hidden="true" tabindex="-1">
           <option value="gemini">Gemini</option><option value="ollama">Local</option>
         </select>
-      </label>
+      </div>
     </div>
 
     <div id="cerebro-painel" class="sidebar-cerebro">

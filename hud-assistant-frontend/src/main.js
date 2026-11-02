@@ -1,4 +1,5 @@
 import './windowChrome.js';
+import './loadingIndicator.js';
 import { getTimeColor } from './timeTheme.js';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import * as THREE from 'three';
@@ -510,12 +511,6 @@ document.addEventListener('DOMContentLoaded', () => {
       btnRestaurar.hidden = true;
       document.getElementById('chat-painel')?.classList.add('chat-expanded');
     });
-    document.addEventListener('click', (event) => {
-      if (chatHistorico.style.display === 'none' || chatHistorico.contains(event.target)) return;
-      chatHistorico.style.display = 'none';
-      btnRestaurar.hidden = false;
-      document.getElementById('chat-painel')?.classList.remove('chat-expanded');
-    }, true);
   }
 
   if (chatForm) {
@@ -525,7 +520,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const provider = quickProvider;
     if (quickProvider) {
       quickProvider.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
-      quickProvider.addEventListener('change', () => localStorage.setItem('urfilig_llm_provider', quickProvider.value));
+      const trigger = document.querySelector('#chat-model-trigger');
+      const label = document.querySelector('#chat-model-label');
+      const menu = document.querySelector('#chat-model-menu');
+      const renderProvider = () => {
+        const provider = quickProvider.value === 'ollama' ? 'ollama' : 'gemini';
+        quickProvider.value = provider;
+        if (label) label.textContent = provider === 'ollama' ? 'Local' : 'Gemini';
+        menu?.querySelectorAll('[data-chat-provider]').forEach((option) => {
+          option.setAttribute('aria-checked', String(option.dataset.chatProvider === provider));
+        });
+      };
+      renderProvider();
+      quickProvider.addEventListener('change', () => {
+        localStorage.setItem('urfilig_llm_provider', quickProvider.value);
+        renderProvider();
+      });
+      trigger?.addEventListener('click', () => {
+        const abrir = menu?.hidden;
+        if (menu) menu.hidden = !abrir;
+        trigger.setAttribute('aria-expanded', String(Boolean(abrir)));
+      });
+      menu?.querySelectorAll('[data-chat-provider]').forEach((option) => option.addEventListener('click', () => {
+        quickProvider.value = option.dataset.chatProvider;
+        quickProvider.dispatchEvent(new Event('change', { bubbles: true }));
+        menu.hidden = true;
+        trigger?.setAttribute('aria-expanded', 'false');
+      }));
+      document.addEventListener('pointerdown', (event) => {
+        const control = document.getElementById('chat-model-control');
+        if (control && !control.contains(event.target) && menu && !menu.hidden) {
+          menu.hidden = true;
+          trigger?.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || !menu || menu.hidden) return;
+        menu.hidden = true;
+        trigger?.setAttribute('aria-expanded', 'false');
+        trigger?.focus();
+      });
     }
 
     novoForm.addEventListener('submit', async (e) => {
@@ -595,13 +629,33 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  restaurarHistoricoChat();
   carregarMemoriasECerebro();
 });
 
-function adicionarMensagemChat(autor, texto) {
-  const chatMensagens = document.getElementById('chat-mensagens');
-  if (!chatMensagens) return;
+const CHAT_HISTORY_PREFIX = 'urfilig_chat_history_v1:';
+function obterChaveHistoricoChat() {
+  try {
+    const usuario = JSON.parse(localStorage.getItem('urfilig_usuario') || '{}');
+    const identidade = String(usuario.id || usuario.email || 'local').trim().toLowerCase();
+    return `${CHAT_HISTORY_PREFIX}${identidade || 'local'}`;
+  } catch {
+    return `${CHAT_HISTORY_PREFIX}local`;
+  }
+}
 
+function lerHistoricoChat() {
+  try {
+    const historico = JSON.parse(localStorage.getItem(obterChaveHistoricoChat()) || '[]');
+    return Array.isArray(historico) ? historico.filter((item) => item && typeof item.texto === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function renderizarMensagemChat(autor, texto) {
+  const chatMensagens = document.getElementById('chat-mensagens');
+  if (!chatMensagens) return null;
   const msgDiv = document.createElement('div');
   msgDiv.className = autor === 'Você' ? 'chat-msg usuario' : 'chat-msg urfilig';
   const autorEl = document.createElement('strong');
@@ -609,7 +663,27 @@ function adicionarMensagemChat(autor, texto) {
   msgDiv.append(autorEl, document.createTextNode(` ${texto}`));
   chatMensagens.appendChild(msgDiv);
   chatMensagens.scrollTop = chatMensagens.scrollHeight;
-  if (isTauri()) void emitTo('mascote-overlay', 'mascot:chat-message', { autor, texto });
+  return msgDiv;
+}
+
+function restaurarHistoricoChat() {
+  const chatMensagens = document.getElementById('chat-mensagens');
+  if (!chatMensagens) return;
+  chatMensagens.replaceChildren();
+  lerHistoricoChat().forEach(({ autor, texto }) => renderizarMensagemChat(String(autor || 'Urfilig'), texto));
+}
+
+function adicionarMensagemChat(autor, texto) {
+  const mensagem = String(texto ?? '');
+  if (!renderizarMensagemChat(autor, mensagem)) return;
+  try {
+    const historico = lerHistoricoChat();
+    historico.push({ autor, texto: mensagem, criadoEm: new Date().toISOString() });
+    localStorage.setItem(obterChaveHistoricoChat(), JSON.stringify(historico));
+  } catch (erro) {
+    console.warn('[chat] Não foi possível persistir o histórico local:', erro);
+  }
+  if (isTauri()) void emitTo('mascote-overlay', 'mascot:chat-message', { autor, texto: mensagem });
 }
 
 socket.on('connect', () => {
@@ -709,9 +783,9 @@ carregarMascote('/models/mascote.glb', scene)
     mascotStateMachine = new MascotStateMachine(mixer, clips);
     motionController = new MascotMotionController(mascote, {
       modo: 'fixo',
-      // Mantém o mascote centralizado logo acima da barra do chat.
-      posicaoFixa: new THREE.Vector3(0, -0.9, 8.0),
-      pontoParaOlhar: new THREE.Vector3(0, -0.9, 20),
+      // A posição é recalculada com base na barra do chat durante a renderização.
+      posicaoFixa: new THREE.Vector3(0, 0, 8.0),
+      pontoParaOlhar: new THREE.Vector3(0, 0, 20),
     });
     mascote.rotation.y = Math.PI / 2;
     mascote.visible = !mascotOverlayActive;
@@ -729,6 +803,31 @@ function normalizarEscala(mascote, alturaAlvo) {
   const tamanho = box.getSize(new THREE.Vector3());
   const fator = alturaAlvo / (tamanho.y || 1);
   mascote.scale.setScalar(fator);
+}
+
+function posicionarMascoteSobreChat() {
+  if (!mascotRef || !motionController || mascotOverlayActive || motionController.modo !== 'fixo') return;
+  const chat = document.getElementById('chat-form');
+  if (!chat) return;
+  const canvasRect = canvas.getBoundingClientRect();
+  const chatRect = chat.getBoundingClientRect();
+  if (!canvasRect.width || !canvasRect.height || !chatRect.width) return;
+
+  const depth = motionController.posicaoFixa.z;
+  const distance = Math.max(.1, camera.position.z - depth);
+  const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
+  const visibleWidth = visibleHeight * camera.aspect;
+  const pixelX = (chatRect.left + chatRect.right) / 2;
+  // A origem do mascote fica nos pés: encosta o modelo logo acima da barra.
+  const pixelY = chatRect.top - 8;
+  const ndcX = ((pixelX - canvasRect.left) / canvasRect.width) * 2 - 1;
+  const ndcY = 1 - ((pixelY - canvasRect.top) / canvasRect.height) * 2;
+  motionController.posicaoFixa.set(
+    ndcX * visibleWidth / 2,
+    camera.position.y + ndcY * visibleHeight / 2,
+    depth,
+  );
+  mascotRef.position.copy(motionController.posicaoFixa);
 }
 
 let audioPiperAtual = null;
@@ -944,7 +1043,9 @@ canvas.addEventListener('pointermove', (event) => {
           const offsetZ = Math.sin(tempo * (velocidadeOrbita * 1.8) + nodeArrastado.fase) * raioOrbita;
           const posLocalBase = nodeArrastado.posicaoAtual.clone().add(new THREE.Vector3(offsetX, offsetY, offsetZ));
 
-          nodeArrastado.offsetArrasto.copy(localTarget.sub(posLocalBase));
+          // O alvo acompanha o cursor com uma mola suave; a posição visível
+          // não teleporta e ainda pode reagir às colisões com outros nós.
+          nodeArrastado.alvoArrasto.copy(localTarget.sub(posLocalBase));
         }
         if (tooltip) tooltip.hidden = true;
       } else if (drag.moved) {
@@ -1136,6 +1237,7 @@ function animate() {
   const delta = Math.min(clock.getDelta(), 0.1);
   const elapsed = clock.elapsedTime;
   mixer?.update(delta);
+  posicionarMascoteSobreChat();
   motionController?.update(elapsed, delta);
 
   if (headTracker) {

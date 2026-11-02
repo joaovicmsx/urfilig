@@ -228,6 +228,8 @@ export class PersonalitySphere {
           posicaoAtual: posInit,
           destino: destinoBase.clone(),
           offsetArrasto: new THREE.Vector3(0, 0, 0),
+          alvoArrasto: new THREE.Vector3(0, 0, 0),
+          velocidadeArrasto: new THREE.Vector3(0, 0, 0),
           fase: Math.random() * Math.PI * 2,
           chegou: false,
           position: posInit.clone(),
@@ -293,6 +295,8 @@ export class PersonalitySphere {
               posicaoAtual: posInitNota,
               destino: destinoNota,
               offsetArrasto: new THREE.Vector3(0, 0, 0),
+              alvoArrasto: new THREE.Vector3(0, 0, 0),
+              velocidadeArrasto: new THREE.Vector3(0, 0, 0),
               fase: Math.random() * Math.PI * 2,
               chegou: false,
               position: posInitNota.clone(),
@@ -449,6 +453,7 @@ export class PersonalitySphere {
   }
 
   update(delta) {
+    const dt = Math.min(Math.max(delta || 0, 0), 0.05);
     this.grupo.rotation.y += this.velocidadeRotacao.y;
     this.grupo.rotation.x += this.velocidadeRotacao.x;
     this.velocidadeRotacao.x *= 0.92;
@@ -471,18 +476,27 @@ export class PersonalitySphere {
       this.linhasConstelacao.material.color.copy(corLinha);
     }
 
+    // Primeiro atualiza a física; a renderização vem depois para que a colisão
+    // entre qualquer par de nós seja refletida no mesmo quadro.
     this.particulas.forEach((p, i) => {
       if (!p.offsetArrasto) p.offsetArrasto = new THREE.Vector3(0, 0, 0);
+      if (!p.alvoArrasto) p.alvoArrasto = new THREE.Vector3();
+      if (!p.velocidadeArrasto) p.velocidadeArrasto = new THREE.Vector3();
 
-      if (this.nodeArrastado !== p && p.offsetArrasto.lengthSq() > 0.00001) {
-        p.offsetArrasto.lerp(new THREE.Vector3(0, 0, 0), Math.min(delta * 10, 1));
-        if (p.offsetArrasto.lengthSq() < 0.00001) {
-          p.offsetArrasto.set(0, 0, 0);
-        }
+      const sendoArrastada = this.nodeArrastado === p;
+      const forcaMola = sendoArrastada ? 24 : 5.5;
+      const amortecimento = sendoArrastada ? 8 : 5;
+      if (!sendoArrastada) p.alvoArrasto.set(0, 0, 0);
+      p.velocidadeArrasto.addScaledVector(p.alvoArrasto.clone().sub(p.offsetArrasto), forcaMola * dt);
+      p.velocidadeArrasto.multiplyScalar(Math.exp(-amortecimento * dt));
+      p.offsetArrasto.addScaledVector(p.velocidadeArrasto, dt);
+      if (!sendoArrastada && p.offsetArrasto.lengthSq() < 0.000025 && p.velocidadeArrasto.lengthSq() < 0.000025) {
+        p.offsetArrasto.set(0, 0, 0);
+        p.velocidadeArrasto.set(0, 0, 0);
       }
 
       if (!p.chegou) {
-        p.posicaoAtual.lerp(p.destino, this.reducedMotion ? 1 : Math.min(delta * 1.6, 1));
+        p.posicaoAtual.lerp(p.destino, this.reducedMotion ? 1 : 1 - Math.exp(-1.6 * dt));
         if (p.posicaoAtual.distanceTo(p.destino) < 0.02) p.chegou = true;
       }
 
@@ -493,6 +507,16 @@ export class PersonalitySphere {
       const offsetY = Math.cos(tempo * (velocidadeOrbita * 1.2) + p.fase) * raioOrbita;
       const offsetZ = Math.sin(tempo * (velocidadeOrbita * 1.8) + p.fase) * raioOrbita;
 
+      const posLocalBase = p.posicaoAtual.clone().add(new THREE.Vector3(offsetX, offsetY, offsetZ));
+      p.position = posLocalBase.clone().add(p.offsetArrasto);
+    });
+
+    this.resolverColisoes();
+
+    this.particulas.forEach((p, i) => {
+      const offsetX = Math.sin(tempo * 0.25 + p.fase) * 0.10;
+      const offsetY = Math.cos(tempo * (0.25 * 1.2) + p.fase) * 0.10;
+      const offsetZ = Math.sin(tempo * (0.25 * 1.8) + p.fase) * 0.10;
       const posLocalBase = p.posicaoAtual.clone().add(new THREE.Vector3(offsetX, offsetY, offsetZ));
       p.position = posLocalBase.clone().add(p.offsetArrasto);
 
@@ -555,6 +579,38 @@ export class PersonalitySphere {
     if (dustAtiva) {
       this.dustGeometry.attributes.position.needsUpdate = true;
       this.dustGeometry.attributes.color.needsUpdate = true;
+    }
+  }
+
+  resolverColisoes() {
+    const distanciaMinima = 0.28;
+    for (let i = 0; i < this.particulas.length; i += 1) {
+      const a = this.particulas[i];
+      for (let j = i + 1; j < this.particulas.length; j += 1) {
+        const b = this.particulas[j];
+        const diferenca = b.position.clone().sub(a.position);
+        const distanciaSq = diferenca.lengthSq();
+        if (distanciaSq >= distanciaMinima * distanciaMinima) continue;
+
+        const distancia = Math.sqrt(distanciaSq);
+        const normal = distancia > 0.0001 ? diferenca.multiplyScalar(1 / distancia) : new THREE.Vector3(1, 0, 0);
+        const penetracao = distanciaMinima - distancia;
+        const aPreso = this.nodeArrastado === a;
+        const bPreso = this.nodeArrastado === b;
+        const parteA = aPreso && !bPreso ? 0.18 : (!aPreso && bPreso ? 0.82 : 0.5);
+        const parteB = 1 - parteA;
+
+        a.offsetArrasto.addScaledVector(normal, -penetracao * parteA);
+        b.offsetArrasto.addScaledVector(normal, penetracao * parteB);
+
+        const velocidadeRelativa = b.velocidadeArrasto.clone().sub(a.velocidadeArrasto);
+        const velocidadeNormal = velocidadeRelativa.dot(normal);
+        if (velocidadeNormal < 0) {
+          const impulso = -velocidadeNormal * 0.28;
+          if (!aPreso) a.velocidadeArrasto.addScaledVector(normal, -impulso * parteA);
+          if (!bPreso) b.velocidadeArrasto.addScaledVector(normal, impulso * parteB);
+        }
+      }
     }
   }
 }

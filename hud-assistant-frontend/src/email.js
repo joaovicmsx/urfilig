@@ -1,4 +1,6 @@
 import './timeTheme.js';
+import './windowChrome.js';
+import './loadingIndicator.js';
 import { BACKEND_URL, exigirLogin, validarSessao } from './authGuard.js';
 import { showAlert, showToast } from './uiDialogs.js';
 

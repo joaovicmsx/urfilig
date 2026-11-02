@@ -1,0 +1,36 @@
+.urfilig-loading-indicator {
+  position: fixed;
+  z-index: 2147483000;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  transform: translate(-50%, -50%) scale(.86);
+  opacity: 0;
+  color: rgba(239, 244, 255, .94);
+  background: rgba(11, 15, 27, .52);
+  border: 1px solid rgba(225, 235, 255, .09);
+  border-radius: 19px;
+  box-shadow: 0 12px 44px rgba(0, 0, 0, .2), inset 0 1px rgba(255, 255, 255, .07);
+  backdrop-filter: blur(18px) saturate(125%);
+  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .24s cubic-bezier(.2,.75,.25,1);
+}
+.urfilig-loading-indicator[hidden] { display: none; }
+.urfilig-loading-indicator.visivel { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+.urfilig-loading-indicator svg { width: 48px; height: 48px; overflow: visible; filter: drop-shadow(0 0 5px rgba(202, 223, 255, .42)); }
+.urfilig-loading-indicator .loading-trail {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: .8;
+  stroke-linecap: round;
+  opacity: .34;
+}
+.urfilig-loading-indicator circle { fill: #f5f8ff; filter: drop-shadow(0 0 3px rgba(226, 239, 255, .95)); }
+@media (prefers-reduced-motion: reduce) {
+  .urfilig-loading-indicator, .urfilig-loading-indicator * { transition: none !important; }
+  .urfilig-loading-indicator animateMotion { display: none; }
+}

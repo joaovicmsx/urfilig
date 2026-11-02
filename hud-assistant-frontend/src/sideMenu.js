@@ -339,16 +339,55 @@ export function iniciarMenuLateral(socket) {
     menuLateral?.classList.contains('visible') ? fecharMenu() : abrirMenu();
   });
   const navItems = [...document.querySelectorAll('.hud-nav .nav-item:not(#nav-logout):not(#mascot-overlay-toggle)')];
-  navItems.forEach((item) => {
-    item.addEventListener('click', () => {
-      navItems.forEach((navItem) => {
-        const ativo = navItem === item;
-        navItem.classList.toggle('active', ativo);
-        if (ativo) navItem.setAttribute('aria-current', 'page');
-        else navItem.removeAttribute('aria-current');
-      });
+  const estadoNavAberto = () => {
+    const aberto = (seletor) => Boolean(document.querySelector(seletor));
+    const modalDados = document.querySelector('#intel-modal.visible');
+    const tituloDados = document.querySelector('#intel-modal-titulo')?.textContent?.trim();
+    const tituloNavDados = {
+      'Notícias em alta': '#btn-tendencias',
+      Lembretes: '#btn-lembretes',
+      'Plano de hoje': '#btn-plano-hoje',
+      'Resumo semanal': '#btn-revisao-semanal',
+    };
+    if (modalDados && tituloNavDados[tituloDados]) return tituloNavDados[tituloDados];
+
+    const destinos = [
+      ['#nav-cerebro', '#cerebro-painel.aberta'],
+      ['#nav-calendario', '#calendario-painel.aberta'],
+      ['#nav-emails', '#email-painel.aberta'],
+      ['#nav-spotify', '#spotify-drawer.aberta'],
+      ['#nav-contatos', '#contatos-painel.aberta'],
+      ['#nav-prospeccao', '#prospeccao-drawer.aberta'],
+      ['#nav-profile', '#profile-drawer.aberta'],
+    ];
+    const destinoAberto = destinos.find(([, seletor]) => aberto(seletor));
+    if (destinoAberto) return destinoAberto[0];
+    if (aberto('#routine-sidebar-list:not([hidden])') || aberto('.routine-modal-backdrop')) return '#nav-routines';
+    return null;
+  };
+  const sincronizarNavAtiva = () => {
+    const idAtivo = estadoNavAberto();
+    navItems.forEach((item) => {
+      const ativo = item.id === idAtivo;
+      item.classList.toggle('active', ativo);
+      if (ativo) item.setAttribute('aria-current', 'page');
+      else item.removeAttribute('aria-current');
     });
+  };
+  const observadorNav = new MutationObserver((mutacoes) => {
+    if (mutacoes.some((mutacao) => mutacao.type === 'attributes'
+      || [...mutacao.addedNodes, ...mutacao.removedNodes].some((node) => node instanceof Element
+        && (node.matches('.routine-modal-backdrop') || node.querySelector('.routine-modal-backdrop'))))) {
+      sincronizarNavAtiva();
+    }
   });
+  observadorNav.observe(document.body, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class', 'hidden', 'aria-hidden'],
+    childList: true,
+  });
+  sincronizarNavAtiva();
   document.querySelectorAll('.hud-nav .nav-item:not(#nav-profile)').forEach((item) => {
     item.addEventListener('click', fecharPerfil, { capture: true });
   });

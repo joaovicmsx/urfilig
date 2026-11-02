@@ -11,7 +11,15 @@ const camera = new THREE.PerspectiveCamera(32, 1, .1, 100);
 camera.position.set(0, .24, 4.3);
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
 renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
-renderer.setSize(innerWidth, innerHeight, false);
+function resizeOverlay() {
+  const bounds = canvas.getBoundingClientRect();
+  const width = Math.max(1, bounds.width || innerWidth);
+  const height = Math.max(1, bounds.height || innerHeight);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height, false);
+}
+resizeOverlay();
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1;
@@ -27,7 +35,7 @@ let target = new THREE.Vector2();
 let pointerActive = false;
 const raycaster = new THREE.Raycaster();
 
-carregarMascote('/models/mascote.glb', scene, 2.25).then(({ mascote, mixer: loadedMixer, clips }) => {
+carregarMascote('/models/mascote.glb', scene, 1.6).then(({ mascote, mixer: loadedMixer, clips }) => {
   mascot = mascote;
   mascot.position.set(0, -.92, 0);
   mascot.rotation.set(0, Math.PI / 2, 0);
@@ -107,10 +115,8 @@ void listen('mascot:chat-history', (event) => {
     chatMessages.append(empty);
   } else messages.forEach(renderChatMessage);
 });
-window.addEventListener('resize', () => {
-  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth, innerHeight, false);
-});
+window.addEventListener('resize', resizeOverlay);
+new ResizeObserver(resizeOverlay).observe(canvas);
 document.querySelector('#overlay-close')?.addEventListener('click', () => getCurrentWindow().close());
 canvas.addEventListener('pointerdown', () => getCurrentWindow().startDragging());
 const clock = new THREE.Clock();
@@ -118,7 +124,13 @@ function animate() {
   const delta = Math.min(clock.getDelta(), .08);
   mixer?.update(delta);
   if (tracker) {
-    raycaster.setFromCamera(target, camera);
+    // O cursor chega normalizado para o monitor inteiro. Amplia a coordenada
+    // para que o olhar percorra uma faixa natural mesmo na janela estreita do overlay.
+    const halfVerticalFov = THREE.MathUtils.degToRad(camera.fov / 2);
+    const halfHorizontalFov = Math.atan(Math.tan(halfVerticalFov) * camera.aspect);
+    const targetX = target.x * Math.tan(THREE.MathUtils.degToRad(34)) / Math.tan(halfHorizontalFov);
+    const targetY = target.y * Math.tan(THREE.MathUtils.degToRad(23)) / Math.tan(halfVerticalFov);
+    raycaster.setFromCamera(new THREE.Vector2(targetX, targetY), camera);
     tracker.atualizarAlvoComRaycaster(raycaster);
     tracker.update(delta, pointerActive);
   }

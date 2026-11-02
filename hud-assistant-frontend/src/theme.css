@@ -1668,13 +1668,11 @@ button:active, .nav-item:active { transform: scale(.96) !important; }
   transform: translateY(-2px);
 }
 .settings-plugin-icon {
+  display: block;
+  flex: 0 0 auto;
   width: 34px;
   height: 34px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.45;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  overflow: visible;
   opacity: .88;
 }
 #profile-drawer .profile-option-list label,
@@ -1747,3 +1745,198 @@ button:active, .nav-item:active { transform: scale(.96) !important; }
   box-shadow: inset 0 1px rgba(255,255,255,.2), 0 0 10px color-mix(in srgb, var(--routine-color) 24%, transparent) !important;
 }
 #routine-board .routine-squares .routine-square:hover { transform: scale(1.06); }
+
+/* Rotinas: modal centralizado, ações claras e grade sem faixas esticadas. */
+#routine-sidebar-list:not([hidden]) {
+  position: fixed !important;
+  z-index: 2200 !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+  background: rgba(8, 7, 14, .42) !important;
+  backdrop-filter: blur(18px) saturate(125%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(125%) !important;
+}
+#routine-sidebar-list[hidden] { display: none !important; }
+#routine-sidebar-list .routine-sidebar-dialog {
+  position: relative !important;
+  inset: auto !important;
+  width: min(560px, calc(100vw - 48px)) !important;
+  max-height: min(680px, calc(100dvh - 48px)) !important;
+  margin: auto !important;
+  overflow: auto !important;
+  padding: 20px !important;
+  background: rgba(22, 20, 32, .88) !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 28px 90px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.05) !important;
+  backdrop-filter: blur(30px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(140%) !important;
+}
+#routine-sidebar-list .routine-sidebar-item { min-height: 52px !important; }
+#routine-sidebar-list .routine-sidebar-open { display: flex !important; align-items: center !important; }
+#routine-sidebar-list .routine-sidebar-open span { font-size: .84rem !important; }
+#routine-sidebar-list .routine-sidebar-actions { opacity: 1 !important; visibility: visible !important; }
+#routine-sidebar-list .routine-sidebar-actions button {
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  gap: 6px !important; width: auto !important; min-width: 34px !important; height: 34px !important;
+  padding: 0 9px !important; color: var(--text-secondary) !important;
+  background: rgba(255,255,255,.055) !important; border-radius: 9px !important;
+  font: inherit !important; font-size: .7rem !important;
+}
+#routine-sidebar-list .routine-sidebar-actions button span { display: inline !important; }
+#routine-sidebar-list .routine-sidebar-actions .routine-sidebar-delete:hover { color: #f0b0bb !important; }
+
+#routine-board {
+  position: fixed !important;
+  z-index: 150 !important;
+  inset: auto 22px 22px auto !important;
+  width: min(440px, calc(100vw - var(--rail-width) - 32px)) !important;
+  max-height: calc(100dvh - 120px) !important;
+  overflow: auto !important;
+  scrollbar-width: none !important;
+}
+#routine-board::-webkit-scrollbar { display: none !important; }
+#routine-board .routine-list-header { padding: 0 !important; }
+#routine-board .routine-list-toggle { display: none !important; }
+#routine-board .routine-card { gap: 10px !important; }
+#routine-board .routine-card header { align-items: center !important; }
+#routine-board .routine-card header strong { font-size: .82rem !important; }
+#routine-board .routine-card header small { display: none !important; }
+#routine-board .routine-squares {
+  display: grid !important;
+  grid-auto-flow: row !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(var(--routine-weeks), minmax(0, 1fr)) !important;
+  grid-auto-columns: auto !important;
+  grid-auto-rows: auto !important;
+  aspect-ratio: 7 / var(--routine-weeks) !important;
+  gap: clamp(4px, .75vw, 7px) !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+#routine-board .routine-squares .routine-square,
+#routine-board .routine-squares .routine-square:not(.done) {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1 !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  background: rgba(210, 214, 229, .12) !important;
+  box-shadow: none !important;
+}
+#routine-board .routine-squares .routine-square.done {
+  background: var(--routine-color) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.18) !important;
+}
+@media (max-width: 700px) {
+  #routine-board { inset: auto 10px 72px auto !important; width: min(370px, calc(100vw - var(--rail-width) - 18px)) !important; }
+  #routine-sidebar-list:not([hidden]) { padding: 12px !important; }
+  #routine-sidebar-list .routine-sidebar-dialog { width: calc(100vw - 24px) !important; max-height: calc(100dvh - 24px) !important; padding: 16px !important; }
+}
+
+/* E-mails usam somente as colunas de caixas e conteúdo; a leitura substitui a lista. */
+body:has(.email-wrapper) .email-wrapper:not(.email-lendo) {
+  grid-template-columns: minmax(145px, 185px) minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+body:has(.email-wrapper) .email-wrapper:not(.email-lendo) > .email-leitor-card {
+  display: none !important;
+}
+body:has(.email-wrapper) .email-lendo.email-wrapper {
+  grid-template-columns: minmax(145px, 185px) minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+body:has(.email-wrapper) .email-lendo.email-wrapper > .email-caixas-card {
+  display: flex !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+body:has(.email-wrapper) .email-lendo.email-wrapper > .email-lista-card {
+  display: none !important;
+}
+body:has(.email-wrapper) .email-lendo.email-wrapper > .email-leitor-card {
+  display: flex !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  min-width: 0 !important;
+}
+@media (max-width: 700px) {
+  body:has(.email-wrapper) .email-wrapper:not(.email-lendo),
+  body:has(.email-wrapper) .email-lendo.email-wrapper {
+    grid-template-columns: minmax(108px, 30%) minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    overflow: hidden !important;
+  }
+}
+
+/* O seletor de provedor usa um menu próprio para não depender do popup nativo do sistema. */
+#chat-model-control { z-index: 12000 !important; }
+#chat-model-control::after { display: none !important; }
+#chat-model-trigger {
+  display: inline-flex !important; align-items: center; justify-content: center; gap: 5px;
+  min-height: 25px; padding: 3px 4px !important; color: rgba(236,229,247,.74) !important;
+  background: transparent !important; border: 0 !important; border-radius: 7px !important;
+  box-shadow: none !important; font: inherit !important; font-size: .69rem !important;
+  cursor: pointer; transition: color .16s ease, background .16s ease;
+}
+#chat-model-trigger:hover, #chat-model-trigger[aria-expanded="true"] {
+  color: var(--text-primary) !important; background: rgba(255,255,255,.055) !important;
+}
+#chat-model-trigger svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }
+#chat-model-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+#chat-model-menu {
+  position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 12001;
+  display: grid; min-width: 132px; gap: 2px; padding: 5px;
+  color: var(--text-primary); background: rgba(23,20,34,.96);
+  border: 1px solid rgba(255,255,255,.09); border-radius: 11px;
+  box-shadow: 0 12px 34px rgba(0,0,0,.36), inset 0 1px rgba(255,255,255,.04);
+  backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
+  animation: glass-window-in .14s ease both;
+}
+#chat-model-menu[hidden] { display: none !important; }
+#chat-model-menu button {
+  width: 100%; min-height: 32px; padding: 6px 9px; color: var(--text-secondary);
+  background: transparent; border: 0; border-radius: 7px; font: inherit; font-size: .72rem;
+  text-align: left; cursor: pointer; transition: color .15s ease, background .15s ease;
+}
+#chat-model-menu button:hover, #chat-model-menu button[aria-checked="true"] {
+  color: var(--text-primary); background: rgba(255,255,255,.08);
+}
+#quick-chat-provider[hidden] { display: none !important; }
+@media (max-width: 700px) {
+  #chat-model-control { right: 68px !important; bottom: 8px !important; }
+  #chat-painel.chat-expanded #chat-model-control { right: 20px !important; }
+}
+
+/* Número do dia em uma cápsula de vidro, seguindo a referência enviada. */
+#routine-board .routine-card > header { display: flex; align-items: center; gap: 9px; }
+#routine-board .routine-card > header > strong { flex: 1 1 auto; min-width: 0; }
+#routine-board .routine-day-counter {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 48px;
+  height: 34px;
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--routine-color, var(--time-accent)) 13%, rgba(255,255,255,.06));
+  border: 1px solid color-mix(in srgb, var(--routine-color, var(--time-accent)) 28%, rgba(255,255,255,.13));
+  border-radius: 999px;
+  box-shadow: inset 0 1px rgba(255,255,255,.16), 0 3px 12px rgba(0,0,0,.14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+#routine-board .routine-day-counter strong {
+  color: color-mix(in srgb, var(--routine-color, var(--time-accent)) 34%, var(--text-primary));
+  font-size: 1.08rem;
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
