@@ -3,9 +3,28 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath } from 'node:url';
 
-const CAMINHO_PIPER = process.env.PIPER_PATH || './piper/piper.exe';
-const CAMINHO_MODELO_VOZ = process.env.PIPER_VOICE_MODEL || './piper/voz.onnx';
+const DIRETORIO_BACKEND = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
+async function localizarArquivo(configurado, padrao) {
+  const candidatos = [];
+  if (configurado?.trim()) {
+    candidatos.push(path.isAbsolute(configurado)
+      ? configurado
+      : path.resolve(process.cwd(), configurado));
+    if (!path.isAbsolute(configurado)) candidatos.push(path.resolve(DIRETORIO_BACKEND, configurado));
+  }
+  candidatos.push(path.join(DIRETORIO_BACKEND, padrao));
+
+  for (const candidato of new Set(candidatos)) {
+    try {
+      await fs.access(candidato);
+      return candidato;
+    } catch { /* tenta o próximo caminho, inclusive o recurso empacotado */ }
+  }
+  throw new Error(`Arquivo do Piper não encontrado. Caminhos verificados: ${[...new Set(candidatos)].join(', ')}`);
+}
 
 // Piper não tem um parâmetro simples de "pitch" como a Web Speech API — a
 // altura da voz vem principalmente de QUAL modelo de voz você baixa (voz
@@ -27,18 +46,31 @@ const LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE || '1.15';
  * Speech API como reserva, em vez de ficar mudo.
  */
 export async function sintetizarFala(texto) {
+  if (typeof texto !== 'string' || !texto.trim()) return null;
+
   const arquivoSaida = path.join(os.tmpdir(), `urfilig-${randomUUID()}.wav`);
 
   try {
+    const caminhoPiper = await localizarArquivo(process.env.PIPER_PATH, path.join('piper', process.platform === 'win32' ? 'piper.exe' : 'piper'));
+    const caminhoModeloVoz = await localizarArquivo(process.env.PIPER_VOICE_MODEL, path.join('piper', 'pt_BR-faber-medium.onnx'));
+    const inicioModelo = await fs.open(caminhoModeloVoz, 'r');
+    const cabecalhoModelo = Buffer.alloc(64);
+    try { await inicioModelo.read(cabecalhoModelo, 0, cabecalhoModelo.length, 0); }
+    finally { await inicioModelo.close(); }
+    if (cabecalhoModelo.toString('utf8').startsWith('version https://git-lfs.github.com/spec/v1')) {
+      throw new Error(`O modelo de voz ainda é um ponteiro Git LFS, não o arquivo ONNX: ${caminhoModeloVoz}`);
+    }
+
     await new Promise((resolve, reject) => {
-      const processo = spawn(CAMINHO_PIPER, [
-        '--model', CAMINHO_MODELO_VOZ,
+      const processo = spawn(caminhoPiper, [
+        '--model', caminhoModeloVoz,
         '--length_scale', String(LENGTH_SCALE),
         '--output_file', arquivoSaida,
-      ]);
+      ], { stdio: ['pipe', 'ignore', 'pipe'] });
 
       let erroStderr = '';
       processo.stderr?.on('data', (dado) => { erroStderr += dado.toString(); });
+      processo.stdin?.on('error', reject);
 
       processo.on('error', (erro) => {
         reject(new Error(`Não consegui executar o Piper em "${CAMINHO_PIPER}": ${erro.message}`));
@@ -50,7 +82,7 @@ export async function sintetizarFala(texto) {
       });
 
       processo.stdin.write(texto);
-      processo.stdin.end();
+      processo.stdin.end('\n');
     });
 
     const audioBuffer = await fs.readFile(arquivoSaida);
