@@ -62,8 +62,13 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
 
   try {
     if (provider && !['gemini', 'ollama'].includes(provider)) return res.status(400).json({ erro: 'Provedor inválido. Use gemini ou ollama.' });
-    const resposta = await processarComando(req.usuarioId, texto, { provider, responseStyle, responseTone });
-    res.json({ resposta });
+    const resultado = await processarComando(req.usuarioId, texto, {
+      provider,
+      responseStyle,
+      responseTone,
+      respostaViaHttp: true,
+    });
+    res.json(resultado);
   } catch (erro) {
     console.error('[comando] falha ao processar:', erro?.code || erro?.name || 'erro interno');
     emitirEstado(req.usuarioId, 'IDLE');

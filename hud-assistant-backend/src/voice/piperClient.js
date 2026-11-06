@@ -26,12 +26,9 @@ async function localizarArquivo(configurado, padrao) {
   throw new Error(`Arquivo do Piper não encontrado. Caminhos verificados: ${[...new Set(candidatos)].join(', ')}`);
 }
 
-// Piper não tem um parâmetro simples de "pitch" como a Web Speech API — a
-// altura da voz vem principalmente de QUAL modelo de voz você baixa (voz
-// feminina/masculina, etc.). O que dá pra ajustar por parâmetro é o ritmo:
-// length-scale > 1 deixa a fala mais lenta/arrastada (efeito melancólico).
-const LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE || '1.15';
-
+// O Piper não separa tom e duração. Mantemos o modelo sem alteração de pitch
+// para preservar a naturalidade e usamos apenas uma desaceleração leve.
+const LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE || '1.2';
 /**
  * Gera áudio a partir de texto usando o Piper (motor de TTS local, neural,
  * sem custo) — substitui a Web Speech API do navegador, que soa
@@ -41,7 +38,7 @@ const LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE || '1.15';
  * da wake word) em vez de um binding nativo do Node — evita repetir o
  * problema do ffi-napi/Visual Studio Build Tools.
  *
- * Retorna o áudio como base64 (WAV), ou `null` se o Piper não estiver
+ * Retorna os bytes WAV em um Buffer, ou `null` se o Piper não estiver
  * configurado/instalado — nesse caso o frontend cai de volta pra Web
  * Speech API como reserva, em vez de ficar mudo.
  */
@@ -65,15 +62,21 @@ export async function sintetizarFala(texto) {
       const processo = spawn(caminhoPiper, [
         '--model', caminhoModeloVoz,
         '--length_scale', String(LENGTH_SCALE),
+        '--espeak_data', path.join(path.dirname(caminhoPiper), 'espeak-ng-data'),
         '--output_file', arquivoSaida,
-      ], { stdio: ['pipe', 'ignore', 'pipe'] });
+      ], {
+        cwd: path.dirname(caminhoPiper),
+        stdio: ['pipe', 'ignore', 'pipe'],
+      });
 
       let erroStderr = '';
-      processo.stderr?.on('data', (dado) => { erroStderr += dado.toString(); });
+      processo.stderr?.on('data', (dado) => {
+        if (erroStderr.length < 4000) erroStderr += dado.toString().slice(0, 4000 - erroStderr.length);
+      });
       processo.stdin?.on('error', reject);
 
       processo.on('error', (erro) => {
-        reject(new Error(`Não consegui executar o Piper em "${CAMINHO_PIPER}": ${erro.message}`));
+        reject(new Error(`Não consegui executar o Piper em "${caminhoPiper}": ${erro.message}`));
       });
 
       processo.on('close', (codigo) => {
@@ -86,7 +89,10 @@ export async function sintetizarFala(texto) {
     });
 
     const audioBuffer = await fs.readFile(arquivoSaida);
-    return audioBuffer.toString('base64');
+    console.info(`[piper] síntese concluída (${audioBuffer.length} bytes).`);
+    // Buffer é enviado como anexo binário do Socket.IO. Base64 adicionava ~33%
+    // ao tamanho e podia ultrapassar o limite padrão de mensagens do transporte.
+    return audioBuffer;
   } catch (erro) {
     console.warn('[piper] falha ao sintetizar voz, frontend vai usar a Web Speech API como reserva:', erro.message);
     return null;

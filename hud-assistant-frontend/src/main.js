@@ -291,8 +291,14 @@ const socket = conectarSocket({
   onResponse: ({ text, emotion, audio }) => {
     adicionarMensagemChat('Urfilig', text);
     if (audio) {
-      tocarAudioPiper(audio, text);
+      const bytesRecebidos = typeof audio === 'string' ? Math.floor(audio.length * 3 / 4) : (audio.byteLength ?? audio.length ?? 0);
+      console.info(`[voz] resposta recebida com áudio do Piper (${bytesRecebidos} bytes)`);
+      const botaoAudio = adicionarBotaoReproduzirAudio(audio, text);
+      void tocarAudioPiper(audio, text).then((iniciou) => {
+        if (botaoAudio) botaoAudio.textContent = iniciou ? 'Ouvir novamente' : 'Ouvir resposta';
+      });
     } else {
+      console.warn('[voz] a resposta chegou sem áudio do Piper; usando síntese do sistema');
       falar(text);
     }
     setLiveStatus('Resposta recebida' + (emotion ? '. Tom: ' + emotion + '.' : '.'));
@@ -607,6 +613,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (resp.ok && dados.resposta) {
           const registroRotina = window.registrarPresencaRotina?.(texto);
           adicionarMensagemChat('Urfilig', dados.resposta);
+          if (dados.audio) {
+            const botaoAudio = adicionarBotaoReproduzirAudio(dados.audio, dados.resposta);
+            void tocarAudioPiper(dados.audio, dados.resposta).then((iniciou) => {
+              if (botaoAudio) botaoAudio.textContent = iniciou ? 'Ouvir novamente' : 'Ouvir resposta';
+            });
+          } else {
+            falar(dados.resposta);
+          }
           if (typeof registroRotina === 'string') adicionarMensagemChat('Rotina', registroRotina);
           carregarMemoriasECerebro();
           if (typeof window.recarregarInterfaceNotas === 'function') {
@@ -788,15 +802,110 @@ function posicionarMascoteSobreChat() {
 }
 
 let audioPiperAtual = null;
-function tocarAudioPiper(audioBase64, textoReserva = '') {
+let urlAudioPiperTemporaria = null;
+let contextoAudioPiper = null;
+let fonteAudioPiper = null;
+
+// Libera o Web Audio dentro de um gesto real do usuário (política de autoplay do WebView2).
+function prepararAudioPiper() {
+  try {
+    const AudioContextApi = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextApi) return;
+    contextoAudioPiper ||= new AudioContextApi();
+    if (contextoAudioPiper.state === 'suspended') void contextoAudioPiper.resume().catch((erro) => console.warn('[voz] o WebView não liberou o áudio:', erro.message));
+  } catch (erro) {
+    console.warn('[voz] não foi possível preparar o áudio:', erro.message);
+  }
+}
+
+window.addEventListener('pointerdown', () => { void prepararAudioPiper(); }, { passive: true });
+window.addEventListener('keydown', () => { void prepararAudioPiper(); }, { passive: true });
+
+async function tocarAudioPiper(audioBase64, textoReserva = '') {
+  if (textoReserva && falar(textoReserva)) {
+    console.info('[voz] reprodução natural selecionada pelo sistema.');
+    return true;
+  }
   window.speechSynthesis?.cancel();
   audioPiperAtual?.pause();
+  try { fonteAudioPiper?.stop(); } catch { /* áudio anterior já terminou */ }
+  fonteAudioPiper = null;
 
-  audioPiperAtual = new Audio(`data:audio/wav;base64,${audioBase64}`);
-  audioPiperAtual.play().catch((erro) => {
-    console.warn('[main] falha ao tocar audio:', erro.message);
-    if (textoReserva) falar(textoReserva);
+  let bytes;
+  if (audioBase64) {
+    try {
+      if (typeof audioBase64 === 'string') {
+        const binario = atob(audioBase64);
+        bytes = Uint8Array.from(binario, (caractere) => caractere.charCodeAt(0));
+      } else if (audioBase64 instanceof ArrayBuffer) {
+        bytes = new Uint8Array(audioBase64);
+      } else if (ArrayBuffer.isView(audioBase64)) {
+        bytes = new Uint8Array(audioBase64.buffer, audioBase64.byteOffset, audioBase64.byteLength);
+      } else if (audioBase64 instanceof Blob) {
+        bytes = new Uint8Array(await audioBase64.arrayBuffer());
+      } else {
+        throw new Error(`formato de áudio não reconhecido: ${typeof audioBase64}`);
+      }
+      if (!bytes.length) throw new Error('O áudio recebido está vazio.');
+    } catch (erro) {
+      console.warn('[voz] áudio Piper inválido:', erro.message);
+    }
+  }
+
+  try {
+    if (contextoAudioPiper && bytes) {
+      if (contextoAudioPiper.state === 'suspended') await contextoAudioPiper.resume();
+      if (contextoAudioPiper.state !== 'running') throw new Error(`contexto de áudio ${contextoAudioPiper.state}`);
+      const buffer = await contextoAudioPiper.decodeAudioData(bytes.buffer.slice(0));
+      fonteAudioPiper = contextoAudioPiper.createBufferSource();
+      fonteAudioPiper.buffer = buffer;
+      fonteAudioPiper.connect(contextoAudioPiper.destination);
+      fonteAudioPiper.start();
+      console.info('[voz] reprodução do Piper iniciada pelo Web Audio');
+      return true;
+    }
+  } catch (erro) {
+    console.warn('[voz] Web Audio não conseguiu tocar o Piper:', erro.message);
+  }
+
+  try {
+    if (bytes) {
+      if (urlAudioPiperTemporaria) URL.revokeObjectURL(urlAudioPiperTemporaria);
+      urlAudioPiperTemporaria = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
+      audioPiperAtual ||= new Audio();
+      audioPiperAtual.muted = false;
+      audioPiperAtual.volume = 1;
+      audioPiperAtual.src = urlAudioPiperTemporaria;
+      await audioPiperAtual.play();
+      console.info('[voz] reprodução do Piper iniciada pelo elemento de áudio');
+      return true;
+    }
+  } catch (erro) {
+    console.warn('[voz] elemento de áudio não conseguiu tocar o Piper:', erro.message);
+  }
+
+  console.warn('[voz] usando síntese de voz do sistema como reserva. Áudio Piper recebido:', Boolean(audioBase64));
+  if (textoReserva) falar(textoReserva);
+  return false;
+}
+
+function adicionarBotaoReproduzirAudio(audioBase64, texto) {
+  const mensagem = document.querySelector('#chat-mensagens .chat-msg.urfilig:last-child');
+  if (!mensagem) return null;
+  if (mensagem.querySelector('.chat-audio-retry')) return mensagem.querySelector('.chat-audio-retry');
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  botao.className = 'chat-audio-retry';
+  botao.textContent = 'Reproduzir áudio';
+  botao.addEventListener('click', async () => {
+    botao.disabled = true;
+    botao.textContent = 'Reproduzindo…';
+    const iniciou = await tocarAudioPiper(audioBase64, texto);
+    botao.disabled = false;
+    botao.textContent = iniciou ? 'Ouvir novamente' : 'Tentar novamente';
   });
+  mensagem.appendChild(botao);
+  return botao;
 }
 
 function showWeather({ temperatura, codigo }) {

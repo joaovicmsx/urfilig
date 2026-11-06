@@ -18,7 +18,7 @@
 // não expõe gênero explicitamente, só nome/idioma, então isso é
 // aproximado e depende de quais vozes o sistema operacional do usuário
 // tem instaladas (varia entre Windows/Mac/navegadores).
-const PISTAS_VOZ_FEMININA = [/maria/i, /female/i, /woman/i, /luciana/i, /francisca/i, /helena/i];
+const PISTAS_VOZ_FEMININA = [/maria/i, /female/i, /woman/i, /luciana/i, /francisca/i, /helena/i, /fernanda/i, /camila/i, /zira/i, /feminina/i];
 
 let vozEscolhida = null;
 let ativa = true;
@@ -26,15 +26,19 @@ let ativa = true;
 function escolherVoz() {
   if (!('speechSynthesis' in window)) return;
   const vozes = window.speechSynthesis.getVoices();
-  if (vozes.length === 0) return; // ainda não carregou — onvoiceschanged vai chamar de novo
+  if (vozes.length === 0) return;
 
-  const candidatasPt = vozes.filter((v) => v.lang?.toLowerCase().startsWith('pt'));
-  const feminina = candidatasPt.find((v) => PISTAS_VOZ_FEMININA.some((regex) => regex.test(v.name)));
+  const candidatasPt = vozes.filter((voz) => voz.lang?.toLowerCase().startsWith('pt'));
+  const feminina = candidatasPt
+    .filter((voz) => PISTAS_VOZ_FEMININA.some((regex) => regex.test(voz.name)))
+    .sort((a, b) => {
+      const prioridade = (voz) => /natural|online|neural/i.test(voz.name) ? 1 : 0;
+      return prioridade(b) - prioridade(a);
+    })[0];
 
   vozEscolhida = feminina || candidatasPt[0] || vozes[0] || null;
   console.log('[voz]', vozEscolhida ? `usando "${vozEscolhida.name}"` : 'nenhuma voz encontrada nesse navegador.');
 }
-
 if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = escolherVoz;
   escolherVoz(); // pode já vir populado em alguns navegadores, sem esperar o evento
@@ -46,24 +50,26 @@ if ('speechSynthesis' in window) {
  * disparado manualmente em cada lugar que recebe texto.
  */
 export function falar(texto) {
-  if (!ativa || !texto || !('speechSynthesis' in window)) return;
+  if (!ativa || !texto || !('speechSynthesis' in window)) return false;
 
   window.speechSynthesis.cancel(); // interrompe qualquer fala anterior ainda em andamento
 
   const utterance = new SpeechSynthesisUtterance(texto);
   if (vozEscolhida) utterance.voice = vozEscolhida;
   utterance.lang = 'pt-BR';
+  utterance.onerror = (evento) => console.warn('[voz] a voz do sistema falhou:', evento.error || 'erro sem detalhe');
+  utterance.onstart = () => console.info('[voz] voz do sistema iniciada');
 
-  // Tom mais AGUDO (fina) + ritmo mais devagar (melancólica/arrastada) —
-  // ajustado a partir do feedback real de que a versão anterior (mais
-  // grave) não combinava. pitch vai de 0 a 2 (1 = padrão); rate de 0.1 a
-  // 10 (1 = padrão). Se ainda não estiver no ponto, mexe só nesses 2
-  // números — 1.3/1.4 de pitch é "fina" perceptível sem virar cômico.
-  utterance.pitch = 1.3;
-  utterance.rate = 0.82;
-  utterance.volume = 1;
+  // Interpretação mais introspectiva: tom um pouco mais agudo,
+  // ritmo calmo e volume suave. Mantém uma entrega natural em português.
+  utterance.pitch = 1.15;
+  utterance.rate = 1;
+  utterance.volume = 0.86;
 
   window.speechSynthesis.speak(utterance);
+  // Algumas versões do WebView2 carregam as vozes depois da primeira fala.
+  if (window.speechSynthesis.paused) window.speechSynthesis.resume();
+  return true;
 }
 
 export function pararFala() {

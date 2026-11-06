@@ -14,6 +14,8 @@ const CUSTO_HASH = 12; // fator de custo do bcrypt — 12 é um padrão seguro a
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const loginsDesktop = new Map();
 const GOOGLE_DESKTOP_CLIENT_ID = process.env.GOOGLE_DESKTOP_CLIENT_ID || '';
+// Segredo guardado exclusivamente no backend; nunca é retornado ao frontend.
+const GOOGLE_DESKTOP_CLIENT_SECRET = process.env.GOOGLE_DESKTOP_CLIENT_SECRET || '';
 
 export const authRouter = Router();
 
@@ -91,12 +93,18 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
       return;
     }
 
+    let etapaOAuth = 'troca do código de autorização';
     try {
       const code = callbackUrl.searchParams.get('code');
       if (!code) throw new Error('O Google não retornou o código de autorização.');
       const redirectUri = `http://127.0.0.1:${callbackServer.address().port}`;
-      const oauthClient = new OAuth2Client({ clientId, redirectUri });
+      const oauthClient = new OAuth2Client({
+        clientId,
+        clientSecret: GOOGLE_DESKTOP_CLIENT_SECRET || undefined,
+        redirectUri,
+      });
       const { tokens } = await oauthClient.getToken({ code, codeVerifier, redirect_uri: redirectUri });
+      etapaOAuth = 'validação da identidade Google';
       if (!tokens.id_token) throw new Error('O Google não retornou um ID token.');
       const ticket = await oauthClient.verifyIdToken({ idToken: tokens.id_token, audience: clientId });
       const payload = ticket.getPayload();
@@ -105,16 +113,19 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
         if (sessao.loginHint && payload.email.toLowerCase() !== sessao.loginHint) {
           throw new Error('A autorização foi feita com outra conta Google. Entre novamente com a conta usada no Urfilig.');
         }
+        etapaOAuth = 'validação da permissão do Gmail';
         if (!tokens.access_token) throw new Error('O Google não retornou um token de acesso ao Gmail.');
         sessao.resultado = { accessToken: tokens.access_token, email: payload.email };
       } else {
+        etapaOAuth = 'sincronização da conta Urfilig';
         sessao.resultado = await sincronizarUsuarioGoogle({ email: payload.email, nome: payload.name, googleSub: payload.sub });
       }
       sessao.status = 'complete';
       responderCallback(resCallback, sessao.emailAccess ? 'Conta conectada! Volte ao Urfilig e feche esta aba.' : 'Login concluído! Volte ao Urfilig.');
     } catch (erro) {
       const bancoIndisponivel = erroBancoIndisponivel(erro);
-      console.error('[auth] falha no OAuth Desktop:', bancoIndisponivel ? `banco indisponível (${erro.code || erro.name})` : (erro.code || erro.name || 'erro OAuth'));
+      const codigoGoogle = erro.response?.data?.error || erro.code || erro.name || 'erro OAuth';
+      console.error(`[auth] falha no OAuth Desktop durante ${etapaOAuth}:`, bancoIndisponivel ? `banco indisponível (${erro.code || erro.name})` : `${codigoGoogle}${erro.response?.status ? ` HTTP ${erro.response.status}` : ''}`);
       sessao.status = 'error';
       sessao.erro = bancoIndisponivel
         ? mensagemBancoIndisponivel()

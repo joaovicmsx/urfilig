@@ -14,6 +14,7 @@ let io;
 export function configurarSocket(httpServer) {
   io = new Server(httpServer, {
     cors: { origin: '*' }, // restrinja pro domínio/IP do frontend quando ele existir
+    maxHttpBufferSize: 5 * 1024 * 1024,
   });
 
   io.use((socket, next) => {
@@ -58,15 +59,15 @@ export function emitirEstado(usuarioId, estado) {
 }
 
 /**
- * `audioBase64` é opcional e vem do Piper (src/voice/piperClient.js) — se
+ * `audio` é opcional e vem do Piper (src/voice/piperClient.js) como WAV binário — se
  * a síntese local falhar ou não estiver configurada, vem `null`/`undefined`
  * e o frontend usa a Web Speech API do navegador como reserva.
  */
-export function emitirResposta(usuarioId, texto, emocao, audioBase64) {
+export function emitirResposta(usuarioId, texto, emocao, audio) {
   io?.to(`usuario:${usuarioId}`).emit('hud:response', {
     text: texto,
     emotion: emocao,
-    audio: audioBase64 || null,
+    audio: audio || null,
   });
 }
 

@@ -16,6 +16,7 @@ quem está recitando um formulário de volta. Não use saudação genérica tipo
 "Olá, tudo bem?" — seja específica e pessoal. 2-4 frases.`;
 
 export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
+  const { respostaViaHttp = false } = opcoesLLM;
   const { sentimento, prioridade } = detectarSentimento(texto);
   const conteudoNota = detectarIntencaoDeNota(texto);
 
@@ -89,15 +90,19 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
   const resposta = await perguntarLLM(textoParaGemini, systemPrompt, { provider: opcoesLLM.provider });
 
   emitirEstado(usuarioId, 'SPEAKING');
-  const audioBase64 = await sintetizarFala(resposta);
-  emitirResposta(usuarioId, resposta, sentimento !== 'neutro' ? sentimento : undefined, audioBase64);
+  const audio = await sintetizarFala(resposta);
+  if (!respostaViaHttp) {
+    emitirResposta(usuarioId, resposta, sentimento !== 'neutro' ? sentimento : undefined, audio);
+  }
 
   await registrarInteracaoEmocional(usuarioId, { sentimento, contexto: texto, respostaDada: resposta });
   emitirParaUsuario(usuarioId, 'mascot:particles', await montarParticulas(usuarioId));
 
   setTimeout(() => emitirEstado(usuarioId, 'IDLE'), 1500);
 
-  return resposta;
+  return respostaViaHttp
+    ? { resposta, audio: audio?.toString('base64') || null }
+    : resposta;
 }
 
 export async function gerarApresentacaoInicial(usuarioId) {

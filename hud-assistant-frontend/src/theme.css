@@ -2220,6 +2220,20 @@ body:has(.email-wrapper) .email-lendo.email-wrapper > .email-leitor-card {
 #chat-current-title { display: none; }
 #chat-mensagens { min-height: 0 !important; padding: 14px !important; }
 .chat-msg { overflow-wrap: anywhere; white-space: pre-wrap; }
+.chat-audio-retry {
+  display: block;
+  margin-top: 8px;
+  padding: 3px 0;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: .72rem;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color .16s ease, opacity .16s ease;
+}
+.chat-audio-retry:hover { color: var(--text-primary); }
+.chat-audio-retry:disabled { opacity: .55; cursor: wait; }
 @media (max-width: 560px) {
   #chat-historico.chat-historico-direita { top: 54px !important; right: 8px !important; width: calc(100vw - var(--rail-width) - 16px) !important; height: min(520px, calc(100dvh - 150px)) !important; }
   .chat-conversation-workspace { grid-template-columns: minmax(104px, 34%) minmax(0,1fr); }
