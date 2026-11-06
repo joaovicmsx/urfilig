@@ -29,6 +29,12 @@
     <!-- Navegação fixa à esquerda -->
     <header id="top-hud-bar">
       <nav class="hud-nav">
+        <button id="nav-chats" class="nav-item" type="button" title="Conversas" aria-controls="chat-historico" aria-expanded="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-7.5A7.5 7.5 0 0 1 10.5 6H13a7 7 0 0 1 7 5.5Z"/><path d="M8 10h8M8 14h5"/></svg>Conversas
+        </button>
+        <div id="chat-sidebar-history" aria-label="Histórico de conversas" hidden>
+          <div id="chat-sidebar-conversation-list" role="list"></div>
+        </div>
         <button id="nav-cerebro" class="nav-item" type="button">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10s10-4.477 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
           Notas
@@ -69,7 +75,10 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Rotinas
         </button>
         <button id="nav-profile" class="nav-item" type="button" title="Configurações" aria-haspopup="dialog" aria-controls="profile-drawer">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>Configurações
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V4a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2.9Z"/></svg>Configurações
+        </button>
+        <button id="nav-plugins" class="nav-item" type="button" title="Plugins" aria-haspopup="dialog" aria-controls="plugins-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3m8-3v3M5 8h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"/><path d="M8 8V6m8 2V6M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"/></svg>Plugins
         </button>
         <button id="mascot-overlay-toggle" class="nav-item mascot-overlay-toggle" type="button" aria-label="Sobrepor mascote" title="Sobrepor mascote" aria-pressed="false">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg>Mascote
@@ -87,11 +96,7 @@
         <h2 id="profile-title">Configurações</h2>
         <button id="profile-close" type="button" class="profile-close" aria-label="Fechar configurações">×</button>
       </header>
-      <nav class="settings-tabs" role="tablist" aria-label="Seções de configurações">
-        <button id="settings-account-tab" type="button" role="tab" aria-selected="true" aria-controls="settings-account-panel">Conta e perfil</button>
-        <button id="settings-plugins-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-plugins-panel">Plugins disponíveis</button>
-      </nav>
-      <div id="settings-account-panel" class="settings-panel" role="tabpanel" aria-labelledby="settings-account-tab">
+      <div id="settings-account-panel" class="settings-panel">
       <form id="profile-form" class="profile-form">
         <section class="profile-section">
           <h3>Sobre você</h3>
@@ -120,7 +125,6 @@
         </section>
         <section class="profile-section">
           <h3>Elementos da tela</h3>
-          <label class="profile-toggle"><input id="profile-sky-motion" type="checkbox"> Movimento das nuvens e do cometa</label>
           <label class="profile-toggle"><input id="profile-show-weather" type="checkbox"> Mostrar clima no relógio</label>
         </section>
         <p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
@@ -137,24 +141,32 @@
         <p id="settings-delete-message" class="profile-message" role="status" aria-live="polite"></p>
       </section>
       </div>
-      <section id="settings-plugins-panel" class="settings-panel settings-plugins-panel" role="tabpanel" aria-labelledby="settings-plugins-tab" hidden>
+    </aside>
+    <div id="plugins-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="plugins-drawer" class="profile-drawer plugins-drawer" role="dialog" aria-modal="true" aria-labelledby="plugins-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="plugins-back" type="button" class="profile-back" aria-label="Voltar" title="Voltar"></button>
+        <h2 id="plugins-title">Plugins</h2>
+        <button id="plugins-close" type="button" class="profile-close" aria-label="Fechar plugins">×</button>
+      </header>
+      <section id="plugins-panel" class="settings-panel settings-plugins-panel" aria-label="Plugins disponíveis">
         <button class="settings-plugin-option" type="button" data-settings-plugin="spotify" aria-label="Conectar Spotify">
           <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1ed760"/><path d="M8 12.2c5.3-1.6 11.6-.9 16 1.9M9.1 16.2c4.4-1.3 9.5-.7 13.2 1.6m-12.1 2.1c3.4-1 7.2-.5 10 1.2" fill="none" stroke="#102016" stroke-width="2.2" stroke-linecap="round"/></svg><span>Conectar</span>
         </button>
         <button class="settings-plugin-option" type="button" data-settings-plugin="gmail" aria-label="Conectar Gmail">
-          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 25V8.5a2.5 2.5 0 0 1 4-2l8 6 8-6a2.5 2.5 0 0 1 4 2V25" fill="none" stroke="#ea4335" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 13v12" stroke="#4285f4" stroke-width="4" stroke-linecap="round"/><path d="M28 13v12" stroke="#34a853" stroke-width="4" stroke-linecap="round"/><path d="M4 8.5v4" stroke="#fbbc04" stroke-width="4" stroke-linecap="round"/></svg><span>Conectar</span>
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path fill="#4285f4" d="M4 8.2v17.3h5V12.1z"/><path fill="#34a853" d="M23 12.1v13.4h5V8.2z"/><path fill="#ea4335" d="m4 8.2 12 9.1 12-9.1a3.1 3.1 0 0 0-4.9-2.5L16 11.8 8.9 5.7A3.1 3.1 0 0 0 4 8.2Z"/><path fill="#fbbc04" d="M4 8.2v5.9l5 3.8v-5.8z"/><path fill="#c5221f" d="m23 12.1 5-3.9v5.9l-5 3.8z"/></svg><span>Conectar</span>
         </button>
         <button class="settings-plugin-option" type="button" data-settings-provider="gemini" aria-label="Conectar Gemini">
-          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5c2.3 7 4.2 9 13.5 13.5C20.2 20.5 18.3 22.5 16 29.5 13.7 22.5 11.8 20.5 2.5 16 11.8 11.5 13.7 9.5 16 2.5Z" fill="#9b7bff"/><path d="M25.5 3v7M22 6.5h7M6 22v7M2.5 25.5h7" stroke="#d9ccff" stroke-width="1.5" stroke-linecap="round"/></svg><span>Conectar</span>
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="gemini-brand-gradient" x1="4" y1="28" x2="28" y2="4" gradientUnits="userSpaceOnUse"><stop stop-color="#4285f4"/><stop offset=".5" stop-color="#9b72cb"/><stop offset="1" stop-color="#d96570"/></linearGradient></defs><path d="M16 2.5c2.5 7.2 4.3 9 13.5 13.5C20.3 18.5 18.5 20.3 16 29.5 13.5 20.3 11.7 18.5 2.5 16 11.7 13.5 13.5 11.7 16 2.5Z" fill="url(#gemini-brand-gradient)"/><path d="M25.5 3v5M23 5.5h5M6 23v5M3.5 25.5h5" stroke="#8ab4f8" stroke-width="1.4" stroke-linecap="round"/></svg><span>Conectar</span>
         </button>
         <button class="settings-plugin-option" type="button" data-settings-provider="ollama" aria-label="Conectar Ollama local">
-          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M9 12 5 6l8 3M23 12l4-6-8 3" fill="none" stroke="#d6a16a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 15c0-5 3.8-8 9-8s9 3 9 8v5a8 8 0 0 1-8 8h-2a8 8 0 0 1-8-8v-5Z" fill="#bd7954"/><path d="M11 18h.1M21 18h.1M13 23c1.8 1.4 4.2 1.4 6 0" fill="none" stroke="#241912" stroke-width="2.5" stroke-linecap="round"/><path d="M5 15h3m16 0h3" stroke="#d6a16a" stroke-width="2" stroke-linecap="round"/></svg><span>Conectar</span>
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5 27.5 9v14L16 29.5 4.5 23V9L16 2.5Z" fill="#f7a36b"/><path d="M9.3 20.8V12c0-.8.9-1.2 1.5-.7l5.2 4.2v-3.3l5.2 4.1v5.7l-5.2-4.1v3.3l-5.2-4.1v3.7H9.3Z" fill="#17131a"/><circle cx="22.1" cy="10" r="1.2" fill="#17131a"/></svg><span>Conectar</span>
         </button>
         <button class="settings-plugin-option" type="button" data-settings-service="obsidian" aria-label="Conectar Obsidian">
           <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m14 2 5 2 2 6 5 5-2 10-7 5-5-3-6-1-2-8 4-7 1-6Z" fill="#8e69cf"/><path d="m14 2 2 9-7 8-5-1 4-7 1-6ZM16 11l10 4-2 10-7 5-1-10-7-1Z" fill="#b695ff"/><path d="m9 19 7 1 1 10-5-3-6-1Z" fill="#65469e"/></svg><span>Conectar</span>
         </button>
         <button class="settings-plugin-option" type="button" data-settings-service="notion" aria-label="Conectar Notion">
-          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="3" fill="#f4f2ee"/><path d="M10 8.5c.7.6 1.5.8 2.5.7l11-1.1v16.1l-3.2.7V13.2l-8.8 11.2-3.3-.8V12.1l-2.4-.6v-2l4.2-1Z" fill="#191919"/></svg><span>Conectar</span>
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="3" fill="#f4f2ee"/><path d="M10 7.2h3.8l8.2 11V7.2h3v17.6h-3.7l-8.2-11v11h-3.1V7.2Z" fill="#191919"/><path d="M8 7.2h2v17.6H8z" fill="#191919"/></svg><span>Conectar</span>
         </button>
         <button class="settings-plugin-option" type="button" data-settings-service="claude" aria-label="Conectar Claude">
           <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><g stroke="#e58e56" stroke-width="2.2" stroke-linecap="round"><path d="M16 3v6M16 23v6M3 16h6M23 16h6M6.8 6.8l4.2 4.2m10 10 4.2 4.2m0-18.4L21 11M11 21l-4.2 4.2M10.7 4.5l2 5.6m6.6 11.8 2 5.6M4.5 10.7l5.6 2m11.8 6.6 5.6 2m-23 0 5.6-2m11.8-6.6 5.6-2m-16.2 17 2-5.6M19.3 10.1l2-5.6"/></g></svg><span>Conectar</span>
@@ -297,12 +309,23 @@
     <div id="chat-painel">
       <div class="chat-historico-direita" id="chat-historico" style="display:none">
         <div class="chat-historico-header">
-          <span>Conversa</span>
+          <span id="chat-active-title">Conversa</span>
+          <div class="chat-header-actions">
+            <button id="chat-new-conversation" type="button" title="Nova conversa">Nova</button>
           <button id="chat-minimizar" type="button" aria-label="Minimizar chat" title="Minimizar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           </button>
+          </div>
         </div>
-        <div id="chat-mensagens"></div>
+        <div class="chat-conversation-workspace">
+          <aside class="chat-conversations-panel" aria-label="Conversas anteriores">
+            <div class="chat-conversations-heading">Conversas</div>
+            <div id="chat-conversation-list" role="list"></div>
+          </aside>
+          <section class="chat-current-conversation" aria-label="Mensagens da conversa">
+            <div id="chat-mensagens" aria-live="polite"></div>
+          </section>
+        </div>
       </div>
 
       <button id="chat-restaurar" type="button" aria-label="Abrir chat" title="Abrir Conversa">

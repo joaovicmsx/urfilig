@@ -4,8 +4,6 @@ import './loadingIndicator.js';
 import { BACKEND_URL } from './authGuard.js';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const GOOGLE_DESKTOP_CLIENT_ID = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID;
-const GOOGLE_DESKTOP_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_SECRET;
 
 const form = document.querySelector('#form-login');
 const mensagemErro = document.querySelector('#mensagem-erro');
@@ -116,6 +114,13 @@ form?.addEventListener('submit', async (evento) => {
   const senha = form.senha.value;
   const nome = form.nome?.value?.trim();
 
+  if (modoRegistro && !nome) {
+    if (mensagemErro) mensagemErro.textContent = 'Informe seu nome para criar a conta.';
+    if (form.nome) form.nome.focus();
+    if (botaoEnviar) botaoEnviar.disabled = false;
+    return;
+  }
+
   const rota = modoRegistro ? '/api/auth/registrar' : '/api/auth/login';
   const corpo = modoRegistro ? { email, senha, nome } : { email, senha };
 
@@ -138,9 +143,15 @@ form?.addEventListener('submit', async (evento) => {
 botaoAlternar?.addEventListener('click', () => {
   modoRegistro = !modoRegistro;
   if (campoNome) campoNome.hidden = !modoRegistro;
+  if (form.nome) form.nome.required = modoRegistro;
+  const campoSenha = form.senha;
+  if (campoSenha) campoSenha.autocomplete = modoRegistro ? 'new-password' : 'current-password';
   if (tituloForm) tituloForm.textContent = modoRegistro ? 'Criar conta na Urfilig' : 'Entrar na Urfilig';
   if (botaoEnviar) botaoEnviar.textContent = modoRegistro ? 'Criar conta' : 'Entrar';
-  if (botaoAlternar) botaoAlternar.textContent = modoRegistro ? 'Já tenho conta' : 'Criar uma conta';
+  if (botaoAlternar) {
+    botaoAlternar.textContent = modoRegistro ? 'Já tenho conta' : 'Criar uma conta';
+    botaoAlternar.setAttribute('aria-expanded', String(modoRegistro));
+  }
   if (mensagemErro) mensagemErro.textContent = '';
 });
 
@@ -176,7 +187,7 @@ window.handleCredentialResponse = async (response) => {
   }
 };
 
-function inicializarGoogle(tentativas = 0) {
+async function inicializarGoogle(tentativas = 0) {
   if (!GOOGLE_CLIENT_ID) {
     if (!estaNoTauri) console.warn('[login] VITE_GOOGLE_CLIENT_ID não configurado.');
   }
@@ -185,8 +196,17 @@ function inicializarGoogle(tentativas = 0) {
   if (!containerBtn) return;
 
   if (estaNoTauri) {
-    if (!GOOGLE_DESKTOP_CLIENT_ID) {
-      if (mensagemErro) mensagemErro.textContent = 'O login Google Desktop não está configurado nesta versão.';
+    let configuracaoGoogle;
+    try {
+      const resposta = await fetch(`${BACKEND_URL}/api/auth/google/desktop/config`, { cache: 'no-store' });
+      configuracaoGoogle = await resposta.json();
+      if (!resposta.ok) throw new Error(configuracaoGoogle.erro || 'Não foi possível verificar o login Google.');
+    } catch (erro) {
+      if (mensagemErro) mensagemErro.textContent = erro.message || 'Não foi possível acessar a configuração do Google.';
+      return;
+    }
+    if (!configuracaoGoogle.configured || !configuracaoGoogle.clientId) {
+      if (mensagemErro) mensagemErro.textContent = 'Login Google ainda não configurado. Cadastre um cliente OAuth para aplicativo desktop no Google Cloud e configure o backend.';
       return;
     }
     containerBtn.innerHTML = `
@@ -207,7 +227,7 @@ function inicializarGoogle(tentativas = 0) {
         const inicio = await fetch(`${BACKEND_URL}/api/auth/google/desktop/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ clientId: GOOGLE_DESKTOP_CLIENT_ID, clientSecret: GOOGLE_DESKTOP_CLIENT_SECRET || undefined }),
+          body: JSON.stringify({}),
         });
         const sessao = await inicio.json();
         if (!inicio.ok) throw new Error(sessao.erro || 'Não foi possível iniciar o login Google.');

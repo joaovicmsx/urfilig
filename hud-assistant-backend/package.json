@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "node --watch-path=src src/server.js",
     "start": "node src/server.js",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --check src/persona/contatoSecurity.js && node --check src/persona/contatosRouter.js",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio"

@@ -2,6 +2,7 @@ import { showAlert, showConfirm } from './uiDialogs.js';
 import { BACKEND_URL } from './authGuard.js';
 
 const STORAGE_KEY = 'urfilig_routine_boards_v1';
+const VIEW_KEY = 'urfilig_routine_board_view_v1';
 const todayKey = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -30,7 +31,31 @@ export function iniciarQuadrosRotina() {
   const save = (boards) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
   };
+  let view = { width: 340, height: 280, minimized: false, left: null, top: null };
+  try { view = { ...view, ...JSON.parse(localStorage.getItem(VIEW_KEY) || '{}') }; } catch { /* Mantém os valores padrão. */ }
+  view.width = Math.max(280, Math.min(520, Number(view.width) || 340));
+  view.height = Math.max(190, Math.min(560, Number(view.height) || 280));
+  view.left = Number.isFinite(view.left) ? view.left : null;
+  view.top = Number.isFinite(view.top) ? view.top : null;
+  const saveView = () => localStorage.setItem(VIEW_KEY, JSON.stringify(view));
+  const applyView = () => {
+    boardRoot.style.setProperty('--routine-board-width', `${view.width}px`);
+    boardRoot.style.setProperty('--routine-board-height', `${view.height}px`);
+    boardRoot.style.setProperty('--routine-board-left', Number.isFinite(view.left) ? `${view.left}px` : 'auto');
+    boardRoot.style.setProperty('--routine-board-top', Number.isFinite(view.top) ? `${view.top}px` : 'auto');
+    boardRoot.style.setProperty('--routine-board-right', Number.isFinite(view.left) ? 'auto' : '18px');
+    boardRoot.style.setProperty('--routine-board-bottom', Number.isFinite(view.top) ? 'auto' : '96px');
+  };
+  const restoreButton = document.createElement('button');
+  restoreButton.id = 'routine-board-restore';
+  restoreButton.type = 'button';
+  restoreButton.title = 'Mostrar quadro de rotinas';
+  restoreButton.setAttribute('aria-label', 'Mostrar quadro de rotinas');
+  restoreButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>';
+  document.body.append(restoreButton);
   let listOpen = true;
+  applyView();
+  restoreButton.addEventListener('click', () => { view.minimized = false; saveView(); render(); });
 
   const sidebarList = document.createElement('aside');
   sidebarList.id = 'routine-sidebar-list';
@@ -48,7 +73,14 @@ export function iniciarQuadrosRotina() {
     if (!sidebarListOpen) return;
 
     const rows = boards.map((board) => {
-      return `<div class="routine-sidebar-item" data-routine-id="${escapeHtml(board.id)}"><button type="button" class="routine-sidebar-open"><span>${escapeHtml(board.name)}</span></button><div class="routine-sidebar-actions"><button type="button" class="routine-sidebar-edit" aria-label="Editar ${escapeHtml(board.name)}" title="Editar rotina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20Z"/></svg><span>Editar</span></button><button type="button" class="routine-sidebar-delete" aria-label="Excluir ${escapeHtml(board.name)}" title="Excluir rotina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg><span>Excluir</span></button></div></div>`;
+      const inicio = new Date(board.createdAt); inicio.setHours(0, 0, 0, 0);
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      const diasPassados = Math.max(0, Math.floor((Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()) - Date.UTC(inicio.getFullYear(), inicio.getMonth(), inicio.getDate())) / 86400000));
+      const diaAtual = Math.min(board.days, diasPassados + 1);
+      const fim = new Date(inicio); fim.setDate(fim.getDate() + board.days - 1); fim.setHours(23, 59, 59, 999);
+      const ativa = Date.now() <= fim.getTime();
+      const presencas = Object.keys(board.checkins || {}).length;
+      return `<div class="routine-sidebar-item" data-routine-id="${escapeHtml(board.id)}"><button type="button" class="routine-sidebar-open"><span>${escapeHtml(board.name)}</span><small><i class="routine-sidebar-status${ativa ? ' ativo' : ''}"></i>${ativa ? 'Ativa' : 'Concluída'} · dia ${diaAtual}/${board.days} · ${presencas} ${presencas === 1 ? 'presença' : 'presenças'}</small></button><div class="routine-sidebar-actions"><button type="button" class="routine-sidebar-edit" aria-label="Editar ${escapeHtml(board.name)}" title="Editar rotina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5M4 20l4.5-1 11-11a2.1 2.1 0 0 0-3-3l-11 11L4 20Z"/></svg><span>Editar</span></button><button type="button" class="routine-sidebar-delete" aria-label="Excluir ${escapeHtml(board.name)}" title="Excluir rotina"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg><span>Excluir</span></button></div></div>`;
     }).join('');
 
     sidebarList.innerHTML = `<div class="routine-sidebar-dialog" role="dialog" aria-modal="true" aria-label="Minhas rotinas"><header><span>Minhas rotinas</span><div><button type="button" class="routine-sidebar-add">Nova</button><button type="button" class="routine-sidebar-close" aria-label="Fechar lista" title="Fechar">×</button></div></header>${rows || '<p class="routine-sidebar-empty">Nenhuma rotina criada.</p>'}</div>`;
@@ -88,20 +120,58 @@ export function iniciarQuadrosRotina() {
   const render = () => {
     const boards = readBoards();
     boardRoot.replaceChildren();
-    boardRoot.hidden = boards.length === 0 || !listOpen;
+    boardRoot.hidden = boards.length === 0 || !listOpen || view.minimized;
+    restoreButton.hidden = boards.length === 0 || !view.minimized;
+    applyView();
     addButton.setAttribute('aria-expanded', String(boards.length > 0 && listOpen));
     renderSidebarList(boards);
     if (boards.length) {
       const heading = document.createElement('header');
       heading.className = 'routine-list-header';
-      heading.innerHTML = `<strong>Rotinas</strong><div class="routine-list-actions"><button type="button" class="routine-add">Nova rotina</button></div>`;
+      heading.innerHTML = `<strong>Rotinas</strong><div class="routine-list-actions"><button type="button" class="routine-add">Nova rotina</button><button type="button" class="routine-size" data-size="-1" aria-label="Diminuir quadro" title="Diminuir quadro">−</button><button type="button" class="routine-size" data-size="1" aria-label="Aumentar quadro" title="Aumentar quadro">+</button><button type="button" class="routine-move" aria-label="Mover quadro" title="Arraste para mover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3m3-3 3 3M12 21l-3-3m3 3 3-3M3 12l3-3m-3 3 3 3m12-3 3-3m-3 3 3 3"/></svg></button><button type="button" class="routine-collapse" aria-label="Recolher quadro" title="Recolher quadro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>`;
       heading.querySelector('.routine-add').addEventListener('click', openForm);
+      heading.querySelectorAll('.routine-size').forEach((button) => button.addEventListener('click', () => {
+        const step = Number(button.dataset.size);
+        view.width = Math.max(280, Math.min(520, view.width + step * 36));
+        view.height = Math.max(190, Math.min(560, view.height + step * 36));
+        applyView(); saveView();
+      }));
+      heading.querySelector('.routine-collapse').addEventListener('click', () => { view.minimized = true; saveView(); render(); });
+      const mover = heading.querySelector('.routine-move');
+      mover.addEventListener('pointerdown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        const bounds = boardRoot.getBoundingClientRect();
+        const startX = event.clientX;
+        const startY = event.clientY;
+        const originX = bounds.left;
+        const originY = bounds.top;
+        mover.setPointerCapture(event.pointerId);
+        const move = (pointerEvent) => {
+          const maxLeft = Math.max(0, window.innerWidth - bounds.width);
+          const maxTop = Math.max(0, window.innerHeight - 52);
+          view.left = Math.max(0, Math.min(maxLeft, originX + pointerEvent.clientX - startX));
+          view.top = Math.max(0, Math.min(maxTop, originY + pointerEvent.clientY - startY));
+          applyView();
+        };
+        const finish = () => {
+          mover.removeEventListener('pointermove', move);
+          mover.removeEventListener('pointerup', finish);
+          mover.removeEventListener('pointercancel', finish);
+          saveView();
+        };
+        mover.addEventListener('pointermove', move);
+        mover.addEventListener('pointerup', finish, { once: true });
+        mover.addEventListener('pointercancel', finish, { once: true });
+      });
       boardRoot.append(heading);
     }
     boards.forEach((board) => {
       const card = document.createElement('article');
       card.className = 'routine-card';
       const inicio = new Date(board.createdAt); inicio.setHours(0, 0, 0, 0);
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
       const dias = Array.from({ length: board.days }, (_, index) => {
         const date = new Date(inicio); date.setDate(inicio.getDate() + index);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -109,14 +179,36 @@ export function iniciarQuadrosRotina() {
       });
       const diasHtml = dias.map(({ date, key, day }) => {
         const checked = Boolean(board.checkins?.[key]);
+        const futuro = date > hoje;
         const label = `${date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${checked ? ` · presença às ${escapeHtml(board.checkins[key])}` : ''}`;
-        return `<span class="routine-square${checked ? ' done' : ''}" style="--routine-color:${escapeHtml(board.color)}" role="gridcell" aria-label="Dia ${day}: ${escapeHtml(label)}" title="Dia ${day}${checked ? ` · presença às ${escapeHtml(board.checkins[key])}` : ''}"></span>`;
+        return `<button type="button" class="routine-square${checked ? ' done' : ''}" data-routine-date="${key}" style="--routine-color:${escapeHtml(board.color)}" role="gridcell" aria-pressed="${checked}" aria-label="Dia ${day}: ${escapeHtml(label)}" title="${escapeHtml(label)}"${futuro ? ' disabled' : ''}>${day}</button>`;
       }).join('');
       card.dataset.boardId = board.id;
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
       const diaAtual = Math.min(board.days, Math.max(1, Math.floor((hoje - inicio) / 86400000) + 1));
       card.innerHTML = `<header><strong>${escapeHtml(board.name)}</strong><span class="routine-day-counter" style="--routine-color:${escapeHtml(board.color)}" aria-label="Dia ${diaAtual} de ${board.days}" title="Dia ${diaAtual} de ${board.days}"><strong>${diaAtual}</strong></span><button type="button" class="routine-remove" aria-label="Excluir quadro" title="Excluir quadro">×</button></header><div class="routine-squares" style="--routine-weeks:${Math.ceil(board.days / 7)}" role="grid" aria-label="Presenças de ${escapeHtml(board.name)}">${diasHtml}</div>`;
+      card.querySelectorAll('.routine-square:not(:disabled)').forEach((square) => {
+        square.addEventListener('click', async () => {
+          const dataPresenca = square.dataset.routineDate;
+          const quadroAtual = readBoards().find((item) => item.id === board.id);
+          if (!quadroAtual) return;
+          const jaMarcado = Boolean(quadroAtual.checkins?.[dataPresenca]);
+          const dataLegivel = new Date(`${dataPresenca}T12:00:00`).toLocaleDateString('pt-BR');
+          const confirmado = await showConfirm(
+            jaMarcado
+              ? `Remover a presença registrada em ${dataLegivel}?`
+              : `Registrar presença em ${dataLegivel}?`,
+            jaMarcado ? 'Desfazer presença' : 'Confirmar presença',
+          );
+          if (!confirmado) return;
+          const quadros = readBoards();
+          const alvo = quadros.find((item) => item.id === board.id);
+          if (!alvo) return;
+          if (jaMarcado) delete alvo.checkins[dataPresenca];
+          else alvo.checkins[dataPresenca] = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          save(quadros);
+          render();
+        });
+      });
       card.querySelector('.routine-remove').addEventListener('click', async () => {
         const confirmed = await showConfirm(`Excluir o quadro “${board.name}” e as presenças registradas?`, 'Excluir rotina');
         if (!confirmed) return;
@@ -179,6 +271,8 @@ export function iniciarQuadrosRotina() {
 
   addButton.addEventListener('click', () => {
     if (!readBoards().length) { openForm(); return; }
+    view.minimized = false;
+    saveView();
     listOpen = true;
     sidebarListOpen = true;
     addButton.setAttribute('aria-expanded', 'true');
@@ -189,6 +283,7 @@ export function iniciarQuadrosRotina() {
     boardRoot.scrollIntoView({ behavior: 'smooth', block: 'end' });
   });
   document.addEventListener('pointerdown', (event) => {
+    if (document.querySelector('.routine-modal-backdrop')) return;
     if (!sidebarListOpen || sidebarList.contains(event.target) || addButton.contains(event.target)) return;
     fecharListaRotinas();
   });

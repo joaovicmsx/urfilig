@@ -224,6 +224,7 @@ model Contato {
   patrimonioEstimado String?   // Ex: R$ 100k - 500k
   objetivoFinanceiro String?   // Ex: Aposentadoria, Compra de Imóvel, Proteção
   anotacoes          String?
+  consentimentoContatoEm DateTime?
   
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt

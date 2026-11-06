@@ -24,6 +24,7 @@ import { iniciarModuloContatos } from './contatos.js';
 import { iniciarQuadrosRotina } from './routineBoards.js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { emitTo, listen as listenTauri } from '@tauri-apps/api/event';
+import { adicionarMensagemChat, iniciarNovaConversaChat, inicializarConversasChat, lerHistoricoChat, renderizarListaConversasChat, restaurarHistoricoChat } from './chatHistory.js';
 
 exigirLogin();
 validarSessao();
@@ -290,7 +291,7 @@ const socket = conectarSocket({
   onResponse: ({ text, emotion, audio }) => {
     adicionarMensagemChat('Urfilig', text);
     if (audio) {
-      tocarAudioPiper(audio);
+      tocarAudioPiper(audio, text);
     } else {
       falar(text);
     }
@@ -499,19 +500,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnMinimizar = document.getElementById('chat-minimizar');
   const btnRestaurar = document.getElementById('chat-restaurar');
   const chatForm = document.getElementById('chat-form');
+  const chatPainel = document.getElementById('chat-painel');
+  const abrirChat = () => {
+    if (chatHistorico) chatHistorico.style.display = 'flex';
+    if (btnRestaurar) btnRestaurar.hidden = true;
+    chatPainel?.classList.add('chat-expanded');
+    document.querySelector('#nav-chats')?.setAttribute('aria-expanded', 'true');
+    const sidebarHistory = document.querySelector('#chat-sidebar-history');
+    if (sidebarHistory) sidebarHistory.hidden = false;
+  };
+  const minimizarChat = () => {
+    if (chatHistorico) chatHistorico.style.display = 'none';
+    if (btnRestaurar) btnRestaurar.hidden = false;
+    chatPainel?.classList.remove('chat-expanded');
+    document.querySelector('#nav-chats')?.setAttribute('aria-expanded', 'false');
+    const sidebarHistory = document.querySelector('#chat-sidebar-history');
+    if (sidebarHistory) sidebarHistory.hidden = true;
+  };
 
   if (btnMinimizar && chatHistorico && btnRestaurar) {
-    btnMinimizar.addEventListener('click', () => {
-      chatHistorico.style.display = 'none';
-      btnRestaurar.hidden = false;
-      document.getElementById('chat-painel')?.classList.remove('chat-expanded');
-    });
-    btnRestaurar.addEventListener('click', () => {
-      chatHistorico.style.display = 'flex';
-      btnRestaurar.hidden = true;
-      document.getElementById('chat-painel')?.classList.add('chat-expanded');
-    });
+    btnMinimizar.addEventListener('click', minimizarChat);
+    btnRestaurar.addEventListener('click', abrirChat);
   }
+  document.querySelector('#nav-chats')?.addEventListener('click', abrirChat);
+  document.querySelector('#chat-new-conversation')?.addEventListener('click', iniciarNovaConversaChat);
 
   if (chatForm) {
     const novoForm = chatForm.cloneNode(true);
@@ -621,70 +633,15 @@ document.addEventListener('DOMContentLoaded', () => {
       form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
     });
     void listenTauri('mascot:chat-history-request', () => {
-      const messages = [...document.querySelectorAll('#chat-mensagens .chat-msg')].map((node) => {
-        const autor = node.querySelector('strong')?.textContent?.replace(/:\s*$/, '') || 'Urfilig';
-        return { autor, texto: node.textContent.replace(/^.*?:\s*/, '') };
-      });
-      void emitTo('mascote-overlay', 'mascot:chat-history', messages);
+      void emitTo('mascote-overlay', 'mascot:chat-history', lerHistoricoChat());
     });
   }
 
+  inicializarConversasChat();
   restaurarHistoricoChat();
+  renderizarListaConversasChat();
   carregarMemoriasECerebro();
 });
-
-const CHAT_HISTORY_PREFIX = 'urfilig_chat_history_v1:';
-function obterChaveHistoricoChat() {
-  try {
-    const usuario = JSON.parse(localStorage.getItem('urfilig_usuario') || '{}');
-    const identidade = String(usuario.id || usuario.email || 'local').trim().toLowerCase();
-    return `${CHAT_HISTORY_PREFIX}${identidade || 'local'}`;
-  } catch {
-    return `${CHAT_HISTORY_PREFIX}local`;
-  }
-}
-
-function lerHistoricoChat() {
-  try {
-    const historico = JSON.parse(localStorage.getItem(obterChaveHistoricoChat()) || '[]');
-    return Array.isArray(historico) ? historico.filter((item) => item && typeof item.texto === 'string') : [];
-  } catch {
-    return [];
-  }
-}
-
-function renderizarMensagemChat(autor, texto) {
-  const chatMensagens = document.getElementById('chat-mensagens');
-  if (!chatMensagens) return null;
-  const msgDiv = document.createElement('div');
-  msgDiv.className = autor === 'Você' ? 'chat-msg usuario' : 'chat-msg urfilig';
-  const autorEl = document.createElement('strong');
-  autorEl.textContent = `${autor}:`;
-  msgDiv.append(autorEl, document.createTextNode(` ${texto}`));
-  chatMensagens.appendChild(msgDiv);
-  chatMensagens.scrollTop = chatMensagens.scrollHeight;
-  return msgDiv;
-}
-
-function restaurarHistoricoChat() {
-  const chatMensagens = document.getElementById('chat-mensagens');
-  if (!chatMensagens) return;
-  chatMensagens.replaceChildren();
-  lerHistoricoChat().forEach(({ autor, texto }) => renderizarMensagemChat(String(autor || 'Urfilig'), texto));
-}
-
-function adicionarMensagemChat(autor, texto) {
-  const mensagem = String(texto ?? '');
-  if (!renderizarMensagemChat(autor, mensagem)) return;
-  try {
-    const historico = lerHistoricoChat();
-    historico.push({ autor, texto: mensagem, criadoEm: new Date().toISOString() });
-    localStorage.setItem(obterChaveHistoricoChat(), JSON.stringify(historico));
-  } catch (erro) {
-    console.warn('[chat] Não foi possível persistir o histórico local:', erro);
-  }
-  if (isTauri()) void emitTo('mascote-overlay', 'mascot:chat-message', { autor, texto: mensagem });
-}
 
 socket.on('connect', () => {
   carregarMemoriasECerebro();
@@ -831,13 +788,14 @@ function posicionarMascoteSobreChat() {
 }
 
 let audioPiperAtual = null;
-function tocarAudioPiper(audioBase64) {
+function tocarAudioPiper(audioBase64, textoReserva = '') {
   window.speechSynthesis?.cancel();
   audioPiperAtual?.pause();
 
   audioPiperAtual = new Audio(`data:audio/wav;base64,${audioBase64}`);
   audioPiperAtual.play().catch((erro) => {
     console.warn('[main] falha ao tocar audio:', erro.message);
+    if (textoReserva) falar(textoReserva);
   });
 }
 
@@ -1124,6 +1082,7 @@ canvas.addEventListener('pointerup', (event) => {
     // Ao soltar o nó, mostra apenas um efeito visual.
     if (nodeArrastado) {
       memorySphere.emitDust(nodeArrastado.position || nodeArrastado.posicaoAtual, nodeArrastado.corAtual, 30, 'explode');
+      nodeArrastado.velocidadeArrasto?.multiplyScalar(0.12);
       nodeArrastado = null;
       memorySphere.nodeArrastado = null;
     }

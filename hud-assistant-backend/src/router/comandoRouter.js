@@ -18,9 +18,9 @@ comandoRouter.post('/comando/saudacao-diaria', exigirAutenticacao, async (req, r
     const resposta = await gerarSaudacaoDiaria(req.usuarioId);
     res.json({ resposta });
   } catch (erro) {
-    console.error('[erro ao gerar saudação diária]', erro.message);
+    console.error('[comando] falha na saudação diária:', erro?.code || erro?.name || 'erro interno');
     emitirEstado(req.usuarioId, 'IDLE');
-    res.status(500).json({ erro: 'Falha ao gerar a saudação', detalhe: erro.message });
+    res.status(500).json({ erro: 'Falha ao gerar a saudação.' });
   }
 });
 
@@ -37,9 +37,9 @@ comandoRouter.post('/comando/apresentacao', exigirAutenticacao, async (req, res)
     const resposta = await gerarApresentacaoInicial(req.usuarioId);
     res.json({ resposta });
   } catch (erro) {
-    console.error('[erro ao gerar apresentação inicial]', erro.message);
+    console.error('[comando] falha na apresentação:', erro?.code || erro?.name || 'erro interno');
     emitirEstado(req.usuarioId, 'IDLE');
-    res.status(500).json({ erro: 'Falha ao gerar a apresentação', detalhe: erro.message });
+    res.status(500).json({ erro: 'Falha ao gerar a apresentação.' });
   }
 });
 
@@ -56,17 +56,17 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
   if (!texto || typeof texto !== 'string') {
     return res.status(400).json({ erro: 'Campo "texto" (string) é obrigatório' });
   }
+  if (texto.trim().length === 0 || texto.length > 8000) {
+    return res.status(400).json({ erro: 'O texto deve ter entre 1 e 8.000 caracteres.' });
+  }
 
   try {
     if (provider && !['gemini', 'ollama'].includes(provider)) return res.status(400).json({ erro: 'Provedor inválido. Use gemini ou ollama.' });
     const resposta = await processarComando(req.usuarioId, texto, { provider, responseStyle, responseTone });
     res.json({ resposta });
   } catch (erro) {
-    console.error('[erro ao processar comando]', erro.message);
+    console.error('[comando] falha ao processar:', erro?.code || erro?.name || 'erro interno');
     emitirEstado(req.usuarioId, 'IDLE');
-    res.status(500).json({
-      erro: 'Falha ao processar o comando',
-      detalhe: erro.message, // exposto de propósito — projeto local, ajuda a diagnosticar rápido
-    });
+    res.status(500).json({ erro: 'Falha ao processar o comando.' });
   }
 });

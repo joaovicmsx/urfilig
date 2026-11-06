@@ -41,7 +41,7 @@ function confirmarExclusao(nome) {
           <h4 style="color: #f0f6fc; font-size: 0.95rem; font-weight: 600; margin: 0;">Excluir Contato</h4>
         </div>
         <div style="padding: 1.2rem; color: #c9d1d9; font-size: 0.88rem; line-height: 1.5;">
-          Tem certeza que deseja excluir <strong>${nome}</strong>?
+          Tem certeza que deseja excluir <strong id="nome-contato-exclusao"></strong>?
         </div>
         <div style="padding: 0.8rem 1.2rem; border-top: 1px solid #21262d; display: flex; justify-content: flex-end; gap: 8px; background: #161b22;">
           <button id="btn-modal-cancelar" style="background: transparent; border: none; color: #8b949e; padding: 8px 14px; font-size: 0.82rem; cursor: pointer;">Cancelar</button>
@@ -51,6 +51,7 @@ function confirmarExclusao(nome) {
     `;
 
     document.body.appendChild(modal);
+    modal.querySelector('#nome-contato-exclusao').textContent = nome;
 
     modal.querySelector('#btn-modal-cancelar').onclick = () => { modal.remove(); resolve(false); };
     modal.querySelector('#btn-modal-confirmar').onclick = () => { modal.remove(); resolve(true); };
@@ -206,6 +207,10 @@ export function iniciarModuloContatos() {
             <label style="font-size: 0.75rem; color: #8b949e; font-weight: 600; letter-spacing: 0.3px;">ANOTAÇÕES & OBSERVAÇÕES</label>
             <textarea id="contato-anotacoes" rows="4" style="background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; font-size: 0.88rem; line-height: 1.5; padding: 10px 12px; border-radius: 6px; width: 100%; resize: none; outline: none; font-family: inherit; box-sizing: border-box;"></textarea>
           </div>
+          <label style="display:flex;align-items:flex-start;gap:8px;color:#aab2bd;font-size:0.78rem;line-height:1.45;">
+            <input id="contato-base-legal" type="checkbox" required style="margin-top:2px;accent-color:#9b62c9;" />
+            <span>Confirmo que tenho autorização ou outra base legal para registrar estes dados neste app.</span>
+          </label>
         </form>
 
         <div style="padding: 0.8rem 1.2rem; border-top: 1px solid #21262d; display: flex; justify-content: flex-end; background: #161b22;">
@@ -266,13 +271,11 @@ export function iniciarModuloContatos() {
         return;
       }
 
-      const dataFmt = c.dataContato ? new Date(c.dataContato).toLocaleDateString('pt-BR') : 'Sem data';
-      const conteudoNota = `Telefone: ${c.telefone || 'Não informado'}\nE-mail: ${c.email || 'Não informado'}\nData de Contato: ${dataFmt}\nAnotações: ${c.anotacoes || 'Sem anotações'}`;
-
       const respNota = await fetch(`${BACKEND_URL}/api/cerebro/pastas/${pastaContatos.id}/notas`, {
         method: 'POST',
         headers: cabecalhoAuth(),
-        body: JSON.stringify({ titulo: c.nome, conteudo: conteudoNota }),
+        // Evita duplicar dados pessoais fora do armazenamento protegido de contatos.
+        body: JSON.stringify({ titulo: 'Registro de contato protegido', conteudo: 'Os dados deste contato estão disponíveis na lista protegida de contatos.' }),
       });
 
       if (respNota.ok) {
@@ -320,11 +323,22 @@ export function iniciarModuloContatos() {
         gap: 2px; user-select: none;
       `;
 
-      item.innerHTML = `
-        <div style="font-size: 0.88rem; font-weight: 600; color: #f0f6fc;">${c.nome}</div>
-        ${c.telefone ? `<div style="font-size: 0.78rem; color: #8b949e;">${c.telefone}</div>` : ''}
-        ${c.email ? `<div style="font-size: 0.75rem; color: #64748b;">${c.email}</div>` : ''}
-      `;
+      const nome = document.createElement('div');
+      nome.style.cssText = 'font-size: 0.88rem; font-weight: 600; color: #f0f6fc;';
+      nome.textContent = c.nome || 'Contato sem nome';
+      item.append(nome);
+      if (c.telefone) {
+        const telefone = document.createElement('div');
+        telefone.style.cssText = 'font-size: 0.78rem; color: #8b949e;';
+        telefone.textContent = c.telefone;
+        item.append(telefone);
+      }
+      if (c.email) {
+        const email = document.createElement('div');
+        email.style.cssText = 'font-size: 0.75rem; color: #64748b;';
+        email.textContent = c.email;
+        item.append(email);
+      }
 
       item.addEventListener('click', () => { abrirFormContato(c); });
 
@@ -348,6 +362,7 @@ export function iniciarModuloContatos() {
     document.getElementById('contato-email').value = c ? c.email || '' : '';
     document.getElementById('contato-data').value = c && c.dataContato ? c.dataContato.split('T')[0] : '';
     document.getElementById('contato-anotacoes').value = c ? c.anotacoes || '' : '';
+    document.getElementById('contato-base-legal').checked = false;
 
     modalContato.style.display = 'flex';
   }
@@ -367,10 +382,15 @@ export function iniciarModuloContatos() {
         email: document.getElementById('contato-email').value.trim(),
         dataContato: document.getElementById('contato-data').value || null,
         anotacoes: document.getElementById('contato-anotacoes').value.trim(),
+        baseLegalConfirmada: document.getElementById('contato-base-legal').checked,
       };
 
       if (!dados.nome) {
         await showAlert('Preencha pelo menos o nome do contato.');
+        return;
+      }
+      if (!dados.baseLegalConfirmada) {
+        await showAlert('Confirme a autorização ou base legal antes de salvar os dados do contato.');
         return;
       }
 
@@ -382,6 +402,9 @@ export function iniciarModuloContatos() {
       if (resp.ok) {
         modalContato.style.display = 'none';
         carregarContatos();
+      } else {
+        const resultado = await resp.json().catch(() => ({}));
+        await showAlert(resultado.erro || 'Não foi possível salvar o contato.');
       }
     } catch (err) {
       console.error('[Contatos] Erro ao salvar:', err);

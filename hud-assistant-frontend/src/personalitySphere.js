@@ -484,12 +484,18 @@ export class PersonalitySphere {
       if (!p.velocidadeArrasto) p.velocidadeArrasto = new THREE.Vector3();
 
       const sendoArrastada = this.nodeArrastado === p;
-      const forcaMola = sendoArrastada ? 24 : 5.5;
-      const amortecimento = sendoArrastada ? 8 : 5;
-      if (!sendoArrastada) p.alvoArrasto.set(0, 0, 0);
-      p.velocidadeArrasto.addScaledVector(p.alvoArrasto.clone().sub(p.offsetArrasto), forcaMola * dt);
-      p.velocidadeArrasto.multiplyScalar(Math.exp(-amortecimento * dt));
-      p.offsetArrasto.addScaledVector(p.velocidadeArrasto, dt);
+      if (sendoArrastada) {
+        // Segue o ponteiro quase diretamente; mantém só uma suavização curta.
+        const anterior = p.offsetArrasto.clone();
+        p.offsetArrasto.lerp(p.alvoArrasto, 1 - Math.exp(-95 * dt));
+        if (dt > 0) p.velocidadeArrasto.copy(p.offsetArrasto).sub(anterior).multiplyScalar(1 / dt);
+      } else {
+        // Ao soltar, a mola continua trazendo a bolinha de volta com calma.
+        p.alvoArrasto.set(0, 0, 0);
+        p.velocidadeArrasto.addScaledVector(p.alvoArrasto.clone().sub(p.offsetArrasto), 5.5 * dt);
+        p.velocidadeArrasto.multiplyScalar(Math.exp(-5 * dt));
+        p.offsetArrasto.addScaledVector(p.velocidadeArrasto, dt);
+      }
       if (!sendoArrastada && p.offsetArrasto.lengthSq() < 0.000025 && p.velocidadeArrasto.lengthSq() < 0.000025) {
         p.offsetArrasto.set(0, 0, 0);
         p.velocidadeArrasto.set(0, 0, 0);

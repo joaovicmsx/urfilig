@@ -2,177 +2,10 @@ import { BACKEND_URL } from './authGuard.js';
 import { showAlert, showConfirm } from './uiDialogs.js';
 import { iniciarPaineisDados } from './dataPanels.js';
 import { invoke, isTauri } from '@tauri-apps/api/core';
+import { confirmarAcao, pedirSelecaoPastaModal, pedirTextoModal } from './sideMenuDialogs.js';
 
 // =========================================================================
 // MODAIS CUSTOMIZADOS (FONTE PADRÃO DA APLICAÇÃO - CLEAN DARK)
-// =========================================================================
-
-function confirmarAcao(titulo, mensagemHtml, textoConfirmar = 'Excluir', corConfirmar = '#f87171') {
-  return new Promise((resolve) => {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);
-      z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
-      font-family: inherit;
-    `;
-
-    modal.innerHTML = `
-      <div style="background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; width: 100%; max-width: 400px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.9); box-sizing: border-box;">
-        <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-          <h4 style="color: #f0f6fc; font-size: 0.9rem; font-weight: 600; margin: 0; letter-spacing: 0.3px;">${titulo}</h4>
-        </div>
-        <div style="padding: 1.5rem; color: #c9d1d9; font-size: 0.88rem; line-height: 1.5;">
-          ${mensagemHtml}
-        </div>
-        <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: flex-end; gap: 8px;">
-          <button id="btn-modal-cancelar" type="button" style="background: transparent; border: none; color: #8b949e; padding: 8px 14px; font-size: 0.82rem; cursor: pointer;">Cancelar</button>
-          <button id="btn-modal-confirmar" type="button" style="background: ${corConfirmar}; color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">${textoConfirmar}</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    modal.querySelector('#btn-modal-cancelar').onclick = () => { modal.remove(); resolve(false); };
-    modal.querySelector('#btn-modal-confirmar').onclick = () => { modal.remove(); resolve(true); };
-  });
-}
-
-function pedirTextoModal(titulo, labelInput, valorInicial = '') {
-  return new Promise((resolve) => {
-    const modal = document.createElement('div');
-    modal.style.cssText = `
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(12px);
-      z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
-      font-family: inherit;
-    `;
-
-    modal.innerHTML = `
-      <div style="background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; width: 100%; max-width: 400px; overflow: hidden; box-shadow: 0 30px 60px rgba(0,0,0,0.9); box-sizing: border-box;">
-        <div style="padding: 1.2rem 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">
-          <h4 style="color: #f0f6fc; font-size: 0.9rem; font-weight: 600; margin: 0; letter-spacing: 0.3px;">${titulo}</h4>
-        </div>
-        <div style="padding: 1.5rem; display: flex; flex-direction: column; gap: 0.4rem;">
-          <label style="font-size: 0.68rem; color: #8b949e; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;">${labelInput}</label>
-          <input id="input-modal-texto" type="text" value="${valorInicial}" style="background: transparent !important; border: none !important; border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important; color: #f0f6fc !important; font-size: 0.95rem !important; padding: 8px 0 !important; border-radius: 0 !important; width: 100% !important; outline: none !important; font-family: inherit; box-sizing: border-box;" />
-        </div>
-        <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); display: flex; justify-content: flex-end; gap: 8px;">
-          <button id="btn-modal-cancelar" type="button" style="background: transparent; border: none; color: #8b949e; padding: 8px 14px; font-size: 0.82rem; cursor: pointer;">Cancelar</button>
-          <button id="btn-modal-salvar" type="button" class="btn-dinamico-esfera" style="padding: 8px 18px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; cursor: pointer;">Salvar</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-    const input = modal.querySelector('#input-modal-texto');
-    input.focus();
-    input.select();
-
-    const fechar = (val) => { modal.remove(); resolve(val); };
-
-    modal.querySelector('#btn-modal-cancelar').onclick = () => fechar(null);
-    modal.querySelector('#btn-modal-salvar').onclick = () => fechar(input.value.trim());
-    input.onkeydown = (e) => {
-      if (e.key === 'Enter') fechar(input.value.trim());
-      if (e.key === 'Escape') fechar(null);
-    };
-  });
-}
-
-function pedirSelecaoPastaModal(pastas, pastaAtual = null) {
-  return new Promise((resolve) => {
-    const modal = document.createElement('div');
-    modal.className = 'folder-move-backdrop';
-    modal.setAttribute('role', 'presentation');
-    const card = document.createElement('section');
-    card.className = 'folder-move-dialog';
-    card.setAttribute('role', 'dialog');
-    card.setAttribute('aria-modal', 'true');
-    card.setAttribute('aria-labelledby', 'folder-move-title');
-    const header = document.createElement('header');
-    const title = document.createElement('h2');
-    title.id = 'folder-move-title';
-    title.textContent = 'Mover nota';
-    const description = document.createElement('p');
-    description.className = 'folder-move-description';
-    description.textContent = 'Escolha a pasta onde esta nota deve ficar.';
-    header.append(title, description);
-
-    const list = document.createElement('fieldset');
-    list.className = 'folder-move-options';
-    list.setAttribute('aria-label', 'Pasta de destino');
-    const options = [
-      ...pastas.map((pasta) => ({ id: String(pasta.id), nome: pasta.nome || 'Pasta sem nome', semPasta: false })),
-      { id: '__sem_pasta__', nome: 'Sem pasta', detalhe: 'Manter como nota solta', semPasta: true },
-    ];
-    let radioParaFocar = null;
-    options.forEach((opcao, index) => {
-      const row = document.createElement('label');
-      row.className = 'folder-move-option';
-      const radio = document.createElement('input');
-      radio.type = 'radio';
-      radio.name = 'pasta-destino-nota';
-      radio.value = opcao.id;
-      // Uma nota solta começa sem destino selecionado para evitar confirmar
-      // acidentalmente a mesma opção e parecer que a movimentação falhou.
-      radio.checked = opcao.semPasta
-        ? pastaAtual !== null && pastaAtual !== undefined && pastaAtual !== '' && String(pastaAtual) === '__sem_pasta__'
-        : pastaAtual !== null && pastaAtual !== undefined && pastaAtual !== '' && String(pastaAtual) === opcao.id;
-      const copy = document.createElement('span');
-      copy.className = 'folder-move-option-copy';
-      const name = document.createElement('strong');
-      name.textContent = opcao.nome;
-      copy.append(name);
-      if (opcao.detalhe) {
-        const detail = document.createElement('small');
-        detail.textContent = opcao.detalhe;
-        copy.append(detail);
-      }
-      row.append(radio, copy);
-      list.append(row);
-      if (!radioParaFocar && (!opcao.semPasta || options.length === 1)) radioParaFocar = radio;
-    });
-
-    const footer = document.createElement('footer');
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.className = 'folder-move-cancel';
-    cancel.textContent = 'Cancelar';
-    const move = document.createElement('button');
-    move.type = 'button';
-    move.className = 'folder-move-confirm';
-    move.textContent = 'Mover nota';
-    move.disabled = !list.querySelector('input:checked');
-    footer.append(cancel, move);
-    card.append(header, list, footer);
-    modal.append(card);
-    document.body.append(modal);
-
-    const fechar = (valor) => {
-      document.removeEventListener('keydown', aoTeclar);
-      modal.remove();
-      resolve(valor);
-    };
-    const aoTeclar = (event) => {
-      if (event.key === 'Escape') fechar(undefined);
-    };
-    list.addEventListener('change', () => { move.disabled = !list.querySelector('input:checked'); });
-    cancel.addEventListener('click', () => fechar(undefined));
-    move.addEventListener('click', () => {
-      const escolha = list.querySelector('input:checked');
-      if (!escolha) return;
-      fechar(escolha.value === '__sem_pasta__' ? null : escolha.value);
-    });
-    modal.addEventListener('click', (event) => { if (event.target === modal) fechar(undefined); });
-    document.addEventListener('keydown', aoTeclar);
-    (list.querySelector('input:checked') || radioParaFocar)?.focus();
-  });
-}
-
-// =========================================================================
-// MÓDULO MENU LATERAL & CÉREBRO
 // =========================================================================
 
 export function iniciarMenuLateral(socket) {
@@ -191,6 +24,8 @@ export function iniciarMenuLateral(socket) {
   const menuBackdrop = document.querySelector('#menu-backdrop');
   const profileDrawer = document.querySelector('#profile-drawer');
   const profileBackdrop = document.querySelector('#profile-backdrop');
+  const pluginsDrawer = document.querySelector('#plugins-drawer');
+  const pluginsBackdrop = document.querySelector('#plugins-backdrop');
   const profileForm = document.querySelector('#profile-form');
   const profileMessage = document.querySelector('#profile-message');
   const profileSaveButton = document.querySelector('#profile-save');
@@ -198,19 +33,15 @@ export function iniciarMenuLateral(socket) {
   const deleteEmailInput = document.querySelector('#settings-delete-email');
   const deleteAccountButton = document.querySelector('#settings-delete-account');
   const deleteMessage = document.querySelector('#settings-delete-message');
-  const accountTab = document.querySelector('#settings-account-tab');
-  const pluginsTab = document.querySelector('#settings-plugins-tab');
-  const accountPanel = document.querySelector('#settings-account-panel');
-  const pluginsPanel = document.querySelector('#settings-plugins-panel');
   const profilePrefs = (() => {
     try {
-      return { responseStyle: 'equilibrada', responseTone: 'natural', skyMotion: true, showWeather: true,
+      return { responseStyle: 'equilibrada', responseTone: 'natural', showWeather: true,
         ...JSON.parse(localStorage.getItem('urfilig_preferencias') || '{}') };
-    } catch { return { responseStyle: 'equilibrada', responseTone: 'natural', skyMotion: true, showWeather: true }; }
+    } catch { return { responseStyle: 'equilibrada', responseTone: 'natural', showWeather: true }; }
   })();
+  delete profilePrefs.skyMotion;
 
   const aplicarPreferenciasPerfil = (prefs = profilePrefs) => {
-    document.body.classList.toggle('pref-no-sky-motion', !prefs.skyMotion);
     document.body.classList.toggle('pref-hide-weather', !prefs.showWeather);
   };
   aplicarPreferenciasPerfil();
@@ -221,13 +52,35 @@ export function iniciarMenuLateral(socket) {
     profileDrawer?.setAttribute('aria-hidden', 'true');
   }
 
-  function selecionarAbaConfiguracao(aba) {
-    const pluginsAtivos = aba === 'plugins';
-    if (accountPanel) accountPanel.hidden = pluginsAtivos;
-    if (pluginsPanel) pluginsPanel.hidden = !pluginsAtivos;
-    accountTab?.setAttribute('aria-selected', String(!pluginsAtivos));
-    pluginsTab?.setAttribute('aria-selected', String(pluginsAtivos));
-    if (pluginsAtivos) atualizarStatusPlugins();
+  function fecharPlugins() {
+    pluginsDrawer?.classList.remove('aberta');
+    pluginsBackdrop?.classList.remove('visible');
+    pluginsDrawer?.setAttribute('aria-hidden', 'true');
+  }
+
+  function minimizarChatAoNavegar() {
+    const chat = document.querySelector('#chat-historico');
+    if (!chat || chat.style.display === 'none') return;
+    chat.style.display = 'none';
+    const restaurar = document.querySelector('#chat-restaurar');
+    if (restaurar) restaurar.hidden = false;
+    document.querySelector('#chat-painel')?.classList.remove('chat-expanded');
+    document.querySelector('#nav-chats')?.setAttribute('aria-expanded', 'false');
+    const listaLateral = document.querySelector('#chat-sidebar-history');
+    if (listaLateral) listaLateral.hidden = true;
+  }
+
+  function abrirPlugins() {
+    fecharMenu();
+    fecharPerfil();
+    minimizarChatAoNavegar();
+    document.querySelectorAll('.sidebar-cerebro.aberta, .sidebar.aberta').forEach((painel) => painel.classList.remove('aberta'));
+    document.querySelector('#email-painel')?.classList.remove('aberta');
+    document.querySelector('#calendario-painel')?.classList.remove('aberta');
+    pluginsDrawer?.classList.add('aberta');
+    pluginsBackdrop?.classList.add('visible');
+    pluginsDrawer?.setAttribute('aria-hidden', 'false');
+    atualizarStatusPlugins();
   }
 
   async function atualizarStatusPlugins() {
@@ -261,13 +114,14 @@ export function iniciarMenuLateral(socket) {
 
   async function abrirPerfil() {
     fecharMenu();
+    fecharPlugins();
+    minimizarChatAoNavegar();
     document.querySelectorAll('.sidebar-cerebro.aberta, .sidebar.aberta').forEach((painel) => painel.classList.remove('aberta'));
     document.querySelector('#email-painel')?.classList.remove('aberta');
     document.querySelector('#calendario-painel')?.classList.remove('aberta');
     profileDrawer?.classList.add('aberta');
     profileBackdrop?.classList.add('visible');
     profileDrawer?.setAttribute('aria-hidden', 'false');
-    selecionarAbaConfiguracao('account');
     if (profileMessage) profileMessage.textContent = '';
     if (deleteMessage) deleteMessage.textContent = '';
     if (deleteEmailInput) deleteEmailInput.value = '';
@@ -304,12 +158,10 @@ export function iniciarMenuLateral(socket) {
     const prefs = profilePrefs;
     const style = document.querySelector(`input[name="profile-response-style"][value="${prefs.responseStyle || 'equilibrada'}"]`);
     const tone = document.querySelector(`input[name="profile-response-tone"][value="${prefs.responseTone || 'natural'}"]`);
-    const skyMotion = document.querySelector('#profile-sky-motion');
     const showWeather = document.querySelector('#profile-show-weather');
     document.querySelectorAll('input[name="profile-response-style"], input[name="profile-response-tone"]').forEach((input) => { input.checked = false; });
     if (style) style.checked = true;
     if (tone) tone.checked = true;
-    if (skyMotion) skyMotion.checked = prefs.skyMotion !== false;
     if (showWeather) showWeather.checked = prefs.showWeather !== false;
     profileDrawer?.querySelector('#profile-back')?.focus();
   }
@@ -336,6 +188,7 @@ export function iniciarMenuLateral(socket) {
 
   menuToggle?.addEventListener('click', () => {
     fecharPerfil();
+    fecharPlugins();
     menuLateral?.classList.contains('visible') ? fecharMenu() : abrirMenu();
   });
   const navItems = [...document.querySelectorAll('.hud-nav .nav-item:not(#nav-logout):not(#mascot-overlay-toggle)')];
@@ -352,6 +205,7 @@ export function iniciarMenuLateral(socket) {
     if (modalDados && tituloNavDados[tituloDados]) return tituloNavDados[tituloDados];
 
     const destinos = [
+      ['#nav-chats', '#chat-historico:not([style*="display: none"])'],
       ['#nav-cerebro', '#cerebro-painel.aberta'],
       ['#nav-calendario', '#calendario-painel.aberta'],
       ['#nav-emails', '#email-painel.aberta'],
@@ -359,6 +213,7 @@ export function iniciarMenuLateral(socket) {
       ['#nav-contatos', '#contatos-painel.aberta'],
       ['#nav-prospeccao', '#prospeccao-drawer.aberta'],
       ['#nav-profile', '#profile-drawer.aberta'],
+      ['#nav-plugins', '#plugins-drawer.aberta'],
     ];
     const destinoAberto = destinos.find(([, seletor]) => aberto(seletor));
     if (destinoAberto) return destinoAberto[0];
@@ -384,27 +239,32 @@ export function iniciarMenuLateral(socket) {
   observadorNav.observe(document.body, {
     subtree: true,
     attributes: true,
-    attributeFilter: ['class', 'hidden', 'aria-hidden'],
+    attributeFilter: ['class', 'hidden', 'aria-hidden', 'style'],
     childList: true,
   });
   sincronizarNavAtiva();
   document.querySelectorAll('.hud-nav .nav-item:not(#nav-profile)').forEach((item) => {
-    item.addEventListener('click', fecharPerfil, { capture: true });
+    item.addEventListener('click', () => { fecharPerfil(); if (item.id !== 'nav-chats') minimizarChatAoNavegar(); }, { capture: true });
+  });
+  document.querySelectorAll('.hud-nav .nav-item:not(#nav-plugins)').forEach((item) => {
+    item.addEventListener('click', fecharPlugins, { capture: true });
   });
 
   menuBackdrop?.addEventListener('click', fecharMenu);
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') { fecharPerfil(); fecharMenu(); }
+    if (event.key === 'Escape') { fecharPerfil(); fecharPlugins(); fecharMenu(); }
   });
 
   document.querySelector('#menu-editar-perfil')?.addEventListener('click', abrirPerfil);
   document.querySelector('#nav-profile')?.addEventListener('click', abrirPerfil);
   profileBackdrop?.addEventListener('click', fecharPerfil);
+  pluginsBackdrop?.addEventListener('click', fecharPlugins);
   document.querySelector('#profile-back')?.addEventListener('click', fecharPerfil);
   document.querySelector('#profile-close')?.addEventListener('click', fecharPerfil);
+  document.querySelector('#plugins-back')?.addEventListener('click', fecharPlugins);
+  document.querySelector('#plugins-close')?.addEventListener('click', fecharPlugins);
   document.querySelector('#profile-cancel')?.addEventListener('click', fecharPerfil);
-  accountTab?.addEventListener('click', () => selecionarAbaConfiguracao('account'));
-  pluginsTab?.addEventListener('click', () => selecionarAbaConfiguracao('plugins'));
+  document.querySelector('#nav-plugins')?.addEventListener('click', abrirPlugins);
   deleteEmailInput?.addEventListener('input', () => {
     const esperado = accountEmail?.textContent?.trim().toLocaleLowerCase('pt-BR') || '';
     const digitado = deleteEmailInput.value.trim().toLocaleLowerCase('pt-BR');
@@ -491,7 +351,6 @@ export function iniciarMenuLateral(socket) {
       Object.assign(profilePrefs, {
         responseStyle: document.querySelector('input[name="profile-response-style"]:checked')?.value || 'equilibrada',
         responseTone: document.querySelector('input[name="profile-response-tone"]:checked')?.value || 'natural',
-        skyMotion: document.querySelector('#profile-sky-motion')?.checked !== false,
         showWeather: document.querySelector('#profile-show-weather')?.checked !== false,
       });
       localStorage.setItem('urfilig_preferencias', JSON.stringify(profilePrefs));
@@ -988,7 +847,7 @@ export function iniciarMenuLateral(socket) {
   }
 
   async function excluirNota(nota) {
-    const confirmado = await confirmarAcao('Excluir Nota', `Tem certeza que deseja excluir a nota "<strong>${nota.titulo || nota.label}</strong>"?`);
+    const confirmado = await confirmarAcao('Excluir Nota', `Tem certeza que deseja excluir a nota "${nota.titulo || nota.label}"?`);
     if (confirmado) {
       if (String(nota.id).startsWith('hobby-')) {
         notasSoltas = notasSoltas.filter(n => n.id !== nota.id);
@@ -1068,7 +927,7 @@ export function iniciarMenuLateral(socket) {
   }
 
   async function excluirPasta(pasta) {
-    const confirmado = await confirmarAcao('Excluir Pasta', `Tem certeza que deseja excluir a pasta "<strong>${pasta.nome}</strong>" e todas as suas notas?`);
+    const confirmado = await confirmarAcao('Excluir Pasta', `Tem certeza que deseja excluir a pasta "${pasta.nome}" e todas as suas notas?`);
     if (confirmado) {
       await fetch(`${BACKEND_URL}/api/cerebro/pastas/${pasta.id}`, { method: 'DELETE', headers: cabecalhoAuth() });
       carregarPastasDoBackend(true);

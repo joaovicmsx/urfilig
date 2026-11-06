@@ -19,19 +19,25 @@ eventosRouter.get('/eventos', async (req, res) => {
     });
     res.json(eventos);
   } catch (erro) {
-    res.status(500).json({ erro: 'Erro ao buscar eventos.', detalhe: erro.message });
+    console.error('[Eventos] falha ao buscar eventos:', erro?.code || erro?.name || 'erro interno');
+    res.status(500).json({ erro: 'Não foi possível buscar eventos.' });
   }
 });
 
 // Criar evento
 eventosRouter.post('/eventos', async (req, res) => {
-  // Agora recebemos o dataFim também
-  const { titulo, descricao, dataInicio, dataFim, cor, etiqueta } = req.body;
+  const { titulo, descricao, dataInicio, dataFim, cor, etiqueta } = req.body || {};
   const usuarioId = req.usuarioId || req.userId || (req.user && req.user.id);
 
   if (!titulo || !dataInicio) {
     return res.status(400).json({ erro: 'Campos "titulo" e "dataInicio" são obrigatórios.' });
   }
+  if (typeof titulo !== 'string' || titulo.trim().length > 160 || (descricao != null && (typeof descricao !== 'string' || descricao.length > 4000))) {
+    return res.status(400).json({ erro: 'Título ou descrição fora do limite permitido.' });
+  }
+  if (typeof dataInicio !== 'string' || Number.isNaN(Date.parse(dataInicio)) || (dataFim && (typeof dataFim !== 'string' || Number.isNaN(Date.parse(dataFim))))) return res.status(400).json({ erro: 'Informe datas válidas.' });
+  if (cor != null && (typeof cor !== 'string' || !/^#[\da-f]{6}$/i.test(cor))) return res.status(400).json({ erro: 'Informe uma cor válida.' });
+  if (etiqueta != null && (typeof etiqueta !== 'string' || etiqueta.trim().length > 32)) return res.status(400).json({ erro: 'A etiqueta deve ter até 32 caracteres.' });
 
   if (!usuarioId) {
     console.error('[Eventos] ERRO: ID do utilizador não encontrado. Verifique o authMiddleware!');
@@ -52,29 +58,37 @@ eventosRouter.post('/eventos', async (req, res) => {
     });
     res.status(201).json(novoEvento);
   } catch (erro) {
-    console.error("=== ERRO AO CRIAR EVENTO ===");
-    console.error(erro); // Vai imprimir o erro real e completo no terminal do VS Code!
-    res.status(500).json({ erro: 'Erro ao criar evento.', detalhe: erro.message });
+    console.error('[Eventos] falha ao criar evento:', erro?.code || erro?.name || 'erro interno');
+    res.status(500).json({ erro: 'Não foi possível criar o evento.' });
   }
 });
 
 // Editar evento
 eventosRouter.put('/eventos/:id', async (req, res) => {
   const { id } = req.params;
-  const { titulo, descricao, dataInicio, dataFim, cor, etiqueta } = req.body;
+  const { titulo, descricao, dataInicio, dataFim, cor, etiqueta } = req.body || {};
   const usuarioId = req.usuarioId || req.userId || (req.user && req.user.id);
 
+  if (typeof id !== 'string' || id.length > 64 || (titulo !== undefined && (typeof titulo !== 'string' || !titulo.trim() || titulo.trim().length > 160)) || (descricao !== undefined && descricao !== null && (typeof descricao !== 'string' || descricao.length > 4000))) return res.status(400).json({ erro: 'Dados do evento inválidos.' });
+  if (dataInicio !== undefined && (typeof dataInicio !== 'string' || Number.isNaN(Date.parse(dataInicio)))) return res.status(400).json({ erro: 'Informe uma data válida.' });
+  if (dataFim !== undefined && dataFim !== null && (typeof dataFim !== 'string' || Number.isNaN(Date.parse(dataFim)))) return res.status(400).json({ erro: 'Informe uma data final válida.' });
+  if (cor !== undefined && cor !== null && (typeof cor !== 'string' || !/^#[\da-f]{6}$/i.test(cor))) return res.status(400).json({ erro: 'Informe uma cor válida.' });
+  if (etiqueta !== undefined && etiqueta !== null && (typeof etiqueta !== 'string' || etiqueta.trim().length > 32)) return res.status(400).json({ erro: 'A etiqueta deve ter até 32 caracteres.' });
+
   try {
+    const data = {
+      ...(titulo !== undefined && { titulo: titulo.trim() }),
+      ...(descricao !== undefined && { descricao }),
+      ...(dataInicio !== undefined && { dataInicio: new Date(dataInicio) }),
+      ...(dataFim !== undefined && { dataFim: dataFim ? new Date(dataFim) : null }),
+      ...(cor !== undefined && { cor }),
+      ...(etiqueta !== undefined && { etiqueta: typeof etiqueta === 'string' && etiqueta.trim() ? etiqueta.trim() : null }),
+    };
+    if (!Object.keys(data).length) return res.status(400).json({ erro: 'Informe ao menos um campo para atualizar.' });
+
     const eventoAtualizado = await prisma.evento.updateMany({
       where: { id, usuarioId },
-      data: {
-        titulo,
-        descricao,
-        dataInicio: new Date(dataInicio),
-        dataFim: dataFim ? new Date(dataFim) : undefined,
-        cor,
-        etiqueta: typeof etiqueta === 'string' && etiqueta.trim() ? etiqueta.trim().slice(0, 32) : null,
-      },
+      data,
     });
 
     if (eventoAtualizado.count === 0) {
@@ -83,8 +97,8 @@ eventosRouter.put('/eventos/:id', async (req, res) => {
 
     res.json({ ok: true, mensagem: 'Evento atualizado.' });
   } catch (erro) {
-    console.error("=== ERRO AO ATUALIZAR EVENTO ===", erro);
-    res.status(500).json({ erro: 'Erro ao atualizar evento.', detalhe: erro.message });
+    console.error('[Eventos] falha ao atualizar evento:', erro?.code || erro?.name || 'erro interno');
+    res.status(500).json({ erro: 'Não foi possível atualizar o evento.' });
   }
 });
 
@@ -92,6 +106,7 @@ eventosRouter.put('/eventos/:id', async (req, res) => {
 eventosRouter.delete('/eventos/:id', async (req, res) => {
   const { id } = req.params;
   const usuarioId = req.usuarioId || req.userId || (req.user && req.user.id);
+  if (typeof id !== 'string' || id.length > 64) return res.status(400).json({ erro: 'Identificador de evento inválido.' });
 
   try {
     const deletado = await prisma.evento.deleteMany({
@@ -104,6 +119,7 @@ eventosRouter.delete('/eventos/:id', async (req, res) => {
 
     res.json({ ok: true, mensagem: 'Evento deletado.' });
   } catch (erro) {
-    res.status(500).json({ erro: 'Erro ao deletar evento.', detalhe: erro.message });
+    console.error('[Eventos] falha ao deletar evento:', erro?.code || erro?.name || 'erro interno');
+    res.status(500).json({ erro: 'Não foi possível remover o evento.' });
   }
 });

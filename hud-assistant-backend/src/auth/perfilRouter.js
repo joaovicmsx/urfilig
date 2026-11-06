@@ -44,8 +44,8 @@ perfilRouter.delete('/usuario/conta', exigirAutenticacao, async (req, res) => {
     });
     return res.json({ mensagem: 'Conta e dados associados excluídos.' });
   } catch (erro) {
-    if (erro.status) return res.status(erro.status).json({ erro: erro.message });
-    console.error('[perfil] Erro ao excluir conta:', erro.message);
+    if (erro.status === 400 || erro.status === 404) return res.status(erro.status).json({ erro: erro.message });
+    console.error('[perfil] falha ao excluir conta:', erro?.code || erro?.name || 'erro interno');
     return res.status(500).json({ erro: 'Não foi possível excluir a conta agora.' });
   }
 });
@@ -81,7 +81,7 @@ perfilRouter.patch('/usuario/perfil', exigirAutenticacao, async (req, res) => {
     });
     return res.json({ usuario: paraRespostaPublica(usuario) });
   } catch (erro) {
-    console.error('[perfil] Erro ao atualizar perfil:', erro.message);
+    console.error('[perfil] falha ao atualizar perfil:', erro?.code || erro?.name || 'erro interno');
     return res.status(500).json({ erro: 'Falha ao salvar as alterações do perfil.' });
   }
 });
@@ -91,7 +91,12 @@ perfilRouter.patch('/usuario/perfil', exigirAutenticacao, async (req, res) => {
  * Grava os dados do formulário de onboarding do utilizador autenticado
  */
 perfilRouter.post('/usuario/onboarding', exigirAutenticacao, async (req, res) => {
-  const { nome, idade, localizacao, profissao, hobbies } = req.body;
+  const { nome, idade, localizacao, profissao, hobbies } = req.body || {};
+  if (nome !== undefined && (typeof nome !== 'string' || nome.trim().length < 1 || nome.trim().length > 80)) return res.status(400).json({ erro: 'Informe um nome válido de até 80 caracteres.' });
+  if (idade !== undefined && idade !== null && (!Number.isInteger(Number(idade)) || Number(idade) < 1 || Number(idade) > 120)) return res.status(400).json({ erro: 'A idade deve estar entre 1 e 120 anos.' });
+  if (localizacao !== undefined && localizacao !== null && (typeof localizacao !== 'string' || localizacao.length > 100)) return res.status(400).json({ erro: 'A localização deve ter até 100 caracteres.' });
+  if (profissao !== undefined && profissao !== null && (typeof profissao !== 'string' || profissao.length > 100)) return res.status(400).json({ erro: 'A profissão deve ter até 100 caracteres.' });
+  if (hobbies !== undefined && hobbies !== null && !((typeof hobbies === 'string' && hobbies.length <= 600) || (Array.isArray(hobbies) && hobbies.length <= 30 && hobbies.every((item) => typeof item === 'string' && item.length <= 80)))) return res.status(400).json({ erro: 'Interesses e atividades excedem o limite permitido.' });
 
   try {
     // Trata hobbies caso venham como array do frontend
@@ -100,11 +105,11 @@ perfilRouter.post('/usuario/onboarding', exigirAutenticacao, async (req, res) =>
     const usuarioAtualizado = await prisma.usuario.update({
       where: { id: req.usuarioId },
       data: {
-        ...(nome && { nome }),
+        ...(nome && { nome: nome.trim() }),
         ...(idade && { idade: Number(idade) }),
-        ...(localizacao && { localizacao }),
-        ...(profissao && { profissao }),
-        ...(hobbiesString && { hobbies: hobbiesString }),
+        ...(localizacao && { localizacao: localizacao.trim() }),
+        ...(profissao && { profissao: profissao.trim() }),
+        ...(hobbiesString && { hobbies: hobbiesString.trim() }),
         onboardingConcluido: true, // Libera o acesso ao HUD
       },
     });
@@ -116,7 +121,7 @@ perfilRouter.post('/usuario/onboarding', exigirAutenticacao, async (req, res) =>
         : usuarioAtualizado,
     });
   } catch (erro) {
-    console.error('[perfil] Erro ao salvar onboarding:', erro.message);
+    console.error('[perfil] falha ao salvar onboarding:', erro?.code || erro?.name || 'erro interno');
     return res.status(500).json({ erro: 'Falha ao salvar os dados do onboarding' });
   }
 });

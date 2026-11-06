@@ -8,8 +8,6 @@ exigirLogin();
 void validarSessao();
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const GOOGLE_DESKTOP_CLIENT_ID = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_ID;
-const GOOGLE_DESKTOP_CLIENT_SECRET = import.meta.env.VITE_GOOGLE_DESKTOP_CLIENT_SECRET;
 
 let writeTextFile, BaseDirectory;
 void (async () => {
@@ -88,9 +86,8 @@ function obterEmailDaSessao() {
 async function conectarContaGoogle() {
   const tauri = window.__TAURI_INTERNALS__ !== undefined || window.__TAURI__ !== undefined;
   if (tauri) {
-    if (!GOOGLE_DESKTOP_CLIENT_ID) { exibirEstadoSemConexao('Esta versão não tem o cliente Google Desktop configurado.'); return; }
     try {
-      const inicio = await fetch(`${BACKEND_URL}/api/auth/google/desktop/start`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ clientId:GOOGLE_DESKTOP_CLIENT_ID, clientSecret:GOOGLE_DESKTOP_CLIENT_SECRET || undefined, emailAccess:true, loginHint:obterEmailDaSessao() || undefined }) });
+      const inicio = await fetch(`${BACKEND_URL}/api/auth/google/desktop/start`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ emailAccess:true, loginHint:obterEmailDaSessao() || undefined }) });
       const sessao = await inicio.json();
       if (!inicio.ok) throw new Error(sessao.erro || 'Não foi possível iniciar a conexão com o Google.');
       const { invoke } = await import('@tauri-apps/api/core');

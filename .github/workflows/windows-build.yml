@@ -33,6 +33,14 @@ jobs:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/urfilig
           DIRECT_URL: postgresql://ci:ci@localhost:5432/urfilig
 
+      - name: Validar backend
+        run: npm run check
+        working-directory: hud-assistant-backend
+
+      - name: Testes automatizados do backend
+        run: npm test
+        working-directory: hud-assistant-backend
+
       - name: Instalar dependências do frontend
         run: npm ci
         working-directory: hud-assistant-frontend
@@ -46,8 +54,6 @@ jobs:
         working-directory: hud-assistant-desktop
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
-          VITE_GOOGLE_DESKTOP_CLIENT_ID: ${{ vars.VITE_GOOGLE_DESKTOP_CLIENT_ID }}
-          VITE_GOOGLE_DESKTOP_CLIENT_SECRET: ${{ secrets.GOOGLE_DESKTOP_CLIENT_SECRET }}
 
       - name: Guardar instalador
         uses: actions/upload-artifact@v7.0.2

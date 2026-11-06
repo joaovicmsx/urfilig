@@ -13,6 +13,7 @@ const CUSTO_HASH = 12; // fator de custo do bcrypt — 12 é um padrão seguro a
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const loginsDesktop = new Map();
+const GOOGLE_DESKTOP_CLIENT_ID = process.env.GOOGLE_DESKTOP_CLIENT_ID || '';
 
 export const authRouter = Router();
 
@@ -46,12 +47,28 @@ function mensagemBancoIndisponivel() {
 }
 
 /** Inicia OAuth nativo: navegador externo + callback loopback + PKCE. */
+authRouter.get('/auth/google/desktop/config', (_req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    configured: Boolean(GOOGLE_DESKTOP_CLIENT_ID),
+    clientId: GOOGLE_DESKTOP_CLIENT_ID || null,
+  });
+});
+
 authRouter.post('/auth/google/desktop/start', async (req, res) => {
-  const { clientId, clientSecret: clientSecretBody, emailAccess = false, loginHint } = req.body;
-  const clientSecret = process.env.GOOGLE_DESKTOP_CLIENT_SECRET || clientSecretBody;
-  if (!clientId || !clientSecret || !/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
-    return res.status(400).json({ erro: 'ID ou segredo do cliente Google Desktop ausente ou inválido' });
+  const { emailAccess = false, loginHint } = req.body;
+  const clientId = GOOGLE_DESKTOP_CLIENT_ID;
+  if (!clientId || !/^\d+-[\w-]+\.apps\.googleusercontent\.com$/.test(clientId)) {
+    return res.status(503).json({ erro: 'Configure GOOGLE_DESKTOP_CLIENT_ID no .env do backend com um cliente OAuth do tipo Aplicativo para computador.' });
   }
+  if (typeof emailAccess !== 'boolean' || (loginHint !== undefined && (typeof loginHint !== 'string' || loginHint.length > 254))) {
+    return res.status(400).json({ erro: 'Parâmetros de login Google inválidos.' });
+  }
+  if (loginHint && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginHint.trim())) return res.status(400).json({ erro: 'Conta Google inválida.' });
+  for (const [chave, sessaoAntiga] of loginsDesktop) {
+    if (Date.now() - sessaoAntiga.criadoEm > 5 * 60 * 1000) loginsDesktop.delete(chave);
+  }
+  if (loginsDesktop.size >= 100) return res.status(429).json({ erro: 'Há muitas autorizações em andamento. Aguarde e tente novamente.' });
 
   const estado = randomBytes(32).toString('hex');
   const { codeVerifier, codeChallenge } = await new OAuth2Client().generateCodeVerifierAsync();
@@ -60,7 +77,7 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
 
   const callbackServer = createServer(async (reqCallback, resCallback) => {
     const callbackUrl = new URL(reqCallback.url, 'http://127.0.0.1');
-    if (callbackUrl.pathname !== '/oauth2callback') return responderCallback(resCallback, 'Endereço inválido.', 404);
+    if (callbackUrl.pathname !== '/') return responderCallback(resCallback, 'Endereço inválido.', 404);
     if (callbackUrl.searchParams.get('state') !== estado) {
       sessao.status = 'error';
       sessao.erro = 'Resposta OAuth inválida. Tente novamente.';
@@ -77,8 +94,8 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
     try {
       const code = callbackUrl.searchParams.get('code');
       if (!code) throw new Error('O Google não retornou o código de autorização.');
-      const redirectUri = `http://127.0.0.1:${callbackServer.address().port}/oauth2callback`;
-      const oauthClient = new OAuth2Client({ clientId, clientSecret, redirectUri });
+      const redirectUri = `http://127.0.0.1:${callbackServer.address().port}`;
+      const oauthClient = new OAuth2Client({ clientId, redirectUri });
       const { tokens } = await oauthClient.getToken({ code, codeVerifier, redirect_uri: redirectUri });
       if (!tokens.id_token) throw new Error('O Google não retornou um ID token.');
       const ticket = await oauthClient.verifyIdToken({ idToken: tokens.id_token, audience: clientId });
@@ -114,9 +131,9 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
     sessao.erro = 'Não foi possível abrir o retorno local do Google.';
   });
   callbackServer.listen(0, '127.0.0.1', () => {
-    const redirectUri = `http://127.0.0.1:${callbackServer.address().port}/oauth2callback`;
+    const redirectUri = `http://127.0.0.1:${callbackServer.address().port}`;
     sessao.server = callbackServer;
-    const oauthClient = new OAuth2Client({ clientId, clientSecret, redirectUri });
+    const oauthClient = new OAuth2Client({ clientId, redirectUri });
     const opcoesOAuth = {
       response_type: 'code',
       redirect_uri: redirectUri,
@@ -150,7 +167,9 @@ authRouter.post('/auth/google/desktop/start', async (req, res) => {
 });
 
 authRouter.get('/auth/google/desktop/status', (req, res) => {
-  const sessao = loginsDesktop.get(req.query.state);
+  const estado = req.query.state;
+  if (typeof estado !== 'string' || !/^[a-f\d]{64}$/i.test(estado)) return res.status(400).json({ erro: 'Sessão de login inválida.' });
+  const sessao = loginsDesktop.get(estado);
   if (!sessao) return res.status(404).json({ erro: 'Sessão de login não encontrada.' });
   if (sessao.status === 'complete') {
     loginsDesktop.delete(req.query.state);
@@ -167,50 +186,51 @@ authRouter.get('/auth/google/desktop/status', (req, res) => {
  * POST /api/auth/registrar { email, senha, nome? }
  */
 authRouter.post('/auth/registrar', async (req, res) => {
-  const { email, senha, nome } = req.body;
+  const { email, senha, nome } = req.body || {};
 
-  if (!email || !senha) {
+  if (typeof email !== 'string' || typeof senha !== 'string' || !email.trim() || !senha) {
     return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
   }
-  if (senha.length < 8) {
-    return res.status(400).json({ erro: 'A senha precisa ter pelo menos 8 caracteres' });
+  const emailNormalizado = email.trim().toLowerCase();
+  if (emailNormalizado.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNormalizado)) return res.status(400).json({ erro: 'Informe um e-mail válido.' });
+  if (senha.length < 8 || senha.length > 128) {
+    return res.status(400).json({ erro: 'A senha deve ter entre 8 e 128 caracteres.' });
   }
+  if (nome !== undefined && (typeof nome !== 'string' || nome.trim().length > 120)) return res.status(400).json({ erro: 'O nome deve ter até 120 caracteres.' });
 
-  const jaExiste = await prisma.usuario.findUnique({ where: { email } });
-  if (jaExiste) {
-    return res.status(409).json({ erro: 'Já existe uma conta com esse e-mail' });
+  try {
+    const jaExiste = await prisma.usuario.findUnique({ where: { email: emailNormalizado } });
+    if (jaExiste) return res.status(409).json({ erro: 'Já existe uma conta com esse e-mail' });
+    const senhaHash = await bcrypt.hash(senha, CUSTO_HASH);
+    const usuario = await prisma.usuario.create({ data: { email: emailNormalizado, nome: nome?.trim() || null, senhaHash } });
+    return res.status(201).json({ token: gerarToken(usuario), usuario: paraRespostaPublica(usuario) });
+  } catch (erro) {
+    console.error('[auth] falha ao registrar conta:', erro?.code || erro?.name || 'erro interno');
+    return res.status(500).json({ erro: 'Não foi possível criar a conta agora.' });
   }
-
-  const senhaHash = await bcrypt.hash(senha, CUSTO_HASH);
-  const usuario = await prisma.usuario.create({ data: { email, nome, senhaHash } });
-
-  res.status(201).json({ token: gerarToken(usuario), usuario: paraRespostaPublica(usuario) });
 });
 
 /**
  * POST /api/auth/login { email, senha }
  */
 authRouter.post('/auth/login', async (req, res) => {
-  const { email, senha } = req.body;
+  const { email, senha } = req.body || {};
 
-  if (!email || !senha) {
+  if (typeof email !== 'string' || typeof senha !== 'string' || email.length > 254 || senha.length > 128 || !email.trim() || !senha) {
     return res.status(400).json({ erro: 'Email e senha são obrigatórios' });
   }
 
-  const usuario = await prisma.usuario.findUnique({ where: { email } });
-
-  // Mensagem genérica de propósito nos dois casos (email não existe / senha
-  // errada) — não dar pista pra quem está tentando adivinhar contas válidas
-  if (!usuario || !usuario.senhaHash) {
-    return res.status(401).json({ erro: 'E-mail ou senha inválidos' });
+  try {
+    const usuario = await prisma.usuario.findUnique({ where: { email: email.trim().toLowerCase() } });
+    // Mensagem única evita revelar se o e-mail está cadastrado.
+    if (!usuario || !usuario.senhaHash) return res.status(401).json({ erro: 'E-mail ou senha inválidos' });
+    const senhaCorreta = await bcrypt.compare(senha, usuario.senhaHash);
+    if (!senhaCorreta) return res.status(401).json({ erro: 'E-mail ou senha inválidos' });
+    return res.json({ token: gerarToken(usuario), usuario: paraRespostaPublica(usuario) });
+  } catch (erro) {
+    console.error('[auth] falha ao autenticar:', erro?.code || erro?.name || 'erro interno');
+    return res.status(503).json({ erro: 'Não foi possível validar o login agora.' });
   }
-
-  const senhaCorreta = await bcrypt.compare(senha, usuario.senhaHash);
-  if (!senhaCorreta) {
-    return res.status(401).json({ erro: 'E-mail ou senha inválidos' });
-  }
-
-  res.json({ token: gerarToken(usuario), usuario: paraRespostaPublica(usuario) });
 });
 
 /**
@@ -220,10 +240,10 @@ authRouter.post('/auth/login', async (req, res) => {
  * (provenientes de OAuth2 implicit flow / redirecionamento desktop/Tauri).
  */
 authRouter.post('/auth/google', async (req, res) => {
-  const { credential, access_token } = req.body;
+  const { credential, access_token } = req.body || {};
   const tokenFornecido = credential || access_token;
 
-  if (!tokenFornecido) {
+  if (typeof tokenFornecido !== 'string' || tokenFornecido.length > 8192) {
     return res.status(400).json({ erro: 'Token do Google é obrigatório' });
   }
 
@@ -255,7 +275,7 @@ authRouter.post('/auth/google', async (req, res) => {
       nome = userData.name;
       googleSub = userData.sub;
     } catch (errAccessToken) {
-      console.error('[auth] falha ao verificar token do Google:', errIdToken.message, '|', errAccessToken.message);
+      console.error('[auth] token Google inválido:', errAccessToken?.code || errAccessToken?.name || 'validação recusada');
       return res.status(401).json({ erro: 'Token do Google inválido' });
     }
   }
@@ -263,7 +283,7 @@ authRouter.post('/auth/google', async (req, res) => {
   try {
     res.json(await sincronizarUsuarioGoogle({ email, nome, googleSub }));
   } catch (erro) {
-    console.error('[auth] erro ao sincronizar usuário do Google no banco:', erro.message);
+    console.error('[auth] falha ao sincronizar conta Google:', erro?.code || erro?.name || 'erro interno');
     res.status(500).json({ erro: 'Erro interno ao processar autenticação' });
   }
 });
