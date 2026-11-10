@@ -26,9 +26,9 @@ async function localizarArquivo(configurado, padrao) {
   throw new Error(`Arquivo do Piper não encontrado. Caminhos verificados: ${[...new Set(candidatos)].join(', ')}`);
 }
 
-// O Piper não separa tom e duração. Mantemos o modelo sem alteração de pitch
-// para preservar a naturalidade e usamos apenas uma desaceleração leve.
-const LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE || '1.2';
+// O Piper não separa tom e duração. Mantemos o pitch original e o ritmo
+// padrão para evitar uma fala arrastada; o usuário pode ajustar pelo .env.
+const LENGTH_SCALE = process.env.PIPER_LENGTH_SCALE || '1.0';
 /**
  * Gera áudio a partir de texto usando o Piper (motor de TTS local, neural,
  * sem custo) — substitui a Web Speech API do navegador, que soa

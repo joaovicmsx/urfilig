@@ -7,6 +7,34 @@ import { montarParticulas } from './particlesBuilder.js';
 import { sintetizarFala } from '../voice/piperClient.js';
 import { prisma } from '../db/client.js';
 
+const MESES = {
+  janeiro: 0, fevereiro: 1, marco: 2, abril: 3, maio: 4, junho: 5,
+  julho: 6, agosto: 7, setembro: 8, outubro: 9, novembro: 10, dezembro: 11,
+};
+function semAcentos(texto = '') {
+  return String(texto).normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+function extrairNovoEvento(texto) {
+  const pedido = /\b(?:cria|crie|adiciona|adicionar|marca|marcar|agenda|agendar)\b/i.test(texto)
+    && /\b(?:evento|compromisso)\b/i.test(texto);
+  const data = texto.match(/\b(?:no\s+)?dia\s+(\d{1,2})(?:\s+de\s+([a-záàâãéêíóôõúç]+))?(?:\s+(?:deste|desse)\s+m[eê]s)?\b/i);
+  const nome = texto.match(/\b(?:chamado|chamada|com\s+(?:o\s+)?nome\s+de)\s+["“]?(.+?)["”]?\s*[.!?]*$/i);
+  if (!pedido || !data || !nome) return null;
+  const dia = Number(data[1]);
+  const mesNome = semAcentos(data[2] || '').toLowerCase();
+  const hoje = new Date();
+  const mes = mesNome ? MESES[mesNome] : hoje.getMonth();
+  const ano = hoje.getFullYear();
+  const titulo = nome[1]
+    .replace(/\s+(?:no\s+)?dia\s+\d{1,2}(?:\s+de\s+[a-záàâãéêíóôõúç]+)?(?:\s+(?:deste|desse)\s+m[eê]s)?\s*$/i, '')
+    .trim()
+    .replace(/[.!?]+$/, '')
+    .slice(0, 160);
+  const dataInicio = new Date(Date.UTC(ano, mes, dia, 12, 0, 0));
+if (!titulo || mes === undefined || dataInicio.getUTCMonth() !== mes || dataInicio.getUTCDate() !== dia) return null;
+  return { titulo, dataInicio };
+}
+
 const PROMPT_APRESENTACAO = `Gere uma saudação de boas-vindas calorosa pra primeira vez que a
 pessoa abre o HUD, logo depois de completar o cadastro e o onboarding.
 Cumprimente pelo nome dela, e mostre que você já sabe algo sobre quem ela
@@ -23,12 +51,40 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
   emitirEstado(usuarioId, 'THINKING');
 
   let textoParaGemini = texto;
+  let eventoCriado = null;
 
   // 1. Comando: Criar Pasta
   const comandoPasta = texto.match(/(?:crie|criar|cria|nova)\s+pasta\s+(?:chamada\s+)?(.+)/i);
 
   // 2. Comando: Editar / Atualizar Nota existente
   const comandoEditarNota = texto.match(/(?:edita|editar|atualiza|atualizar)\s+(?:a\s+)?nota\s+(?:do|da|de)?\s*([^\n,]+)/i);
+  const novoEvento = extrairNovoEvento(texto);
+  
+  if (novoEvento) {
+  const eventoSalvo = await prisma.evento.create({
+    data: {
+      usuarioId,
+      titulo: novoEvento.titulo,
+      descricao: 'Criado pelo chat do Urfilig.',
+      dataInicio: novoEvento.dataInicio,
+      dataFim: new Date(novoEvento.dataInicio.getTime() + 60 * 60 * 1000),
+      cor: '#c58ad8',
+      etiqueta: 'Urfilig',
+    },
+  });
+
+  eventoCriado = {
+    id: eventoSalvo.id,
+    titulo: eventoSalvo.titulo,
+    dataInicio: eventoSalvo.dataInicio.toISOString(),
+    origem: 'urfilig',
+  };
+
+  const dataFormatada = eventoSalvo.dataInicio.toLocaleDateString('pt-BR', {
+    timeZone: 'UTC', day: '2-digit', month: 'long', year: 'numeric',
+  });
+ textoParaGemini = `O evento "${eventoSalvo.titulo}" foi salvo no calendário interno do Urfilig para ${dataFormatada}. Confirme brevemente.`;
+} else
 
   if (comandoPasta && comandoPasta[1]) {
     const nomePasta = comandoPasta[1].trim().replace(/[.\s]+$/, '');
@@ -101,7 +157,7 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
   setTimeout(() => emitirEstado(usuarioId, 'IDLE'), 1500);
 
   return respostaViaHttp
-    ? { resposta, audio: audio?.toString('base64') || null }
+    ? { resposta, audio: audio?.toString('base64') || null, eventoCriado }
     : resposta;
 }
 

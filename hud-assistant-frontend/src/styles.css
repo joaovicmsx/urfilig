@@ -189,6 +189,7 @@ body.tela-centralizada {
 .nav-item svg { stroke: #64748b; transition: stroke 0.2s ease; }
 .nav-item:hover { color: #ffffff; }
 .nav-item:hover svg { stroke: #ffffff; }
+.nav-item.chat-tool-only { display: none; }
 
 #hud-canvas { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; z-index: 1; }
 #labels-canvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none !important; z-index: 5; }

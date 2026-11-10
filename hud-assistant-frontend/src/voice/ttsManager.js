@@ -7,11 +7,8 @@
  * filtro eletrônico/robótico de verdade** por cima da voz (bitcrusher,
  * ring modulator, etc.) — o navegador gera o áudio internamente e manda
  * direto pro alto-falante, sem um nó de Web Audio no meio. O que dá pra
- * fazer aqui é aproximar o efeito "etéreo/melancólico" (inspirado na
- * banda Daughter) via escolha de voz + tom (pitch) mais grave + fala mais
- * devagar. Se quiser o toque eletrônico de verdade depois, isso normalmente
- * exige um motor de TTS dedicado (ElevenLabs, Piper com pós-processamento)
- * — um passo futuro maior, não um ajuste de parâmetro.
+ * fazer aqui é escolher a voz em português mais natural disponível no sistema
+ * e ajustar levemente o tom e o ritmo. A lista depende das vozes instaladas.
  */
 
 // Heurística pra achar uma voz feminina em português — a Web Speech API
@@ -32,7 +29,11 @@ function escolherVoz() {
   const feminina = candidatasPt
     .filter((voz) => PISTAS_VOZ_FEMININA.some((regex) => regex.test(voz.name)))
     .sort((a, b) => {
-      const prioridade = (voz) => /natural|online|neural/i.test(voz.name) ? 1 : 0;
+      const prioridade = (voz) => {
+        const nome = voz.name || '';
+        return (/natural|online|neural/i.test(nome) ? 2 : 0)
+          + (/francisca|maria|luciana|helena|fernanda|camila|zira/i.test(nome) ? 1 : 0);
+      };
       return prioridade(b) - prioridade(a);
     })[0];
 
@@ -54,17 +55,25 @@ export function falar(texto) {
 
   window.speechSynthesis.cancel(); // interrompe qualquer fala anterior ainda em andamento
 
-  const utterance = new SpeechSynthesisUtterance(texto);
+  const textoLimpo = texto
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/[`*_#>]/g, '')
+    .replace(/^\s*[-•]\s+/gm, '')
+    .replace(/\n+/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/([.!?])\1+/g, '$1')
+    .trim();
+  const utterance = new SpeechSynthesisUtterance(textoLimpo);
   if (vozEscolhida) utterance.voice = vozEscolhida;
   utterance.lang = 'pt-BR';
   utterance.onerror = (evento) => console.warn('[voz] a voz do sistema falhou:', evento.error || 'erro sem detalhe');
   utterance.onstart = () => console.info('[voz] voz do sistema iniciada');
 
-  // Interpretação mais introspectiva: tom um pouco mais agudo,
-  // ritmo calmo e volume suave. Mantém uma entrega natural em português.
-  utterance.pitch = 1.15;
-  utterance.rate = 1;
-  utterance.volume = 0.86;
+  // Tom mais fino e ritmo natural. Limpa marcação de listas para evitar que
+  // símbolos e quebras artificiais causem pausas estranhas na fala.
+  utterance.pitch = 1.2;
+  utterance.rate = 1.08;
+  utterance.volume = 0.9;
 
   window.speechSynthesis.speak(utterance);
   // Algumas versões do WebView2 carregam as vozes depois da primeira fala.

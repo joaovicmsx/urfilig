@@ -159,6 +159,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 #calendario-conteudo .item-evento { min-height: 17px; padding: 1px 4px !important; overflow: hidden; color: var(--text-primary) !important; background: rgba(255,255,255,.08) !important; border: 0 !important; border-radius: 4px !important; font-size: 10px !important; line-height: 1.35 !important; }
 #calendario-conteudo .btn-add-evento { color: var(--time-accent) !important; background: transparent !important; }
 
+#calendario-conteudo .dia-numero { display: inline-flex; align-items: center; gap: 5px; }
+#calendario-conteudo .dia-tem-evento { width: 6px; height: 6px; border-radius: 50%; background: var(--time-accent); box-shadow: 0 0 8px color-mix(in srgb, var(--time-accent) 65%, transparent); }
+
 /* Unified compact dialog surfaces, including the cards created in JavaScript. */
 .intel-modal, .microfone-modal, #modal-nota-detalhes, #modal-contato-form, #modal-evento-overlay, .modal-overlay {
   background: rgba(4,5,7,.58) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
@@ -825,6 +828,122 @@ button:active, .nav-item:active { transform: scale(.96) !important; }
   will-change: transform, opacity;
 }
 .profile-drawer.aberta { opacity: 1; visibility: visible; pointer-events: auto; transform: translateX(0); }
+.dev-agent-drawer {
+  width: min(680px, calc(100vw - var(--rail-width) - 12px));
+}
+.dev-agent-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 18px 22px 24px;
+}
+.dev-agent-form { display: grid; gap: 12px; }
+.dev-agent-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: .76rem;
+}
+.dev-agent-form input,
+.dev-agent-form textarea,
+.dev-agent-form select {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  color: var(--text-primary);
+  background: rgba(10, 9, 17, .48);
+  border: 0;
+  border-radius: 11px;
+  outline: 1px solid rgba(255,255,255,.065);
+  font: inherit;
+  font-size: .83rem;
+}
+.dev-agent-form textarea { resize: vertical; min-height: 92px; }
+.dev-agent-form input:focus-visible,
+.dev-agent-form textarea:focus-visible,
+.dev-agent-form select:focus-visible { outline: 2px solid color-mix(in srgb, var(--time-accent) 66%, white); }
+.dev-agent-form .profile-save { justify-self: start; min-width: 170px; }
+.dev-agent-message { min-height: 1.1em; margin: 0; color: var(--text-muted); font-size: .77rem; }
+.dev-agent-message.is-error,
+.dev-agent-tasks .is-error { color: #ff929b; }
+.dev-agent-task-section { display: grid; gap: 10px; }
+.dev-agent-task-section > header,
+.dev-agent-task-heading,
+.dev-agent-task-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.dev-agent-task-section > header h3 { margin: 0; color: var(--text-primary); font-size: .88rem; font-weight: 500; }
+.dev-agent-task-section > header button { min-height: 30px; padding: 5px 9px; font-size: .72rem; }
+.dev-agent-tasks { display: grid; gap: 10px; }
+.dev-agent-task {
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 14px;
+  border-radius: 15px;
+  background: rgba(255,255,255,.045);
+  box-shadow: inset 0 1px rgba(255,255,255,.035);
+  animation: dev-agent-task-in .24s ease both;
+}
+.dev-agent-task-heading h4 { margin: 0 0 4px; color: var(--text-primary); font-size: .86rem; font-weight: 500; overflow-wrap: anywhere; }
+.dev-agent-status,
+.dev-agent-risk,
+.dev-agent-execution-note { color: var(--text-muted); font-size: .7rem; }
+.dev-agent-risk { flex: 0 0 auto; padding: 4px 8px; border-radius: 99px; background: rgba(255,255,255,.055); }
+.dev-agent-risk.risk-alto { color: #ffabb2; }
+.dev-agent-risk.risk-baixo { color: #a9dfc2; }
+.dev-agent-task-description,
+.dev-agent-plan-summary { margin: 0; color: var(--text-secondary); font-size: .78rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.dev-agent-plan-details { color: var(--text-secondary); font-size: .75rem; }
+.dev-agent-plan-details summary { cursor: pointer; color: var(--text-muted); }
+.dev-agent-plan-details ul { display: grid; gap: 5px; margin: 8px 0 0; padding-left: 20px; }
+.dev-agent-plan-details li { line-height: 1.45; overflow-wrap: anywhere; }
+.dev-agent-task-actions { justify-content: flex-start; flex-wrap: wrap; padding-top: 3px; }
+.dev-agent-task-actions button { min-height: 32px; padding: 6px 11px; font-size: .74rem; }
+.dev-agent-task-actions .dev-agent-execution-note { margin-left: auto; }
+@keyframes dev-agent-task-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.dev-agent-chat-progress,
+.dev-agent-chat-card {
+  width: min(100%, 560px);
+  margin: 8px 0;
+  padding: 13px 15px;
+  color: var(--text-primary);
+  border-radius: 15px;
+  background: rgba(18,17,26,.76);
+  box-shadow: inset 0 1px rgba(255,255,255,.045), 0 8px 26px rgba(0,0,0,.12);
+  backdrop-filter: blur(18px) saturate(120%);
+  -webkit-backdrop-filter: blur(18px) saturate(120%);
+  animation: dev-agent-task-in .22s ease both;
+}
+.chat-msg.urfilig.dev-agent-chat-progress,
+.chat-msg.urfilig.dev-agent-chat-card {
+  align-self: flex-start;
+  color: var(--text-primary);
+  background: rgba(18,17,26,.76);
+}
+.dev-agent-chat-progress > strong { display: block; font-size: .82rem; font-weight: 500; }
+.dev-agent-chat-steps { display: flex; flex-wrap: wrap; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
+.dev-agent-chat-steps li { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: .7rem; }
+.dev-agent-chat-steps li::before { width: 7px; height: 7px; flex: 0 0 7px; content: ''; border-radius: 50%; background: rgba(255,255,255,.2); }
+.dev-agent-chat-steps li.is-current::before { background: var(--time-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--time-accent) 52%, transparent); animation: dev-agent-step-pulse 1.2s ease-in-out infinite; }
+.dev-agent-chat-steps li.is-done { color: var(--text-secondary); }
+.dev-agent-chat-steps li.is-done::before { background: #89cbb0; }
+.dev-agent-chat-error { margin: 10px 0 0; color: #ff929b; font-size: .76rem; overflow-wrap: anywhere; }
+.dev-agent-chat-card-kicker { display: block; margin-bottom: 8px; color: var(--text-muted); font-size: .67rem; }
+.dev-agent-chat-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.dev-agent-chat-card-title { display: grid; gap: 3px; min-width: 0; }
+.dev-agent-chat-card-title strong { overflow-wrap: anywhere; font-size: .84rem; font-weight: 500; }
+.dev-agent-chat-card-title span,
+.dev-agent-chat-card-note { color: var(--text-muted); font-size: .7rem; }
+.dev-agent-chat-card-description,
+.dev-agent-chat-card-summary,
+.dev-agent-chat-card-objective { margin: 9px 0 0; color: var(--text-secondary); font-size: .76rem; line-height: 1.45; overflow-wrap: anywhere; white-space: pre-wrap; }
+.dev-agent-chat-card-summary { color: var(--text-primary); }
+.dev-agent-chat-card-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+.dev-agent-chat-card-actions button { min-height: 31px; padding: 6px 10px; font-size: .72rem; }
+.dev-agent-chat-card-actions button:disabled { opacity: .55; cursor: wait; }
+@keyframes dev-agent-step-pulse { 50% { opacity: .55; transform: scale(.82); } }
 .profile-drawer-header {
   flex: 0 0 auto; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center;
   gap: 12px; padding: 19px 18px; border-bottom: 1px solid rgba(255,255,255,.075);
@@ -2240,3 +2359,6 @@ body:has(.email-wrapper) .email-lendo.email-wrapper > .email-leitor-card {
   .chat-conversation-item { padding: 8px 6px; }
   #chat-mensagens { padding: 10px !important; }
 }
+
+/* Ferramentas continuam no DOM para os atalhos do chat e listeners existentes. */
+.hud-nav .nav-item.chat-tool-only { display: none !important; }

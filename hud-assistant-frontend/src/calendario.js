@@ -25,6 +25,7 @@ const cabecalhoAuth = () => ({
 });
 
 export async function carregarCalendarioUI() {
+  renderizarEstrutura();
   await buscarEventos();
   renderizarEstrutura();
 }
@@ -90,11 +91,13 @@ function renderizarEstrutura() {
         return `<button type="button" class="item-evento" data-id="${escaparHtml(ev.id)}" style="--evento-cor:${corSegura(ev.cor)}" title="${escaparHtml(ev.titulo)}">${etiqueta}<span class="evento-titulo">${escaparHtml(ev.titulo)}</span></button>`;
       })
       .join('');
-
+     const marcadorDoDia = eventosDoDia.length > 0
+    ? '<span class="dia-tem-evento" aria-label="dia com evento"></span>'
+    : '';
     htmlDias += `
       <div data-data="${dataIso}" style="background: #09090b; padding: 8px; min-height: 75px; display: flex; flex-direction: column; gap: 4px; border-radius: 6px;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-weight: 500; font-size: 0.8rem; color: #94a3b8;">${dia}</span>
+          <span style="font-weight: 500; font-size: 0.8rem; color: #94a3b8;">${dia}${marcadorDoDia}</span>
           <button type="button" class="btn-add-evento" data-data="${dataIso}" style="background: none; border: none; color: #475569; cursor: pointer; font-size: 0.9rem; padding: 0;">+</button>
         </div>
         <div style="display: flex; flex-direction: column; gap: 3px; overflow-y: auto; max-height: 55px;">

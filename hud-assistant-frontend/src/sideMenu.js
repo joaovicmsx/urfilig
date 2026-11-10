@@ -212,6 +212,7 @@ export function iniciarMenuLateral(socket) {
       ['#nav-spotify', '#spotify-drawer.aberta'],
       ['#nav-contatos', '#contatos-painel.aberta'],
       ['#nav-prospeccao', '#prospeccao-drawer.aberta'],
+      ['#nav-dev-agent', '#dev-agent-drawer.aberta'],
       ['#nav-profile', '#profile-drawer.aberta'],
       ['#nav-plugins', '#plugins-drawer.aberta'],
     ];

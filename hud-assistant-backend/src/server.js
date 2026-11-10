@@ -15,6 +15,7 @@ import { eventosRouter } from './router/eventosRouter.js';
 import { authRouter } from './auth/authRouter.js';
 import { perfilRouter } from './auth/perfilRouter.js';
 import { spotifyRouter } from './spotify/spotifyRouter.js';
+import { devAgentRouter } from './devAgent/devAgentRouter.js';
 import inteligenciaRouter from './router/inteligenciaRouter.js';
 
 // Middlewares e Jobs
@@ -84,6 +85,7 @@ const io = configurarSocket(httpServer);
 app.use('/api', authRouter);
 app.use('/api', perfilRouter);
 app.use('/api', spotifyRouter);
+app.use('/api/dev-agent', exigirAutenticacao, devAgentRouter);
 app.use('/api', comandoRouter);
 app.use('/api', leadsRouter);
 app.use('/api', agendaRouter);

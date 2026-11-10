@@ -70,7 +70,7 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
     });
     res.json(resultado);
   } catch (erro) {
-    console.error('[comando] falha ao processar:', erro?.code || erro?.name || 'erro interno');
+   console.error('[comando] falha ao processar:', erro);
     emitirEstado(req.usuarioId, 'IDLE');
     res.status(500).json({ erro: 'Falha ao processar o comando.' });
   }

@@ -35,7 +35,7 @@
         <div id="chat-sidebar-history" aria-label="Histórico de conversas" hidden>
           <div id="chat-sidebar-conversation-list" role="list"></div>
         </div>
-        <button id="nav-cerebro" class="nav-item" type="button">
+        <button id="nav-cerebro" class="nav-item chat-tool-only" type="button">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10s10-4.477 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
           Notas
         </button>
@@ -43,35 +43,38 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           Calendário
         </button>
-        <button id="btn-lembretes" class="nav-item" type="button" title="Lembretes">
+        <button id="btn-lembretes" class="nav-item chat-tool-only" type="button" title="Lembretes">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
           Lembretes
         </button>
-        <button id="nav-emails" class="nav-item" type="button" aria-haspopup="dialog" aria-controls="email-painel">
+        <button id="nav-emails" class="nav-item chat-tool-only" type="button" aria-haspopup="dialog" aria-controls="email-painel">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           E-mails
         </button>
-        <button id="nav-spotify" class="nav-item" type="button" title="Spotify" aria-haspopup="dialog" aria-controls="spotify-drawer">
+        <button id="nav-spotify" class="nav-item chat-tool-only" type="button" title="Spotify" aria-haspopup="dialog" aria-controls="spotify-drawer">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M7.2 9.3c3.6-1.1 7.8-.7 10.5 1.1M8 12.2c3-.8 6.4-.4 8.7 1M8.8 15c2.3-.5 4.7-.2 6.8.8"/></svg>
           Spotify
         </button>
-        <button id="nav-contatos" class="nav-item" type="button">
+        <button id="nav-contatos" class="nav-item chat-tool-only" type="button">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1 0 7.75"/></svg>
           Contatos
         </button>
-        <button id="nav-prospeccao" class="nav-item" type="button" title="Buscar empresas">
+        <button id="nav-prospeccao" class="nav-item chat-tool-only" type="button" title="Buscar empresas">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5M8 10h5M10.5 7.5v5"/></svg>Empresas
         </button>
-        <button id="btn-tendencias" class="nav-item" type="button" title="Tendências">
+        <button id="nav-dev-agent" class="nav-item chat-tool-only" type="button" title="Dev Agent" aria-haspopup="dialog" aria-controls="dev-agent-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/></svg>Dev Agent
+        </button>
+        <button id="btn-tendencias" class="nav-item chat-tool-only" type="button" title="Tendências">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>Tendências
         </button>
-        <button id="btn-plano-hoje" class="nav-item" type="button" title="Plano de hoje">
+        <button id="btn-plano-hoje" class="nav-item chat-tool-only" type="button" title="Plano de hoje">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M8 11h8M8 15h5"/></svg>Plano de hoje
         </button>
-        <button id="btn-revisao-semanal" class="nav-item" type="button" title="Resumo semanal">
+        <button id="btn-revisao-semanal" class="nav-item chat-tool-only" type="button" title="Resumo semanal">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 15v-3M12 15V8M17 15v-5"/></svg>Resumo semanal
         </button>
-        <button id="nav-routines" class="nav-item" type="button" title="Ver quadros e criar rotina" aria-controls="routine-board" aria-expanded="false">
+        <button id="nav-routines" class="nav-item chat-tool-only" type="button" title="Ver quadros e criar rotina" aria-controls="routine-board" aria-expanded="false">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Rotinas
         </button>
         <button id="nav-profile" class="nav-item" type="button" title="Configurações" aria-haspopup="dialog" aria-controls="profile-drawer">
@@ -212,6 +215,28 @@
         <section class="profile-section">
           <h3>Para revisar</h3>
           <div id="prospeccao-leads" class="prospeccao-leads"><p class="profile-message">Carregando empresas…</p></div>
+        </section>
+      </div>
+    </aside>
+
+    <div id="dev-agent-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="dev-agent-drawer" class="profile-drawer dev-agent-drawer" role="dialog" aria-modal="true" aria-labelledby="dev-agent-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="dev-agent-back" type="button" class="profile-back" aria-label="Voltar" title="Voltar"></button>
+        <h2 id="dev-agent-title">Dev Agent</h2>
+        <button id="dev-agent-close" type="button" class="profile-close" aria-label="Fechar Dev Agent">×</button>
+      </header>
+      <div class="dev-agent-content">
+        <form id="dev-agent-form" class="dev-agent-form">
+          <label>Repositório (organização/projeto)<input id="dev-agent-repository" name="repositorio" placeholder="ex.: minha-equipe/meu-projeto" required maxlength="140" autocomplete="off"></label>
+          <label>Descrição da tarefa<textarea id="dev-agent-description" name="descricao" rows="4" minlength="10" maxlength="4000" required placeholder="Descreva o resultado esperado"></textarea></label>
+          <label>Provider<select id="dev-agent-provider" name="provider"><option value="gemini">Gemini</option><option value="ollama">Local (Ollama)</option></select></label>
+          <button id="dev-agent-create" type="submit" class="profile-save">Criar tarefa e plano</button>
+        </form>
+        <p id="dev-agent-message" class="dev-agent-message" role="status" aria-live="polite"></p>
+        <section class="dev-agent-task-section" aria-labelledby="dev-agent-list-title">
+          <header><h3 id="dev-agent-list-title">Tarefas</h3><button id="dev-agent-refresh" type="button" class="profile-cancel">Atualizar</button></header>
+          <div id="dev-agent-tasks" class="dev-agent-tasks" aria-live="polite"><p class="profile-message">Carregando tarefas…</p></div>
         </section>
       </div>
     </aside>

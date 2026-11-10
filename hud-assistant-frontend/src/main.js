@@ -18,6 +18,8 @@ import { falar } from './voice/ttsManager.js';
 import { exigirLogin, validarSessao, sair, BACKEND_URL } from './authGuard.js';
 import { iniciarMenuLateral } from './sideMenu.js';
 import { iniciarProspeccao } from './prospeccao.js';
+import { iniciarDevAgent } from './devAgent.js';
+import { tentarAtalhoFerramentaChat } from './chatToolBridge.js';
 import { iniciarSpotify } from './spotify.js';
 import { carregarCalendarioUI } from './calendario.js';
 import { iniciarModuloContatos } from './contatos.js';
@@ -313,6 +315,7 @@ const socket = conectarSocket({
 
 iniciarMenuLateral(socket);
 iniciarProspeccao();
+const processarComandoDevAgent = iniciarDevAgent();
 iniciarSpotify();
 
 window.recarregarEsferaNeural = carregarMemoriasECerebro;
@@ -593,6 +596,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnEnviar) btnEnviar.disabled = true;
 
       try {
+        if (await processarComandoDevAgent?.(texto)) return;
+        if (await tentarAtalhoFerramentaChat(texto, { adicionarMensagem: adicionarMensagemChat })) return;
         let preferencias = {};
         try { preferencias = JSON.parse(localStorage.getItem('urfilig_preferencias') || '{}'); } catch { /* mantém as preferências padrão */ }
         const resp = await fetch(`${BACKEND_URL}/api/comando`, {
@@ -622,6 +627,9 @@ document.addEventListener('DOMContentLoaded', () => {
             falar(dados.resposta);
           }
           if (typeof registroRotina === 'string') adicionarMensagemChat('Rotina', registroRotina);
+          if (dados.eventoCriado && typeof window.carregarCalendarioUI === 'function') {
+  await window.carregarCalendarioUI();
+}
           carregarMemoriasECerebro();
           if (typeof window.recarregarInterfaceNotas === 'function') {
             window.recarregarInterfaceNotas();

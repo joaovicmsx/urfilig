@@ -1,5 +1,6 @@
-// Consulte a nota "Migração para Banco de Dados Relacional" no Obsidian
-// pra contexto completo de por que cada modelo existe.
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider  = "postgresql"
@@ -7,64 +8,51 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-// ---------- Autenticação / multiusuário ----------
-
 model Usuario {
-  id                  String   @id @default(cuid())
-  email               String   @unique
+  id                  String              @id @default(cuid())
+  email               String              @unique
   nome                String?
-  senhaHash           String? // null se a conta só usa login via Google
-  googleId            String?  @unique
-  criadoEm            DateTime @default(now())
-
+  senhaHash           String?
+  googleId            String?             @unique
+  criadoEm            DateTime            @default(now())
   idade               Int?
   localizacao         String?
   profissao           String?
-  hobbies             String? // separado por vírgula
-  onboardingConcluido Boolean  @default(false)
-
+  hobbies             String?
+  onboardingConcluido Boolean             @default(false)
+  itensAgenda         AgendaItem[]
+  bordoes             Bordao[]
+  contatos            Contato[]
+  tarefasDevAgent     DevAgentTask[]
+  diretrizes          Diretriz[]
+  estatisticasUso     EstatisticaUso[]
+  eventosCalendario   Evento[]
   leads               Lead[]
   memorias            Memory[]
-  diretrizes          Diretriz[]
-  reflexoes           Reflexao[]
-  itensAgenda         AgendaItem[]
-  eventosCalendario   Evento[]
-  temperamentos       Temperamento[]
-  bordoes             Bordao[]
-  registrosEmocionais RegistroEmocional[]
-  estatisticasUso     EstatisticaUso[]
-  
-  pastas              Pasta[]
   notas               Nota[]
-  contatos            Contato[]
+  pastas              Pasta[]
+  reflexoes           Reflexao[]
+  registrosEmocionais RegistroEmocional[]
+  temperamentos       Temperamento[]
 }
-
-// ---------- Calendário ----------
 
 model Evento {
-  id          String    @id @default(cuid())
-  usuarioId   String
-  usuario     Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  titulo      String
-  descricao   String?
-  dataInicio  DateTime
-  dataFim     DateTime?
-  cor         String?   @default("#3b82f6")
-  etiqueta    String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id         String    @id @default(cuid())
+  usuarioId  String
+  titulo     String
+  descricao  String?
+  dataInicio DateTime
+  dataFim    DateTime?
+  cor        String?   @default("#3b82f6")
+  etiqueta   String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
-
-// ---------- Módulo de Vendas (CRM/leads) ----------
 
 model Lead {
   id              String    @id @default(cuid())
   usuarioId       String
-  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   nome            String
   contato         String
   nicho           String?
@@ -75,22 +63,21 @@ model Lead {
   ultimaInteracao DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@unique([usuarioId, contato])
 }
 
-// ---------- Memória do usuário + grafo ----------
-
 model Memory {
   id         String       @id @default(cuid())
   usuarioId  String
-  usuario    Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   categoria  String
   titulo     String
   conteudo   String
   tags       String
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
+  usuario    Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   linksSaida MemoryLink[] @relation("LinksDeOrigem")
 }
 
@@ -103,129 +90,137 @@ model MemoryLink {
   @@unique([origemId, destinoId])
 }
 
-// ---------- Cofre-IA / RAG leve ----------
-
 model Diretriz {
   id        String   @id @default(cuid())
   usuarioId String
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   conteudo  String
   tags      String
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model Reflexao {
   id        String   @id @default(cuid())
   usuarioId String
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   conteudo  String
   data      DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
-
-// ---------- Persona Agêntica (personalidade autônoma) ----------
 
 model Temperamento {
   id           String   @id @default(cuid())
   usuarioId    String
-  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   traco        String
   intensidade  Int      @default(1)
   evidencia    String
   ativo        Boolean  @default(true)
   createdAt    DateTime @default(now())
   atualizadoEm DateTime @updatedAt
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model Bordao {
   id         String   @id @default(cuid())
   usuarioId  String
-  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   situacao   String
   texto      String
   vezesUsado Int      @default(0)
   createdAt  DateTime @default(now())
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model RegistroEmocional {
   id                  String   @id @default(cuid())
   usuarioId           String
-  usuario             Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   sentimentoDetectado String
   contexto            String
   respostaDada        String?
   createdAt           DateTime @default(now())
+  usuario             Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model EstatisticaUso {
   id        String   @id @default(cuid())
   usuarioId String
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   tipo      String
   detalhe   String?
   createdAt DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
-
-// ---------- Agenda (alimenta a saudação diária) ----------
 
 model AgendaItem {
   id        String   @id @default(cuid())
   usuarioId String
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   titulo    String
   horario   String?
   data      DateTime @default(now())
   concluido Boolean  @default(false)
   createdAt DateTime @default(now())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
-
-// ---------- Notas do Cérebro (Pastas e Notas) ----------
 
 model Pasta {
   id        Int      @id @default(autoincrement())
   usuarioId String
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   nome      String
   createdAt DateTime @default(now())
-  
   notas     Nota[]
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model Nota {
   id          Int      @id @default(autoincrement())
   pastaId     Int?
-  pasta       Pasta?   @relation(fields: [pastaId], references: [id], onDelete: Cascade)
   usuarioId   String
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   titulo      String
   conteudo    String
   importante  Boolean  @default(false)
   ordem       Int      @default(0)
   dataCriacao DateTime @default(now())
+  pasta       Pasta?   @relation(fields: [pastaId], references: [id], onDelete: Cascade)
+  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
-// ---------- Módulo de Contatos (CRM / Consultoria Financeira) ----------
-
 model Contato {
-  id                 String    @id @default(cuid())
-  usuarioId          String
-  usuario            Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  nome               String
-  telefone           String?
-  email              String?
-  
-  // Gestão de Agendamento/Contato
-  dataContato        DateTime?
-  tipoData           String?   @default("PROXIMO_CONTATO") // "ULTIMO_CONTATO" ou "PROXIMO_CONTATO"
-  
-  // Informações para Consultoria Financeira
-  status             String?   @default("LEAD") // Lead, Reunião Agendada, Proposta Enviada, Cliente Ativo, Inativo
-  perfilInvestidor   String?   // Conservador, Moderado, Arrojado
-  patrimonioEstimado String?   // Ex: R$ 100k - 500k
-  objetivoFinanceiro String?   // Ex: Aposentadoria, Compra de Imóvel, Proteção
-  anotacoes          String?
+  id                     String    @id @default(cuid())
+  usuarioId              String
+  nome                   String
+  telefone               String?
+  email                  String?
+  dataContato            DateTime?
+  tipoData               String?   @default("PROXIMO_CONTATO")
+  status                 String?   @default("LEAD")
+  perfilInvestidor       String?
+  patrimonioEstimado     String?
+  objetivoFinanceiro     String?
+  anotacoes              String?
   consentimentoContatoEm DateTime?
-  
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  usuario                Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
+
+model DevAgentTask {
+  id          String             @id @default(cuid())
+  usuarioId   String
+  repositorio String
+  descricao   String
+  status      DevAgentTaskStatus @default(PLANEJADA)
+  plano       Json
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  usuario     Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, createdAt])
+}
+
+enum DevAgentTaskStatus {
+  PLANEJADA
+  AGUARDANDO_APROVACAO
+  APROVADA
+  EM_EXECUCAO
+  CONCLUIDA
+  BLOQUEADA
+  CANCELADA
 }
