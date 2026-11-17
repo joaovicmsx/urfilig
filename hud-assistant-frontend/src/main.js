@@ -26,7 +26,203 @@ import { iniciarModuloContatos } from './contatos.js';
 import { iniciarQuadrosRotina } from './routineBoards.js';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { emitTo, listen as listenTauri } from '@tauri-apps/api/event';
-import { adicionarMensagemChat, iniciarNovaConversaChat, inicializarConversasChat, lerHistoricoChat, renderizarListaConversasChat, restaurarHistoricoChat } from './chatHistory.js';
+import { adicionarMensagemChat, iniciarNovaConversaChat, inicializarConversasChat, lerHistoricoChat, mostrarIndicadorPensando, ocultarIndicadorPensando, renderizarListaConversasChat, restaurarHistoricoChat, rolarChatParaFim } from './chatHistory.js';
+
+// Camada final do chat: aplicada pelo JavaScript para não ser sobrescrita pelos temas globais.
+function aplicarVisualFinalDoChat() {
+  if (document.getElementById('urfilig-chat-visual-final')) return;
+  const estilo = document.createElement('style');
+  estilo.id = 'urfilig-chat-visual-final';
+  estilo.textContent = `
+    #chat-painel { z-index: 10040 !important; }
+    /* O canvas frontal é irmão do chat. Camadas globais devem ficar acima dele. */
+    #menu-backdrop, .menu-backdrop, .profile-backdrop { z-index: 10049 !important; }
+    #menu-lateral, .menu-lateral, .profile-drawer, .sidebar-cerebro, .sidebar,
+    #email-painel, #routine-sidebar-list:not([hidden]) { z-index: 10050 !important; }
+    #modal-backdrop { z-index: 10059 !important; }
+    #obsidian-modal, .intel-modal, .microfone-modal, .routine-modal-backdrop,
+    .modal-overlay, .folder-move-backdrop, #modal-nota-detalhes, #modal-contato-form,
+    #modal-evento-overlay, #urfilig-context-menu,
+    body > div[style*="z-index: 10000"] { z-index: 10060 !important; }
+    /* Mesmo timing do menu lateral: o painel fica montado e a classe muda apenas seu estado visual. */
+    #chat-historico.chat-historico-direita {
+      position: fixed !important; inset: auto !important; top: 50vh !important; left: 50vw !important;
+      width: min(920px, calc(100vw - 72px)) !important;
+      height: min(610px, calc(100vh - 190px)) !important; min-height: 400px !important;
+      margin: 0 !important; overflow: hidden !important;
+      padding-bottom: 82px !important; box-sizing: border-box !important;
+      opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;
+      transform: translate3d(calc(-50% + var(--chat-origem-x, 0px)), calc(-50% + var(--chat-origem-y, 0px)), 0) scale(.24) !important;
+      transform-origin: center center !important;
+      transition: transform .26s cubic-bezier(.22, 1, .36, 1), opacity .16s ease, visibility 0s linear .26s, border-radius .26s cubic-bezier(.22, 1, .36, 1) !important;
+      animation: none !important;
+      background: rgba(12,18,40,.045) !important;
+      border: 1px solid rgba(255,255,255,.18) !important; border-top-color: rgba(255,255,255,.28) !important;
+      border-radius: 30px !important;
+      box-shadow: 0 22px 58px rgba(0,0,0,.22), inset 0 1px 1px rgba(255,255,255,.18) !important;
+      backdrop-filter: blur(20px) saturate(118%) !important; -webkit-backdrop-filter: blur(20px) saturate(118%) !important;
+    }
+    #chat-historico.chat-historico-direita.chat-aberto {
+      opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;
+      transform: translate3d(-50%, -50%, 0) scale(1) !important;
+      border-radius: 30px !important;
+      transition: transform .26s cubic-bezier(.22, 1, .36, 1), opacity .16s ease, visibility 0s linear 0s, border-radius .26s cubic-bezier(.22, 1, .36, 1) !important;
+    }
+    #chat-historico.chat-historico-direita.is-chat-closing { pointer-events: none !important; }
+    #chat-historico .chat-historico-header,
+    #chat-historico .chat-conversation-workspace,
+    #chat-historico .chat-current-conversation { background: transparent !important; }
+    #chat-historico .chat-conversations-panel { background: transparent !important; border-right-color: rgba(255,255,255,.10) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+    #chat-historico .chat-conversations-heading { color: rgba(226,232,240,.38) !important; }
+    #chat-sidebar-history, #chat-sidebar-conversation-list { background: transparent !important; }
+    #chat-historico .chat-conversation-item, #chat-sidebar-history .chat-conversation-item {
+      display: flex !important; flex-direction: column !important; gap: .22rem !important; appearance: none !important;
+      background: transparent !important; background-color: transparent !important; background-image: none !important;
+      border: 1px solid transparent !important; color: rgba(237,242,255,.64) !important; box-shadow: none !important;
+    }
+    #chat-historico .chat-conversation-item::before, #chat-historico .chat-conversation-item::after,
+    #chat-sidebar-history .chat-conversation-item::before, #chat-sidebar-history .chat-conversation-item::after { content: none !important; display: none !important; }
+    #chat-historico .chat-conversation-item small, #chat-sidebar-history .chat-conversation-item small { display: none !important; }
+    #chat-historico .chat-conversation-item time, #chat-sidebar-history .chat-conversation-item time { color: rgba(226,232,240,.38) !important; font-size: .69rem !important; }
+    #chat-historico .chat-conversation-item:hover, #chat-sidebar-history .chat-conversation-item:hover { background: transparent !important; background-image: none !important; border-color: rgba(255,255,255,.065) !important; color: rgba(255,255,255,.90) !important; }
+    #chat-historico .chat-conversation-item.ativa, #chat-sidebar-history .chat-conversation-item.ativa { background: transparent !important; background-image: none !important; border-color: rgba(255,255,255,.10) !important; color: #fff !important; box-shadow: none !important; }
+    #chat-historico .chat-conversation-title, #chat-sidebar-history .chat-conversation-title { color: inherit !important; }
+    #chat-historico #chat-mensagens { background: transparent !important; }
+    #chat-historico .chat-msg.urfilig { background: rgba(255,255,255,.014) !important; border: 0 !important; box-shadow: 0 8px 20px rgba(4,8,22,.045) !important; backdrop-filter: blur(5px) !important; -webkit-backdrop-filter: blur(5px) !important; }
+    #chat-historico .chat-msg.usuario { background: rgba(116,82,192,.026) !important; border: 0 !important; box-shadow: 0 8px 20px rgba(94,65,157,.045) !important; backdrop-filter: blur(5px) !important; -webkit-backdrop-filter: blur(5px) !important; }
+    #chat-historico .chat-conversations-panel, #chat-historico #chat-mensagens { scrollbar-width: thin !important; scrollbar-color: rgba(255,255,255,.34) transparent !important; }
+    #chat-historico .chat-conversations-panel::-webkit-scrollbar, #chat-historico #chat-mensagens::-webkit-scrollbar { width: 7px !important; }
+    #chat-historico .chat-conversations-panel::-webkit-scrollbar-track, #chat-historico #chat-mensagens::-webkit-scrollbar-track { background: transparent !important; }
+    #chat-historico .chat-conversations-panel::-webkit-scrollbar-thumb, #chat-historico #chat-mensagens::-webkit-scrollbar-thumb { background: rgba(255,255,255,.28) !important; border: 2px solid transparent !important; border-radius: 99px !important; background-clip: padding-box !important; }
+    #chat-historico .chat-conversations-panel::-webkit-scrollbar-thumb:hover, #chat-historico #chat-mensagens::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.48) !important; background-clip: padding-box !important; }
+    #chat-historico .chat-resposta-acao,
+    #chat-historico .chat-resposta-acao:hover,
+    #chat-historico .chat-resposta-acao:focus,
+    #chat-historico .chat-resposta-acao:active,
+    #chat-historico .chat-resposta-acao:disabled {
+      background: transparent !important; border: 0 !important; box-shadow: none !important; outline: 0 !important;
+      width: 26px !important; height: 26px !important; padding: 0 !important; color: rgba(235,241,255,.88) !important;
+    }
+    #chat-historico .chat-resposta-acao:hover { color: #fff !important; transform: scale(1.12) !important; }
+    #chat-historico .chat-resposta-acao.esta-ouvindo { color: #d8c7ff !important; animation: urfiligIconeOuvindo .85s ease-in-out infinite !important; }
+    #chat-historico .chat-resposta-acao svg { width: 17px !important; height: 17px !important; pointer-events: none !important; }
+    /* A barra e seus controles são independentes da janela do histórico. */
+    #chat-restaurar {
+      display: none !important;
+      width: 52px !important; height: 52px !important; min-width: 52px !important; min-height: 52px !important;
+      padding: 0 !important; box-sizing: border-box !important; border-radius: 50% !important; overflow: hidden !important;
+      align-items: center !important; justify-content: center !important;
+      transform: none !important; isolation: isolate !important;
+    }
+    #chat-restaurar svg { display: block !important; width: 22px !important; height: 22px !important; flex: 0 0 22px !important; }
+    #chat-restaurar[hidden] { display: none !important; }
+    #chat-restaurar:hover { transform: translateY(-2px) !important; }
+    /* Barra permanente: não pertence à janela do histórico, fica sempre no centro inferior. */
+    #chat-composer {
+      position: fixed !important; z-index: 10042 !important; left: 50% !important; top: 50% !important; bottom: auto !important;
+      width: min(740px, calc(100vw - 48px)) !important; transform: translate(-50%, -50%) !important;
+      display: flex !important; align-items: center !important; gap: 9px !important; pointer-events: auto !important;
+    }
+    #chat-composer .chat-form-inferior {
+      position: relative !important; z-index: auto !important; left: auto !important; bottom: auto !important; top: auto !important;
+      flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; height: 132px !important; min-height: 132px !important; box-sizing: border-box !important;
+      display: grid !important; grid-template-columns: minmax(0,1fr) !important; grid-template-rows: 20px minmax(24px,1fr) 34px !important;
+      transform: none !important; padding: 14px 16px 12px !important; gap: 5px 8px !important; align-items: center !important;
+      border-radius: 30px !important; background: var(--composer-surface) !important;
+      border: 0 !important; outline: 0 !important; box-shadow: 0 18px 42px rgba(0,0,0,.16) !important;
+      backdrop-filter: blur(24px) saturate(120%) !important; -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
+    }
+    #chat-composer .chat-form-inferior::before { content: "Clique para conversar" !important; grid-column: 1 / -1 !important; grid-row: 1 !important; color: var(--text-secondary) !important; font-size: .82rem !important; }
+    #chat-composer #chat-input { grid-column: 1 / -1 !important; grid-row: 2 !important; align-self: start !important; height: 30px !important; padding: 0 !important; color: var(--text-primary) !important; background: transparent !important; border: 0 !important; box-shadow: none !important; font-size: .86rem !important; line-height: 1.2 !important; }
+    #chat-composer .chat-btn-enviar { min-height: 32px !important; margin-left: 2px !important; padding: 5px 14px !important; border-radius: 17px !important; font-size: .72rem !important; }
+    #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 3 !important; display: flex !important; align-items: center !important; gap: 8px !important; width: 100% !important; min-width: 0 !important; }
+    /* Nova conversa: bolha independente, no fim do compositor, ao lado de Enviar. */
+    #chat-composer #chat-new-conversation {
+      position: relative !important; z-index: 10045 !important; flex: 0 0 32px !important;
+      width: 32px !important; height: 32px !important; min-width: 32px !important; padding: 0 !important;
+      display: grid !important; place-items: center !important; border-radius: 50% !important; overflow: hidden !important;
+      color: var(--text-primary) !important; background: var(--composer-control) !important;
+      border: 1px solid rgba(255,255,255,.25) !important; box-shadow: 0 5px 14px rgba(0,0,0,.18) !important;
+      font-size: 0 !important; line-height: 1 !important; backdrop-filter: blur(15px) saturate(125%) !important;
+      -webkit-backdrop-filter: blur(15px) saturate(125%) !important;
+    }
+    #chat-composer #chat-new-conversation::before { content: '+' !important; font-size: 22px !important; font-weight: 300 !important; line-height: 1 !important; }
+    #chat-composer #chat-new-conversation { margin-right: auto !important; }
+    #chat-composer #chat-new-conversation:hover { background: var(--composer-control-hover) !important; transform: translateY(-1px) !important; }
+    #chat-historico .chat-historico-header { pointer-events: none !important; }
+    #chat-historico .chat-historico-header #chat-minimizar, #chat-composer #chat-new-conversation { pointer-events: auto !important; }
+    #chat-composer .chat-form-inferior { overflow: visible !important; }
+    #chat-composer #chat-model-control {
+      position: relative !important; z-index: 10043 !important; display: flex !important; align-items: center !important;
+      flex: 0 0 auto !important; height: 32px !important; margin-left: auto !important;
+    }
+    #chat-model-trigger { height: 32px !important; min-width: 78px !important; padding: 0 9px !important; border-radius: 11px !important; font-size: .7rem !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 6px !important; white-space: nowrap !important; }
+    #chat-model-trigger svg { width: 13px !important; height: 13px !important; flex: 0 0 13px !important; }
+    #chat-model-menu { position: absolute !important; z-index: 10044 !important; right: 0 !important; bottom: calc(100% + 7px) !important; min-width: 116px !important; }
+    #chat-model-menu[hidden] { display: none !important; }
+    #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 22px !important; transform: translateX(-50%) !important; }
+    #chat-painel.chat-expanded #chat-composer .chat-form-inferior { height: 76px !important; min-height: 76px !important; grid-template-columns: minmax(0,1fr) !important; grid-template-rows: 32px 34px !important; padding: 4px 9px !important; gap: 2px !important; border-radius: 28px !important; }
+    #chat-painel.chat-expanded #chat-composer .chat-form-inferior::before { display: none !important; }
+    #chat-painel.chat-expanded #chat-composer #chat-input { grid-column: 1 !important; grid-row: 1 !important; align-self: center !important; height: 32px !important; }
+    #chat-painel.chat-expanded #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 2 !important; justify-content: flex-end !important; }
+    #chat-painel.chat-expanded #chat-composer #chat-new-conversation { margin-right: auto !important; }
+    @media (max-width: 720px) { #chat-composer { width: calc(100vw - 24px) !important; top: 50% !important; gap: 6px !important; } #chat-model-trigger { min-width: 68px !important; padding: 0 7px !important; } #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 14px !important; } }
+    #chat-historico .chat-menu-compartilhar { background: rgba(34,40,78,.42) !important; border-color: rgba(255,255,255,.24) !important; backdrop-filter: blur(18px) !important; -webkit-backdrop-filter: blur(18px) !important; }
+    @keyframes urfiligIconeOuvindo { 50% { opacity: .42; transform: scale(1.18); } }
+    @media (max-width: 720px) {
+      #chat-historico.chat-historico-direita { width: calc(100vw - 24px) !important; height: min(610px, calc(100vh - 150px)) !important; min-height: 350px !important; }
+    }
+  `;
+  document.head.appendChild(estilo);
+
+  const iconeOuvir = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6.5 9H3v6h3.5l4.5 4V5Z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6"/><path d="M18 6.5a7.7 7.7 0 0 1 0 11"/></svg>';
+  const aplicar = (elemento, propriedades) => {
+    if (!elemento) return;
+    Object.entries(propriedades).forEach(([chave, valor]) => elemento.style.setProperty(chave, valor, 'important'));
+  };
+  const reforcarVisual = () => {
+    const historico = document.getElementById('chat-historico');
+    aplicar(historico, {
+      position: 'fixed', inset: 'auto', top: '50vh', left: '50vw', right: 'auto', bottom: 'auto',
+      width: 'min(920px, calc(100vw - 72px))', height: 'min(610px, calc(100vh - 190px))',
+      'min-height': '400px', margin: '0',
+      background: 'rgba(12,18,40,.045)', 'border-radius': '30px', 'border-color': 'rgba(255,255,255,.18)',
+      'border-top-color': 'rgba(255,255,255,.28)', 'box-shadow': '0 22px 58px rgba(0,0,0,.22), inset 0 1px 1px rgba(255,255,255,.18)',
+      'backdrop-filter': 'blur(20px) saturate(118%)', '-webkit-backdrop-filter': 'blur(20px) saturate(118%)'
+    });
+    historico?.classList.toggle('chat-aberto', historico.style.display !== 'none' && !historico.classList.contains('is-chat-closing'));
+    document.querySelectorAll('#chat-historico .chat-historico-header, #chat-historico .chat-conversation-workspace, #chat-historico .chat-current-conversation, #chat-historico #chat-mensagens').forEach((area) => aplicar(area, {
+      background: 'transparent'
+    }));
+    document.querySelectorAll('#chat-historico .chat-conversations-panel').forEach((painel) => aplicar(painel, {
+      background: 'transparent', 'border-right-color': 'rgba(255,255,255,.10)', 'backdrop-filter': 'none', '-webkit-backdrop-filter': 'none'
+    }));
+    document.querySelectorAll('#chat-historico .chat-conversation-item, #chat-sidebar-history .chat-conversation-item').forEach((item) => aplicar(item, {
+      background: 'transparent', 'background-color': 'transparent', 'background-image': 'none', border: '1px solid transparent', 'box-shadow': 'none'
+    }));
+    document.querySelectorAll('#chat-historico .chat-msg.urfilig').forEach((mensagem) => aplicar(mensagem, {
+      background: 'rgba(255,255,255,.014)', border: '0', 'box-shadow': '0 8px 20px rgba(4,8,22,.045)'
+    }));
+    document.querySelectorAll('#chat-historico .chat-msg.usuario').forEach((mensagem) => aplicar(mensagem, {
+      background: 'rgba(116,82,192,.026)', border: '0', 'box-shadow': '0 8px 20px rgba(94,65,157,.045)'
+    }));
+    document.querySelectorAll('#chat-historico .chat-resposta-acao').forEach((botao) => aplicar(botao, {
+      background: 'transparent', border: '0', 'box-shadow': 'none', outline: '0', padding: '0', width: '26px', height: '26px'
+    }));
+  };
+  const corrigirBotaoOuvir = (botao) => {
+    if (!botao || botao.querySelector('svg')) return;
+    botao.innerHTML = iconeOuvir;
+  };
+  reforcarVisual();
+  document.querySelectorAll('#chat-historico .chat-acao-ouvir').forEach(corrigirBotaoOuvir);
+  new MutationObserver(() => {
+    reforcarVisual();
+    document.querySelectorAll('#chat-historico .chat-acao-ouvir').forEach(corrigirBotaoOuvir);
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+}
+
+document.addEventListener('DOMContentLoaded', aplicarVisualFinalDoChat, { once: true });
 
 exigirLogin();
 validarSessao();
@@ -63,8 +259,8 @@ const camera = new THREE.PerspectiveCamera(52, (canvas?.getBoundingClientRect().
 camera.position.set(0, 0.65, 14);
 
 // --- Controlo de Zoom da Esfera ---
-let targetSphereScale = 1.0;
-const MIN_SCALE = 0.5;
+let targetSphereScale = 0.38;
+const MIN_SCALE = 0.18;
 const MAX_SCALE = 2.2;
 
 canvas.addEventListener('wheel', (event) => {
@@ -77,7 +273,7 @@ canvas.addEventListener('wheel', (event) => {
 const LIMITES_ESFERA = {
   minX: -4.0,
   maxX: 4.0,
-  minY: -2.5,
+  minY: -4.8,
   maxY: 2.5,
 };
 
@@ -129,9 +325,104 @@ const bloomPass = new UnrealBloomPass(
   0.8
 );
 composer.addPass(bloomPass);
-
 const smaaPass = new SMAAPass(window.innerWidth * dpr, window.innerHeight * dpr);
 composer.addPass(smaaPass);
+
+// A camada frontal é independente do painel, inclusive quando o chat está oculto.
+// Ela fica acima do histórico; o compositor e menus do chat são recortados abaixo.
+const cenaMascoteFrontal = new THREE.Scene();
+const canvasMascoteFrontal = document.createElement('canvas');
+canvasMascoteFrontal.id = 'mascote-frontal-canvas';
+canvasMascoteFrontal.setAttribute('aria-hidden', 'true');
+Object.assign(canvasMascoteFrontal.style, {
+  position: 'fixed', margin: '0', padding: '0', border: '0',
+  pointerEvents: 'none', zIndex: '10041',
+});
+document.body.appendChild(canvasMascoteFrontal);
+let rendererMascoteFrontal = null;
+let composerMascoteFallback = null;
+try {
+  rendererMascoteFrontal = new THREE.WebGLRenderer({
+    canvas: canvasMascoteFrontal, alpha: true, antialias: true, powerPreference: 'high-performance',
+  });
+  rendererMascoteFrontal.setClearColor(0x000000, 0);
+  rendererMascoteFrontal.setPixelRatio(dpr);
+  rendererMascoteFrontal.setSize(canvas?.getBoundingClientRect().width || window.innerWidth, window.innerHeight, false);
+  rendererMascoteFrontal.outputColorSpace = renderer.outputColorSpace;
+  rendererMascoteFrontal.toneMapping = renderer.toneMapping;
+  rendererMascoteFrontal.toneMappingExposure = renderer.toneMappingExposure;
+} catch (erro) {
+  // Se não houver segundo contexto WebGL, mantém o comportamento anterior
+  // em vez de interromper toda a interface.
+  rendererMascoteFrontal?.dispose();
+  rendererMascoteFrontal = null;
+  canvasMascoteFrontal.remove();
+  console.warn('[mascote] camada frontal indisponível; usando canvas original', erro);
+  composerMascoteFallback = new EffectComposer(renderer);
+  composerMascoteFallback.setPixelRatio(dpr);
+  composerMascoteFallback.setSize(canvas?.getBoundingClientRect().width || window.innerWidth, window.innerHeight);
+  const passMascoteFallback = new RenderPass(cenaMascoteFrontal, camera);
+  passMascoteFallback.clear = false;
+  passMascoteFallback.clearDepth = true;
+  composerMascoteFallback.addPass(passMascoteFallback);
+}
+
+// A projeção usa o retângulo real do canvas principal, inclusive a faixa lateral.
+function alinharCanvasMascoteFrontal() {
+  const rect = canvas.getBoundingClientRect();
+  canvasMascoteFrontal.style.left = `${rect.left}px`;
+  canvasMascoteFrontal.style.top = `${rect.top}px`;
+  canvasMascoteFrontal.style.width = `${rect.width}px`;
+  canvasMascoteFrontal.style.height = `${rect.height}px`;
+
+  // O compositor e os menus internos estão no contexto de empilhamento do chat.
+  // Recorta suas áreas sem movê-los, unindo sobreposições para a regra evenodd.
+  const menus = [];
+  document.querySelectorAll('#chat-composer, #chat-painel [role="menu"], #chat-painel .chat-conversation-menu').forEach((menu) => {
+    if (!menu.getClientRects().length || getComputedStyle(menu).visibility === 'hidden') return;
+    const r = menu.getBoundingClientRect();
+    const x1 = Math.max(0, r.left - rect.left), y1 = Math.max(0, r.top - rect.top);
+    const x2 = Math.min(rect.width, r.right - rect.left), y2 = Math.min(rect.height, r.bottom - rect.top);
+    if (x1 < x2 && y1 < y2) menus.push({ x1, y1, x2, y2 });
+  });
+  const recortes = [];
+  const limitesY = [...new Set(menus.flatMap(({ y1, y2 }) => [y1, y2]))].sort((a, b) => a - b);
+  for (let i = 0; i < limitesY.length - 1; i++) {
+    const y1 = limitesY[i], y2 = limitesY[i + 1];
+    const intervalos = menus.filter((r) => r.y1 < y2 && r.y2 > y1).sort((a, b) => a.x1 - b.x1);
+    let inicio = null, fim = null;
+    intervalos.forEach((r) => {
+      if (inicio === null) { inicio = r.x1; fim = r.x2; }
+      else if (r.x1 <= fim) fim = Math.max(fim, r.x2);
+      else { recortes.push(`M ${inicio} ${y1} H ${fim} V ${y2} H ${inicio} Z`); inicio = r.x1; fim = r.x2; }
+    });
+    if (inicio !== null) recortes.push(`M ${inicio} ${y1} H ${fim} V ${y2} H ${inicio} Z`);
+  }
+  canvasMascoteFrontal.style.clipPath = recortes.length
+    ? `path(evenodd, "M 0 0 H ${rect.width} V ${rect.height} H 0 Z ${recortes.join(' ')}")`
+    : 'none';
+}
+alinharCanvasMascoteFrontal();
+
+// O mascote é movido para esta cena na inicialização. Luzes pertencem à cena,
+// não ao renderer: sem esta cópia ele recebe só preto ao ser renderizado na
+// camada frontal, embora a cena principal esteja iluminada.
+const luzAmbienteMascoteFrontal = new THREE.AmbientLight(0xffffff, 2.15);
+const luzCeuMascoteFrontal = new THREE.HemisphereLight(0xddeaff, 0x483653, 1.25);
+const luzChaveMascoteFrontal = new THREE.DirectionalLight(0xfff1df, 2.4);
+luzChaveMascoteFrontal.position.set(-3.5, 3.5, 12);
+luzChaveMascoteFrontal.target.position.set(0, 0, 7);
+const luzRecorteMascoteFrontal = new THREE.DirectionalLight(0xaecbff, 1.15);
+luzRecorteMascoteFrontal.position.set(4, 1.5, 10);
+luzRecorteMascoteFrontal.target.position.set(0, .3, 7);
+cenaMascoteFrontal.add(
+  luzAmbienteMascoteFrontal,
+  luzCeuMascoteFrontal,
+  luzChaveMascoteFrontal,
+  luzChaveMascoteFrontal.target,
+  luzRecorteMascoteFrontal,
+  luzRecorteMascoteFrontal.target,
+);
 
 function criarFundoEtereo() {
   const geometria = new THREE.SphereGeometry(70, 32, 32);
@@ -181,6 +472,9 @@ let headTracker = null;
 let faceMesh = null;
 let muted = false;
 let mousePresenteNaTela = false;
+let mascotePensando = false;
+let escalaBaseMascote = 1;
+let escalaAlvoMascote = 1;
 
 let nodeArrastado = null;
 const planoArrasto = new THREE.Plane();
@@ -227,30 +521,22 @@ const memorySphere = new PersonalitySphere(scene, {
     syncAccessibleParticles(particles);
   },
 });
+// A esfera de relações passa a ocupar a região inferior do painel inicial,
+// como uma pequena constelação, sem sair da cena nem perder os controles 3D.
+memorySphere.grupo.position.set(0, -3.35, 0);
+memorySphere.grupo.scale.setScalar(0.38);
 
 function atualizarTemaPorHorario() {
   const rgb = getTimeColor();
   const cor = new THREE.Color(`rgb(${rgb.join(',')})`);
   const uniforms = fundoEtereo.material.uniforms;
-  const hora = new Date().getHours() + new Date().getMinutes() / 60;
-  const paleta = [
-    [0,  ['#263957', '#7d89a7', '#b99191', '#263650']],
-    [5,  ['#354b69', '#a18ca5', '#d49a7d', '#34445d']],
-    [7,  ['#9fc4df', '#c6bad5', '#e1c2a5', '#819fbe']],
-    [10, ['#aacde6', '#c9c5dc', '#e4d2b8', '#95b5d1']],
-    [14, ['#a6c5df', '#c9bfd9', '#e2c9ae', '#91a9c8']],
-    [16, ['#91afd0', '#c5a7be', '#dfa783', '#788fac']],
-    [18, ['#5d7399', '#b98e9e', '#d28e73', '#3c4b68']],
-    [20, ['#354a67', '#9c8ba5', '#ca967d', '#30405d']],
-    [22, ['#293c5a', '#818ba8', '#b88f88', '#293a55']],
-    [24, ['#263957', '#7d89a7', '#b99191', '#263650']],
-  ];
-  let indice = 0;
-  while (indice < paleta.length - 2 && hora > paleta[indice + 1][0]) indice++;
-  const [horaInicial, coresIniciais] = paleta[indice];
-  const [horaFinal, coresFinais] = paleta[indice + 1];
-  const fator = (hora - horaInicial) / (horaFinal - horaInicial);
-  const cores = coresIniciais.map((hex, i) => new THREE.Color(hex).lerp(new THREE.Color(coresFinais[i]), fator));
+  const agora = new Date();
+  const hora = agora.getHours() + agora.getMinutes() / 60;
+  const temaClaro = document.documentElement.dataset.theme === 'light';
+  const cores = (temaClaro
+    ? ['#f2e8ff', '#bfd1fa', '#78bce9', '#d1c7ef']
+    : ['#173568', '#10264d', '#091a38', '#050e23'])
+    .map((hex) => new THREE.Color(hex));
   uniforms.corTopo.value.copy(cores[0]);
   uniforms.corMeio.value.copy(cores[1]);
   uniforms.corBase.value.copy(cores[2]);
@@ -258,9 +544,33 @@ function atualizarTemaPorHorario() {
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
+  document.documentElement.style.setProperty('--aura-color', `rgba(${rgb.join(',')}, ${temaClaro ? '.36' : '.30'})`);
+  document.documentElement.dataset.timePeriod = hora < 11 ? 'morning' : hora < 17 ? 'afternoon' : 'night';
 }
 atualizarTemaPorHorario();
 setInterval(atualizarTemaPorHorario, 60_000);
+new MutationObserver(atualizarTemaPorHorario).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+function atualizarSaudacaoInicial() {
+  const titulo = document.getElementById('home-greeting-title');
+  const frase = document.getElementById('home-greeting-message');
+  if (!titulo || !frase) return;
+  const hora = new Date().getHours();
+  const periodo = hora < 12 ? 'Bom dia' : hora < 18 ? 'Boa tarde' : 'Boa noite';
+  let nome = '';
+  try {
+    const usuario = JSON.parse(localStorage.getItem('urfilig_usuario') || '{}');
+    nome = String(usuario.nome || '').trim().split(/\s+/)[0];
+  } catch { /* a saudação continua disponível sem o nome salvo */ }
+  titulo.textContent = `${periodo}${nome ? `, ${nome}` : ''}`;
+  frase.textContent = hora < 12
+    ? 'Que o seu dia comece com leveza. Vamos no seu ritmo.'
+    : hora < 18
+      ? 'Faça uma pausa, respire e siga no seu ritmo.'
+      : 'Desacelere um pouco. Amanhã é um novo começo.';
+}
+atualizarSaudacaoInicial();
+setInterval(atualizarSaudacaoInicial, 60_000);
 
 // CAPTURA DO BOTÃO DIREITO NO CANVAS
 canvas.addEventListener('contextmenu', (event) => {
@@ -291,6 +601,9 @@ const socket = conectarSocket({
     }
   },
   onResponse: ({ text, emotion, audio }) => {
+    ocultarIndicadorPensando();
+    mascotePensando = false;
+    escalaAlvoMascote = escalaBaseMascote;
     adicionarMensagemChat('Urfilig', text);
     if (audio) {
       const bytesRecebidos = typeof audio === 'string' ? Math.floor(audio.length * 3 / 4) : (audio.byteLength ?? audio.length ?? 0);
@@ -325,133 +638,166 @@ function atualizarBolinhasDaEsfera(particulas) {
   syncAccessibleParticles(particulas);
 }
 
-function ehParticulaDoCerebro(particula) {
-  const id = String(particula?.id || '');
-  const label = String(particula?.label || '');
-  return Boolean(particula?.isNote || particula?.isFolder)
-    || /^(hobby|pasta|nota)-/.test(id)
-    || id.startsWith('lembrete-')
-    || label.startsWith('Hobby: ');
+function fonteDaParticula(particula) {
+  const id = String(particula?.id ?? '');
+  if (id.startsWith('hobby-')) return 'perfil';
+  if (id.startsWith('pasta-')) return 'pastas';
+  if (id.startsWith('nota-')) return particula.folderRef ? 'pastas' : 'notasSoltas';
+  if (id.startsWith('lembrete-')) return 'lembretes';
+  // Versões antigas identificavam hobbies somente pelo rótulo.
+  if (!particula?.isFolder && !particula?.isNote && !particula?.isReminder
+      && typeof particula?.label === 'string' && particula.label.startsWith('Hobby: ')) return 'perfil';
+  return null;
+}
+
+function montarParticulasDaFonte(fonte, valor) {
+  const objeto = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+  const texto = (v) => typeof v === 'string' && v.trim().length > 0;
+  const idValido = (v) => (typeof v === 'string' && v.trim().length > 0)
+    || (typeof v === 'number' && Number.isSafeInteger(v));
+  const ids = new Set();
+  const registrar = (prefixo, id) => {
+    if (!idValido(id)) throw new Error('ID ausente ou inválido');
+    const chave = prefixo + id;
+    if (ids.has(chave)) throw new Error('ID duplicado');
+    ids.add(chave);
+    return chave;
+  };
+  const notaValida = (nota) => objeto(nota) && texto(nota.titulo);
+  const resultado = [];
+
+  if (fonte === 'perfil') {
+    if (!objeto(valor) || !objeto(valor.usuario)
+        || !Object.prototype.hasOwnProperty.call(valor.usuario, 'hobbies')) {
+      throw new Error('campo hobbies ausente');
+    }
+    const hobbies = valor.usuario.hobbies;
+    if (hobbies !== null && typeof hobbies !== 'string'
+        && !(Array.isArray(hobbies) && hobbies.every((hobby) => typeof hobby === 'string'))) {
+      throw new Error('hobbies inválidos');
+    }
+    const lista = hobbies === null ? [] : typeof hobbies === 'string' ? hobbies.split(',') : hobbies;
+    const nomes = new Set();
+    lista.forEach((hobby) => {
+      const nome = hobby.trim();
+      if (!nome || nomes.has(nome)) return;
+      nomes.add(nome);
+      resultado.push({ id: 'hobby-' + nome, titulo: nome, label: nome, strength: 0.8,
+        isFolder: false, isNote: false });
+    });
+  } else if (fonte === 'pastas') {
+    if (!Array.isArray(valor)) throw new Error('pastas não é uma lista');
+    valor.forEach((pasta) => {
+      if (!objeto(pasta) || !texto(pasta.nome) || !Array.isArray(pasta.notas)) {
+        throw new Error('pasta ou lista de notas inválida');
+      }
+      const folderObj = { id: registrar('pasta-', pasta.id), titulo: pasta.nome, label: pasta.nome,
+        strength: 0.9, isFolder: true, isNote: false };
+      resultado.push(folderObj);
+      pasta.notas.forEach((nota) => {
+        if (!notaValida(nota)) throw new Error('nota de pasta inválida');
+        resultado.push({ id: registrar('nota-', nota.id), titulo: nota.titulo, label: nota.titulo,
+          strength: 0.5, isFolder: false, isNote: true, folderRef: folderObj });
+      });
+    });
+  } else if (fonte === 'notasSoltas') {
+    if (!Array.isArray(valor)) throw new Error('notas soltas não é uma lista');
+    valor.forEach((nota) => {
+      if (!notaValida(nota)) throw new Error('nota solta inválida');
+      resultado.push({ id: registrar('nota-', nota.id), titulo: nota.titulo, label: nota.titulo,
+        strength: 0.4, isFolder: false, isNote: true, folderRef: null });
+    });
+  } else if (fonte === 'lembretes') {
+    if (!Array.isArray(valor)) throw new Error('lembretes não é uma lista');
+    valor.forEach((lembrete) => {
+      if (!objeto(lembrete) || !texto(lembrete.titulo)
+          || (lembrete.concluido != null && typeof lembrete.concluido !== 'boolean')) {
+        throw new Error('lembrete inválido');
+      }
+      const id = registrar('lembrete-', lembrete.id);
+      if (!lembrete.concluido) resultado.push({ id, titulo: lembrete.titulo,
+        label: `Lembrete: ${lembrete.titulo}`, strength: 0.65,
+        isFolder: false, isNote: false, isReminder: true });
+    });
+  }
+  return resultado;
 }
 
 async function carregarMemoriasECerebro() {
   const token = localStorage.getItem('urfilig_token');
   if (!token) return;
 
+  const buscarJson = async (rota) => {
+    const resposta = await fetch(`${BACKEND_URL}${rota}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!resposta.ok) throw new Error(`${rota}: HTTP ${resposta.status}`);
+    return resposta.json();
+  };
+
   try {
-    const particulas = [];
-
-    const respMe = await fetch(`${BACKEND_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
+    const nomes = ['perfil', 'pastas', 'notasSoltas', 'lembretes'];
+    // O backend de cérebro também responde 200 [] em alguns erros; essa resposta
+    // é indistinguível de uma lista legitimamente vazia sem alterar o backend.
+    const respostas = await Promise.allSettled([
+      buscarJson('/api/auth/me'),
+      buscarJson('/api/cerebro/pastas'),
+      buscarJson('/api/cerebro/notas-soltas'),
+      buscarJson('/api/agenda?lembretes=1'),
+    ]);
+    const atualizacoes = {};
+    respostas.forEach((resposta, indice) => {
+      const fonte = nomes[indice];
+      try {
+        if (resposta.status !== 'fulfilled') throw resposta.reason;
+        // Montagem transacional: nenhuma parte de uma fonte inválida é aplicada.
+        atualizacoes[fonte] = montarParticulasDaFonte(fonte, resposta.value);
+      } catch (erro) {
+        console.warn(`[main] Fonte ${fonte} preservada:`, erro?.message || 'resposta inválida');
+      }
     });
-    if (!respMe.ok) return;
-    if (respMe.ok) {
-      const { usuario } = await respMe.json();
-      if (usuario?.hobbies) {
-        const hobbiesLista = typeof usuario.hobbies === 'string'
-          ? usuario.hobbies.split(',')
-          : usuario.hobbies;
 
-        hobbiesLista.forEach((hobby) => {
-          const hobbyNome = hobby.trim();
-          if (hobbyNome) {
-            particulas.push({
-              id: 'hobby-' + hobbyNome,
-              titulo: hobbyNome,
-              label: hobbyNome,
-              strength: 0.8,
-              isFolder: false,
-              isNote: false,
-            });
+    // Notas usam IDs globais. Nunca sobrescrever uma fonte preservada nem aceitar
+    // o mesmo ID em duas respostas; rejeitar a atualização ambígua é mais seguro.
+    let houveConflito;
+    do {
+      houveConflito = false;
+      const donos = new Map();
+      const conflitantes = new Set();
+      const registrarDono = (id, fonte, atualizada) => {
+        if (!id) return;
+        const anteriores = donos.get(id) || [];
+        anteriores.forEach((anterior) => {
+          if (anterior.fonte !== fonte) {
+            if (atualizada) conflitantes.add(fonte);
+            if (anterior.atualizada) conflitantes.add(anterior.fonte);
           }
         });
-      }
-    }
+        anteriores.push({ fonte, atualizada });
+        donos.set(id, anteriores);
+      };
+      memorySphere.particulas.forEach((p) => {
+        const fonte = fonteDaParticula(p);
+        if (!fonte || !Object.prototype.hasOwnProperty.call(atualizacoes, fonte)) {
+          registrarDono(p?.id, fonte, false);
+        }
+      });
+      Object.entries(atualizacoes).forEach(([fonte, particulas]) => {
+        particulas.forEach((p) => registrarDono(p.id, fonte, true));
+      });
+      conflitantes.forEach((fonte) => {
+        delete atualizacoes[fonte];
+        console.warn(`[main] Fonte ${fonte} preservada: ID em conflito com outra fonte`);
+        houveConflito = true;
+      });
+    } while (houveConflito);
 
-    const respCerebro = await fetch(`${BACKEND_URL}/api/cerebro/pastas`, {
-      headers: { Authorization: `Bearer ${token}` },
+    if (!Object.keys(atualizacoes).length) return;
+    const preservadas = memorySphere.particulas.filter((particula) => {
+      const fonte = fonteDaParticula(particula);
+      return !fonte || !Object.prototype.hasOwnProperty.call(atualizacoes, fonte);
     });
-    if (!respCerebro.ok) return;
-    if (respCerebro.ok) {
-      const pastas = await respCerebro.json();
-      if (Array.isArray(pastas)) {
-        pastas.forEach((pasta) => {
-          const folderObj = {
-            id: 'pasta-' + pasta.id,
-            titulo: pasta.nome,
-            label: pasta.nome,
-            strength: 0.9,
-            isFolder: true,
-            isNote: false,
-          };
-          particulas.push(folderObj);
-
-          if (pasta.notas && Array.isArray(pasta.notas)) {
-            pasta.notas.forEach((nota) => {
-              particulas.push({
-                id: 'nota-' + nota.id,
-                titulo: nota.titulo,
-                label: nota.titulo,
-                strength: 0.5,
-                isFolder: false,
-                isNote: true,
-                folderRef: folderObj,
-              });
-            });
-          }
-        });
-      }
-    }
-
-    const respNotasSoltas = await fetch(`${BACKEND_URL}/api/cerebro/notas-soltas`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!respNotasSoltas.ok) return;
-    if (respNotasSoltas.ok) {
-      const notasSoltas = await respNotasSoltas.json();
-      if (Array.isArray(notasSoltas)) {
-        notasSoltas.forEach((nota) => {
-          particulas.push({
-            id: 'nota-' + nota.id,
-            titulo: nota.titulo,
-            label: nota.titulo,
-            strength: 0.4,
-            isFolder: false,
-            isNote: true,
-            folderRef: null,
-          });
-        });
-      }
-    }
-
-    const respLembretes = await fetch(`${BACKEND_URL}/api/agenda?lembretes=1`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (respLembretes.ok) {
-      const lembretes = await respLembretes.json();
-      if (Array.isArray(lembretes)) {
-        lembretes.filter((lembrete) => !lembrete.concluido).forEach((lembrete) => {
-          particulas.push({
-            id: `lembrete-${lembrete.id}`,
-            titulo: lembrete.titulo,
-            label: `Lembrete: ${lembrete.titulo}`,
-            strength: 0.65,
-            isFolder: false,
-            isNote: false,
-            isReminder: true,
-          });
-        });
-      }
-    }
-
-    const outrasParticulas = memorySphere.particulas.filter((particula) => !ehParticulaDoCerebro(particula));
-    const mescladas = [...outrasParticulas, ...particulas];
-    const unicas = new Map();
-    mescladas.forEach((particula) => {
-      const chave = particula.id || `${particula.isFolder ? 'pasta' : particula.isNote ? 'nota' : 'no'}:${particula.label}`;
-      unicas.set(chave, particula);
-    });
-    atualizarBolinhasDaEsfera([...unicas.values()]);
+    atualizarBolinhasDaEsfera([...preservadas, ...Object.values(atualizacoes).flat()]);
   } catch (erro) {
     console.warn('[main] Erro ao carregar esfera neural:', erro.message);
   }
@@ -510,17 +856,56 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnRestaurar = document.getElementById('chat-restaurar');
   const chatForm = document.getElementById('chat-form');
   const chatPainel = document.getElementById('chat-painel');
+  let fechamentoDoChat;
+  const duracaoDaTransicaoDoChat = 280;
+  const atualizarOrigemDaAnimacaoDoChat = () => {
+    if (!chatHistorico || !btnRestaurar) return;
+    const origem = btnRestaurar.getBoundingClientRect();
+    const destino = chatHistorico.getBoundingClientRect();
+    if (!origem.width || !destino.width) return;
+    const origemX = origem.left + origem.width / 2;
+    const origemY = origem.top + origem.height / 2;
+    const destinoX = destino.left + destino.width / 2;
+    const destinoY = destino.top + destino.height / 2;
+    chatHistorico.style.setProperty('--chat-origem-x', `${origemX - destinoX}px`);
+    chatHistorico.style.setProperty('--chat-origem-y', `${origemY - destinoY}px`);
+  };
   const abrirChat = () => {
-    if (chatHistorico) chatHistorico.style.display = 'flex';
-    if (btnRestaurar) btnRestaurar.hidden = true;
+    if (chatHistorico) {
+      window.clearTimeout(fechamentoDoChat);
+      const jaEstavaAberto = chatHistorico.classList.contains('chat-aberto');
+      chatHistorico.style.display = 'flex';
+      chatHistorico.classList.remove('is-chat-closing');
+      if (!jaEstavaAberto) {
+        atualizarOrigemDaAnimacaoDoChat();
+        // O painel nasce visualmente do ícone e cresce até a posição final.
+        void chatHistorico.offsetWidth;
+        requestAnimationFrame(() => chatHistorico.classList.add('chat-aberto'));
+      }
+    }
     chatPainel?.classList.add('chat-expanded');
+    if (!chatHistorico?.classList.contains('chat-aberto')) window.setTimeout(() => { if (btnRestaurar) btnRestaurar.hidden = true; }, 60);
+    else if (btnRestaurar) btnRestaurar.hidden = true;
     document.querySelector('#nav-chats')?.setAttribute('aria-expanded', 'true');
     const sidebarHistory = document.querySelector('#chat-sidebar-history');
     if (sidebarHistory) sidebarHistory.hidden = false;
+    rolarChatParaFim();
+    window.setTimeout(() => document.getElementById('chat-input')?.focus(), 260);
   };
   const minimizarChat = () => {
-    if (chatHistorico) chatHistorico.style.display = 'none';
-    if (btnRestaurar) btnRestaurar.hidden = false;
+    if (chatHistorico) {
+      window.clearTimeout(fechamentoDoChat);
+      if (btnRestaurar) {
+        btnRestaurar.hidden = false;
+        atualizarOrigemDaAnimacaoDoChat();
+      }
+      chatHistorico.classList.add('is-chat-closing');
+      chatHistorico.classList.remove('chat-aberto');
+      fechamentoDoChat = window.setTimeout(() => {
+        chatHistorico.style.display = 'none';
+        chatHistorico.classList.remove('is-chat-closing');
+      }, duracaoDaTransicaoDoChat);
+    }
     chatPainel?.classList.remove('chat-expanded');
     document.querySelector('#nav-chats')?.setAttribute('aria-expanded', 'false');
     const sidebarHistory = document.querySelector('#chat-sidebar-history');
@@ -532,30 +917,73 @@ document.addEventListener('DOMContentLoaded', () => {
     btnRestaurar.addEventListener('click', abrirChat);
   }
   document.querySelector('#nav-chats')?.addEventListener('click', abrirChat);
-  document.querySelector('#chat-new-conversation')?.addEventListener('click', iniciarNovaConversaChat);
 
   if (chatForm) {
     const novoForm = chatForm.cloneNode(true);
     chatForm.parentNode.replaceChild(novoForm, chatForm);
+    // Formulário e seletor são irmãos. Assim o seletor não dispara o envio nem disputa a área do botão.
+    const composer = document.createElement('div');
+    composer.id = 'chat-composer';
+    chatPainel?.appendChild(composer);
+    composer.appendChild(novoForm);
+    const composerActions = document.createElement('div');
+    composerActions.className = 'chat-composer-actions';
+    novoForm.appendChild(composerActions);
+    const novoChat = document.getElementById('chat-new-conversation');
+    if (novoChat) {
+      novoChat.textContent = '';
+      novoChat.setAttribute('aria-label', 'Nova conversa');
+      novoChat.title = 'Nova conversa';
+      // Fica ao lado de Enviar, como uma bolha própria, sem alterar o comportamento da nova conversa.
+      composerActions.appendChild(novoChat);
+      novoChat.addEventListener('click', (event) => {
+        event.preventDefault();
+        iniciarNovaConversaChat();
+      });
+    }
+    const modelControl = document.getElementById('chat-model-control');
+    if (modelControl) composerActions.appendChild(modelControl);
+    const sendButton = novoForm.querySelector('.chat-btn-enviar');
+    if (sendButton) composerActions.appendChild(sendButton);
+    const expandirChatPelaBarra = () => {
+      if (!chatHistorico?.classList.contains('chat-aberto')) abrirChat();
+    };
+    novoForm.addEventListener('pointerdown', expandirChatPelaBarra);
+    novoForm.addEventListener('focusin', expandirChatPelaBarra);
     const quickProvider = document.querySelector('#quick-chat-provider');
     const provider = quickProvider;
     if (quickProvider) {
-      quickProvider.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
       const trigger = document.querySelector('#chat-model-trigger');
       const label = document.querySelector('#chat-model-label');
       const menu = document.querySelector('#chat-model-menu');
+      // Acrescenta Groq sem alterar o HTML e sem duplicar o item.
+      if (!quickProvider.querySelector('option[value="groq"]')) {
+        quickProvider.add(new Option('Groq', 'groq'));
+      }
+      if (menu && !menu.querySelector('[data-chat-provider="groq"]')) {
+        const opcaoGroq = document.createElement('button');
+        opcaoGroq.type = 'button';
+        opcaoGroq.setAttribute('role', 'menuitemradio');
+        opcaoGroq.dataset.chatProvider = 'groq';
+        opcaoGroq.setAttribute('aria-checked', 'false');
+        opcaoGroq.textContent = 'Groq';
+        menu.prepend(opcaoGroq);
+      }
+      const opcoesValidas = ['groq', 'gemini', 'ollama'];
+      const salvo = localStorage.getItem('urfilig_llm_provider');
+      quickProvider.value = opcoesValidas.includes(salvo) ? salvo : 'groq';
       const renderProvider = () => {
-        const provider = quickProvider.value === 'ollama' ? 'ollama' : 'gemini';
+        const provider = opcoesValidas.includes(quickProvider.value) ? quickProvider.value : 'groq';
         quickProvider.value = provider;
-        if (label) label.textContent = provider === 'ollama' ? 'Local' : 'Gemini';
+        if (label) label.textContent = { groq: 'Groq', gemini: 'Gemini', ollama: 'Local' }[provider];
         menu?.querySelectorAll('[data-chat-provider]').forEach((option) => {
           option.setAttribute('aria-checked', String(option.dataset.chatProvider === provider));
         });
       };
       renderProvider();
       quickProvider.addEventListener('change', () => {
-        localStorage.setItem('urfilig_llm_provider', quickProvider.value);
         renderProvider();
+        localStorage.setItem('urfilig_llm_provider', quickProvider.value);
       });
       trigger?.addEventListener('click', () => {
         const abrir = menu?.hidden;
@@ -590,14 +1018,29 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!texto) return;
 
       input.value = '';
+      abrirChat();
       adicionarMensagemChat('Você', texto);
+      mostrarIndicadorPensando();
+      mascotePensando = true;
+      escalaAlvoMascote = escalaBaseMascote * 0.42;
+      setLiveStatus('Pensando...');
 
       const btnEnviar = novoForm.querySelector('button[type="submit"]');
       if (btnEnviar) btnEnviar.disabled = true;
 
       try {
-        if (await processarComandoDevAgent?.(texto)) return;
-        if (await tentarAtalhoFerramentaChat(texto, { adicionarMensagem: adicionarMensagemChat })) return;
+        if (await processarComandoDevAgent?.(texto)) {
+          ocultarIndicadorPensando();
+          mascotePensando = false;
+          escalaAlvoMascote = escalaBaseMascote;
+          return;
+        }
+        if (await tentarAtalhoFerramentaChat(texto, { adicionarMensagem: adicionarMensagemChat })) {
+          ocultarIndicadorPensando();
+          mascotePensando = false;
+          escalaAlvoMascote = escalaBaseMascote;
+          return;
+        }
         let preferencias = {};
         try { preferencias = JSON.parse(localStorage.getItem('urfilig_preferencias') || '{}'); } catch { /* mantém as preferências padrão */ }
         const resp = await fetch(`${BACKEND_URL}/api/comando`, {
@@ -608,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
           body: JSON.stringify({
             texto,
-            provider: provider?.value || localStorage.getItem('urfilig_llm_provider') || 'gemini',
+            provider: provider?.value || localStorage.getItem('urfilig_llm_provider') || 'groq',
             responseStyle: preferencias.responseStyle || 'equilibrada',
             responseTone: preferencias.responseTone || 'natural',
           }),
@@ -616,6 +1059,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const dados = await resp.json();
         if (resp.ok && dados.resposta) {
+          ocultarIndicadorPensando();
+          mascotePensando = false;
+          escalaAlvoMascote = escalaBaseMascote;
           const registroRotina = window.registrarPresencaRotina?.(texto);
           adicionarMensagemChat('Urfilig', dados.resposta);
           if (dados.audio) {
@@ -632,15 +1078,23 @@ document.addEventListener('DOMContentLoaded', () => {
 }
           carregarMemoriasECerebro();
           if (typeof window.recarregarInterfaceNotas === 'function') {
-            window.recarregarInterfaceNotas();
+            await window.recarregarInterfaceNotas();
           }
         } else {
-          adicionarMensagemChat('Urfilig', dados.detalhe || dados.erro || 'Não consegui responder agora. Confira o estado do Gemini ou do Ollama no menu inferior esquerdo.');
+          ocultarIndicadorPensando();
+          mascotePensando = false;
+          escalaAlvoMascote = escalaBaseMascote;
+          adicionarMensagemChat('Urfilig', dados.detalhe || dados.erro || 'Não consegui responder agora. Confira o provedor selecionado.');
         }
       } catch (err) {
+        ocultarIndicadorPensando();
+        mascotePensando = false;
+        escalaAlvoMascote = escalaBaseMascote;
         console.error('[chat] Erro ao enviar comando:', err);
+        adicionarMensagemChat('Urfilig', 'Não consegui concluir agora. Tente novamente em instantes.');
       } finally {
         if (btnEnviar) btnEnviar.disabled = false;
+        document.getElementById('chat-input')?.focus();
       }
     });
   }
@@ -747,18 +1201,19 @@ carregarMascote('/models/mascote.glb', scene)
       if (filho.isMesh && filho.material) {
         const materiais = Array.isArray(filho.material) ? filho.material : [filho.material];
         materiais.forEach((material) => {
-          material.metalness = 0.0;
-          material.roughness = 0.85;
-          if (material.emissive) {
-            material.emissive.setHex(0x000000);
-            material.emissiveIntensity = 0.0;
-          }
+          // Mantém os materiais e as texturas originais do GLB. Forçar os
+          // parâmetros aqui removia a aparência própria do modelo e podia
+          // deixá-lo escuro na camada frontal.
+          material.needsUpdate = true;
         });
       }
     });
 
     mixer = loadedMixer;
     mascotRef = mascote;
+    cenaMascoteFrontal.add(mascote);
+    escalaBaseMascote = mascote.scale.x;
+    escalaAlvoMascote = escalaBaseMascote;
     mascotStateMachine = new MascotStateMachine(mixer, clips);
     motionController = new MascotMotionController(mascote, {
       modo: 'fixo',
@@ -785,30 +1240,49 @@ function normalizarEscala(mascote, alturaAlvo) {
 }
 
 function posicionarMascoteSobreChat() {
-  if (!mascotRef || !motionController || mascotOverlayActive || motionController.modo !== 'fixo') return;
-  const chat = document.getElementById('chat-form');
-  if (!chat) return;
-  const canvasRect = canvas.getBoundingClientRect();
-  const chatRect = chat.getBoundingClientRect();
-  if (!canvasRect.width || !canvasRect.height || !chatRect.width) return;
+  if (!mascotRef || !motionController || mascotOverlayActive) return;
+  if (motionController.modo !== 'fixo') motionController.setMode?.('fixo');
 
-  const depth = motionController.posicaoFixa.z;
+  const chatHistorico = document.getElementById('chat-historico');
+  const composerDoChat = document.getElementById('chat-composer');
+  const canvasRect = canvas?.getBoundingClientRect();
+  const chatRect = chatHistorico?.classList.contains('chat-aberto')
+    ? chatHistorico.getBoundingClientRect()
+    : (composerDoChat || document.getElementById('chat-form'))?.getBoundingClientRect();
+  if (!canvasRect?.width || !canvasRect.height || !chatRect?.width) return;
+
+  const chatAberto = chatHistorico?.classList.contains('chat-aberto');
+  mascotRef.visible = true;
+  // Frente da cena: o modelo não disputa profundidade com a esfera e não fica
+  // escondido pelo vidro do chat. Fora do chat, mantém a profundidade original.
+  const depth = chatAberto ? 6.85 : 7.45;
   const distance = Math.max(.1, camera.position.z - depth);
   const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
   const visibleWidth = visibleHeight * camera.aspect;
-  const pixelX = (chatRect.left + chatRect.right) / 2;
-  // A origem do mascote fica nos pés: encosta o modelo logo acima da barra.
-  const pixelY = chatRect.top - 8;
-  const ndcX = ((pixelX - canvasRect.left) / canvasRect.width) * 2 - 1;
-  const ndcY = 1 - ((pixelY - canvasRect.top) / canvasRect.height) * 2;
+
+  // Mascote compacto: ele repousa logo acima do canto esquerdo da barra,
+  // sem cobrir a digitação nem o histórico, aberto ou minimizado.
+  const alvoX = chatRect.left + chatRect.width / 2;
+  const alvoY = chatAberto
+    ? chatRect.bottom - 86
+    : chatRect.top - 170;
+  const ndcX = ((alvoX - canvasRect.left) / canvasRect.width) * 2 - 1;
+  const ndcY = 1 - ((alvoY - canvasRect.top) / canvasRect.height) * 2;
   motionController.posicaoFixa.set(
     ndcX * visibleWidth / 2,
     camera.position.y + ndcY * visibleHeight / 2,
-    depth,
+    depth
   );
+  motionController.pontoParaOlhar?.set(
+    motionController.posicaoFixa.x,
+    motionController.posicaoFixa.y - .12,
+    20
+  );
+  // O modo fixo não aplica alterações posteriores a posicaoFixa sozinho.
+  // Atualize o modelo carregado junto com o ponto de destino calculado.
   mascotRef.position.copy(motionController.posicaoFixa);
+  mascotRef.lookAt(motionController.pontoParaOlhar);
 }
-
 let audioPiperAtual = null;
 let urlAudioPiperTemporaria = null;
 let contextoAudioPiper = null;
@@ -897,24 +1371,36 @@ async function tocarAudioPiper(audioBase64, textoReserva = '') {
   return false;
 }
 
+function definirEstadoBotaoOuvir(botao, ouvindo) {
+  if (!botao) return;
+  botao.disabled = ouvindo;
+  botao.classList.toggle('esta-ouvindo', ouvindo);
+  const titulo = ouvindo ? 'Reproduzindo resposta' : (botao.dataset.label || 'Ouvir resposta');
+  botao.setAttribute('aria-label', titulo);
+  botao.title = titulo;
+}
+
 function adicionarBotaoReproduzirAudio(audioBase64, texto) {
   const mensagem = document.querySelector('#chat-mensagens .chat-msg.urfilig:last-child');
   if (!mensagem) return null;
-  if (mensagem.querySelector('.chat-audio-retry')) return mensagem.querySelector('.chat-audio-retry');
-  const botao = document.createElement('button');
-  botao.type = 'button';
-  botao.className = 'chat-audio-retry';
-  botao.textContent = 'Reproduzir áudio';
-  botao.addEventListener('click', async () => {
-    botao.disabled = true;
-    botao.textContent = 'Reproduzindo…';
-    const iniciou = await tocarAudioPiper(audioBase64, texto);
-    botao.disabled = false;
-    botao.textContent = iniciou ? 'Ouvir novamente' : 'Tentar novamente';
-  });
-  mensagem.appendChild(botao);
+  const botao = mensagem.querySelector('.chat-acao-ouvir');
+  if (!botao) return null;
+  botao.onclick = async () => {
+    definirEstadoBotaoOuvir(botao, true);
+    await tocarAudioPiper(audioBase64, texto);
+    window.setTimeout(() => definirEstadoBotaoOuvir(botao, false), 700);
+  };
   return botao;
 }
+
+document.addEventListener('urfilig:ouvir-resposta', async (event) => {
+  const texto = String(event.detail?.texto || '');
+  const botao = event.detail?.botao;
+  if (!texto || !botao) return;
+  definirEstadoBotaoOuvir(botao, true);
+  falar(texto);
+  window.setTimeout(() => definirEstadoBotaoOuvir(botao, false), 700);
+});
 
 function showWeather({ temperatura, codigo }) {
   const elementoClima = document.querySelector('#hud-clock-weather');
@@ -938,57 +1424,76 @@ function atualizarRelogio() {
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
 
-const providerSelect = document.querySelector('#quick-chat-provider');
-if (providerSelect) {
-  providerSelect.value = localStorage.getItem('urfilig_llm_provider') || 'gemini';
-}
-
 const overlayToggle = document.querySelector('#mascot-overlay-toggle');
 let mascotOverlay = null;
 let mascotOverlayActive = false;
+let alterandoMascotOverlay = false;
+function atualizarEstadoMascotOverlay(ativo, titulo = ativo ? 'Desativar sobreposição do mascote' : 'Sobrepor mascote') {
+  mascotOverlayActive = ativo;
+  if (mascotRef) mascotRef.visible = !ativo;
+  overlayToggle.title = titulo;
+  overlayToggle.setAttribute('aria-label', titulo);
+  overlayToggle.setAttribute('aria-pressed', String(ativo));
+}
 overlayToggle?.addEventListener('click', async () => {
   if (!isTauri()) {
     overlayToggle.title = 'A sobreposição está disponível no aplicativo desktop';
     overlayToggle.setAttribute('aria-label', 'A sobreposição está disponível no aplicativo desktop');
     return;
   }
+  if (alterandoMascotOverlay) return;
+  alterandoMascotOverlay = true;
+  const estavaAtivo = mascotOverlayActive;
   try {
     if (mascotOverlay) {
-      await mascotOverlay.close(); mascotOverlay = null;
-      mascotOverlayActive = false;
-      if (mascotRef) mascotRef.visible = true;
-      overlayToggle.title = 'Sobrepor mascote';
-      overlayToggle.setAttribute('aria-label', 'Sobrepor mascote');
-      overlayToggle.setAttribute('aria-pressed', 'false');
+      await mascotOverlay.close();
+      mascotOverlay = null;
+      atualizarEstadoMascotOverlay(false);
       return;
     }
-    mascotOverlay = await WebviewWindow.getByLabel('mascote-overlay');
-    if (!mascotOverlay) {
-      mascotOverlay = new WebviewWindow('mascote-overlay', {
+    let janela = await WebviewWindow.getByLabel('mascote-overlay');
+    if (!janela) {
+      janela = new WebviewWindow('mascote-overlay', {
         url: 'mascote-overlay.html', title: 'Mascote Urfilig', width: 360, height: 520,
         x: 88, y: Math.max(0, window.innerHeight - 540),
         decorations: false, transparent: true, alwaysOnTop: true, focus: false, focusable: false,
         resizable: false, skipTaskbar: true, shadow: false,
       });
-      mascotOverlay.once('tauri://destroyed', () => {
-        mascotOverlay = null;
-        mascotOverlayActive = false;
-        if (mascotRef) mascotRef.visible = true;
-        if (overlayToggle) { overlayToggle.title = 'Sobrepor mascote'; overlayToggle.setAttribute('aria-label', 'Sobrepor mascote'); overlayToggle.setAttribute('aria-pressed', 'false'); }
+      // A construção é assíncrona no Tauri: não esconda o mascote até
+      // receber a confirmação, e trate o erro que chega por evento.
+      await new Promise((resolve, reject) => {
+        let concluido = false;
+        const desinscrever = [];
+        const finalizar = (erro) => {
+          if (concluido) return;
+          concluido = true;
+          desinscrever.forEach((fn) => fn());
+          if (erro) reject(erro); else resolve();
+        };
+        const registrar = (evento, callback) => {
+          janela.once(evento, callback).then((fn) => {
+            if (concluido) fn(); else desinscrever.push(fn);
+          }, finalizar);
+        };
+        registrar('tauri://created', () => finalizar());
+        registrar('tauri://error', (event) => finalizar(event.payload || event));
       });
-      mascotOverlay.once('tauri://error', (error) => console.error('[mascote-overlay] falha ao abrir', error));
     }
-    mascotOverlayActive = true;
-    if (mascotRef) mascotRef.visible = false;
-    overlayToggle.title = 'Desativar sobreposição do mascote';
-    overlayToggle.setAttribute('aria-label', 'Desativar sobreposição do mascote');
-    overlayToggle.setAttribute('aria-pressed', 'true');
+    mascotOverlay = janela;
+    let janelaDestruida = false;
+    await janela.once('tauri://destroyed', () => {
+      janelaDestruida = true;
+      if (mascotOverlay !== janela) return;
+      mascotOverlay = null;
+      atualizarEstadoMascotOverlay(false);
+    });
+    if (!janelaDestruida) atualizarEstadoMascotOverlay(true);
   } catch (error) {
     console.error('[mascote-overlay] falha:', error);
-    mascotOverlayActive = false;
-    if (mascotRef) mascotRef.visible = true;
-    overlayToggle.title = 'Não foi possível abrir o mascote';
-    overlayToggle.setAttribute('aria-label', 'Não foi possível abrir o mascote');
+    if (!estavaAtivo) mascotOverlay = null;
+    atualizarEstadoMascotOverlay(estavaAtivo, estavaAtivo ? 'Desativar sobreposição do mascote' : 'Não foi possível abrir o mascote');
+  } finally {
+    alterandoMascotOverlay = false;
   }
 });
 
@@ -1229,6 +1734,14 @@ window.addEventListener('resize', () => {
   renderer.setSize(width, window.innerHeight, false);
   composer.setPixelRatio(currentDpr);
   composer.setSize(width, window.innerHeight);
+  if (rendererMascoteFrontal) {
+    rendererMascoteFrontal.setPixelRatio(currentDpr);
+    rendererMascoteFrontal.setSize(width, window.innerHeight, false);
+    alinharCanvasMascoteFrontal();
+  } else {
+    composerMascoteFallback.setPixelRatio(currentDpr);
+    composerMascoteFallback.setSize(width, window.innerHeight);
+  }
   bloomPass.setSize(width, window.innerHeight);
   smaaPass.setSize(width * currentDpr, window.innerHeight * currentDpr);
   redimensionarCanvasLabels();
@@ -1331,6 +1844,14 @@ function animate() {
   memorySphere.update(delta);
   if (!reducedMotionQuery.matches) memorySphere.grupo.rotation.y += delta * 0.009;
   composer.render();
+  // A limpeza automática também remove a imagem ao ativar o overlay desktop.
+  if (rendererMascoteFrontal) {
+    alinharCanvasMascoteFrontal();
+    rendererMascoteFrontal.render(cenaMascoteFrontal, camera);
+  } else {
+    renderer.clearDepth();
+    composerMascoteFallback.render();
+  }
   renderizarRotulosObsidian();
   requestAnimationFrame(animate);
 }

@@ -1,52 +1,28 @@
-import { perguntarGemini } from './geminiClient.js';
-import { perguntarOllama } from './ollamaClient.js';
-
-// Se true, o fallback pro Ollama fica desativado (via .env: LLM_FALLBACK=false)
-const FALLBACK_ATIVO = (process.env.LLM_FALLBACK ?? 'true') !== 'false';
-
-/**
- * Verifica se o erro parece ser de cota/rate limit da API do Gemini
- * (429 / RESOURCE_EXHAUSTED / "quota").
- */
-function erroDeQuota(erro) {
-  const msg = String(erro?.message ?? erro).toLowerCase();
-  const status = erro?.status ?? erro?.code ?? erro?.httpStatus;
-  return (
-    status === 429 ||
-    msg.includes('429') ||
-    msg.includes('resource_exhausted') ||
-    msg.includes('quota')
-  );
-}
-
-/**
- * Ponto único de acesso ao LLM. Tenta o Gemini primeiro; se a chamada falhar
- * (quota estourada, rate limit, rede, etc.), cai automaticamente pro Ollama
- * local, que não tem limite de requisições.
- *
- * Assinatura idêntica às dos clients individuais, então basta trocar o import
- * nos arquivos que consomem.
- */
-export async function perguntarLLM(prompt, systemPrompt = '', { formatoJson = false, provider } = {}) {
-  const escolhido = provider || process.env.LLM_PROVIDER || 'gemini';
-  if (escolhido === 'ollama') return perguntarOllama(prompt, systemPrompt, { formatoJson });
-  if (escolhido !== 'gemini') throw new Error('Provedor de IA inválido. Escolha Gemini ou Ollama.');
-  try {
-    return await perguntarGemini(prompt, systemPrompt, { formatoJson });
-  } catch (erro) {
-    if (!FALLBACK_ATIVO) throw erro;
-
-    console.warn(
-      `[llmClient] Gemini falhou (${erroDeQuota(erro) ? 'quota/rate limit' : 'erro'}); caindo pro Ollama local.`,
-      erro.message
-    );
-
+ import { perguntarGemini } from './geminiClient.js';
+ import { perguntarOllama } from './ollamaClient.js';
+ import { perguntarGroq } from './groqClient.js';
+ 
+ const FALLBACK_ATIVO = (process.env.LLM_FALLBACK ?? 'true') !== 'false';
+ 
+ export async function perguntarLLM(prompt, systemPrompt = '', { formatoJson = false, provider } = {}) {
+   const escolhido = provider || process.env.LLM_PROVIDER || 'groq';
+ 
+   if (escolhido === 'ollama') return perguntarOllama(prompt, systemPrompt, { formatoJson });
+   if (!['gemini', 'groq'].includes(escolhido)) {
+     throw new Error('Provedor de IA inválido. Use Groq, Gemini ou Ollama.');
+   }
+ 
+   try {
+     if (escolhido === 'groq') return await perguntarGroq(prompt, systemPrompt, { formatoJson });
+     return await perguntarGemini(prompt, systemPrompt, { formatoJson });
+   } catch (erro) {
+     if (!FALLBACK_ATIVO) throw erro;
+ 
+     console.warn('[llmClient] ' + escolhido + ' falhou; caindo pro Ollama local.', erro.message);
     try {
-      return await perguntarOllama(prompt, systemPrompt, { formatoJson });
-    } catch (erroOllama) {
-      throw new Error(
-        `Gemini falhou (${erro.message}) e o fallback pro Ollama também falhou (${erroOllama.message})`
-      );
-    }
-  }
-}
+       return await perguntarOllama(prompt, systemPrompt, { formatoJson });
+     } catch (erroOllama) {
+      throw new Error(escolhido + ' falhou (' + erro.message + ') e o fallback Ollama também falhou (' + erroOllama.message + ')');
+     }
+   }
+ }

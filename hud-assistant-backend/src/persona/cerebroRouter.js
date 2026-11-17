@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../db/client.js';
 import { exigirAutenticacao } from '../auth/authMiddleware.js';
+import { atualizarNotaDoUsuario } from './notaChatActions.js';
 
 export const cerebroRouter = Router();
 cerebroRouter.use(exigirAutenticacao);
@@ -276,14 +277,11 @@ cerebroRouter.put('/notas/:id', async (req, res) => {
     let pastaIdTratado = undefined;
     if (pastaId !== undefined) {
       pastaIdTratado = pastaId === null ? null : parseId(pastaId);
-      if (pastaIdTratado !== null) {
-        const pastaDestino = await prisma.pasta.findFirst({ where: { id: pastaIdTratado, usuarioId: parseId(req.usuarioId) }, select: { id: true } });
-        if (!pastaDestino) return res.status(400).json({ erro: 'A pasta de destino não foi encontrada.' });
-      }
     }
 
-    const resultado = await prisma.nota.updateMany({
-      where: { id, usuarioId: parseId(req.usuarioId) },
+    const resultado = await atualizarNotaDoUsuario(prisma, {
+      usuarioId: parseId(req.usuarioId),
+      notaId: id,
       data: {
         ...(titulo !== undefined && { titulo: titulo.trim() }),
         ...(conteudo !== undefined && { conteudo }),
@@ -292,13 +290,9 @@ cerebroRouter.put('/notas/:id', async (req, res) => {
         ...(pastaId !== undefined && { pastaId: pastaIdTratado }),
       },
     });
-
-    if (resultado.count === 0) {
-      return res.status(404).json({ erro: 'Nota não encontrada' });
-    }
-
-    const atualizada = await prisma.nota.findFirst({ where: { id } });
-    return res.json(atualizada);
+    if (resultado.status === 'pasta-nao-encontrada') return res.status(400).json({ erro: 'A pasta de destino não foi encontrada.' });
+    if (resultado.status === 'nota-nao-encontrada') return res.status(404).json({ erro: 'Nota não encontrada' });
+    return res.json(resultado.nota);
   } catch (erro) {
     logErroCerebro('falha ao atualizar nota', erro);
     return res.status(500).json({ erro: 'Não foi possível concluir esta operação.' });

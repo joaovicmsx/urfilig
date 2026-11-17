@@ -7,15 +7,18 @@ import { BACKEND_URL } from './authGuard.js';
  * agora tem mais de um sistema reagindo ao socket (stateMachine, motion
  * controller, esfera de partículas, expressões faciais).
  */
-export function conectarSocket({ stateMachine, motionController, onExpression, onParticles, onResponse, onWeather, onOutfit } = {}) {
-  const socket = io(BACKEND_URL, {
-    reconnectionDelay: 2000,
-    auth: { token: localStorage.getItem('urfilig_token') },
-  });
-
-  socket.on('connect', () => {
-    console.log('[socket] conectado ao backend em', BACKEND_URL);
-  });
+export function conectarSocket({ stateMachine, motionController, onExpression, onParticles, onResponse, onWeather, onOutfit, onProspectingBatch, onProspectingError } = {}) {
+   const socket = io(BACKEND_URL, {
+   reconnectionDelay: 2000,
+   auth: { token: localStorage.getItem('urfilig_token') },
+ });
+ 
+ socket.on('prospeccao:lote', (dados) => {
+   if (typeof onProspectingBatch === 'function') onProspectingBatch(dados);
+ });
+ socket.on('prospeccao:erro', (dados) => {
+   if (typeof onProspectingError === 'function') onProspectingError(dados);
+ });
 
   socket.on('connect_error', (erro) => {
     console.warn('[socket] não conseguiu conectar ao backend:', erro.message);
@@ -55,8 +58,16 @@ export function conectarSocket({ stateMachine, motionController, onExpression, o
 
   // Clima de Contagem, MG — ver src/weather/weatherService.js no backend
   socket.on('weather:update', (dados) => {
-    onWeather?.(dados);
-  });
+   onWeather?.(dados);
+ });
+ 
+ socket.on('prospeccao:lote', (lote) => {
+   onProspectingBatch?.(lote);
+ });
+ 
+ socket.on('prospeccao:erro', (erro) => {
+   onProspectingError?.(erro);
+ });
 
   // Alterna a visibilidade de uma parte nomeada do .glb do mascote (ex:
   // "Casaco" quando está frio). Só funciona se o modelo tiver essa peça.

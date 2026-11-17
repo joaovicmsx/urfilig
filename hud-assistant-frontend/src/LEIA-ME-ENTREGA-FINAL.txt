@@ -1,0 +1,29 @@
+URFILIG — CHAT VISUAL FINAL
+
+ESTA ENTREGA ALTERA SOMENTE:
+- main.js
+- chatHistory.js
+- styles.css
+
+ONDE COPIAR
+C:\urfilig\hud-assistant-frontend\src
+
+ANTES DE APLICAR
+1. Feche o frontend em execução.
+2. Faça uma cópia dos três arquivos atuais da pasta src.
+3. Extraia este pacote.
+4. Copie os três arquivos para a pasta src acima e confirme a substituição.
+5. Inicie novamente o frontend e use Ctrl + F5.
+
+O QUE FOI CORRIGIDO
+- Abertura e fechamento agora usam transição real por classe, com o mesmo tempo e curva do menu lateral: 0,25s cubic-bezier(0.16, 1, 0.3, 1).
+- O painel permanece renderizado durante o fechamento e só é ocultado após a transição terminar.
+- Janela de chat preserva o visual de vidro translúcido, sem gradientes de bolha marcantes.
+- Histórico das conversas sem fundo, inclusive itens, estado ativo, hover e pseudo-elementos.
+- Histórico continua exibindo somente nome, data e horário.
+- Nenhuma lógica de socket, backend, calendário, Groq, compartilhamento ou fluxo funcional foi alterada.
+
+VALIDAÇÃO
+- main.js: sintaxe validada.
+- chatHistory.js: sintaxe validada.
+- Não há package.json neste recorte recebido, portanto não foi possível rodar o build do projeto aqui.

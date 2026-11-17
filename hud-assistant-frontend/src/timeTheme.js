@@ -1,8 +1,8 @@
 const stops = [
-  [0, [102, 122, 169]], [4, [126, 139, 184]], [6, [205, 153, 145]],
-  [8, [158, 181, 211]], [10, [164, 190, 216]], [15, [161, 186, 212]],
-  [17, [214, 165, 137]], [19, [211, 146, 128]], [21, [137, 139, 183]],
-  [23, [102, 122, 169]], [24, [102, 122, 169]],
+  [0, [67, 94, 166]], [4, [78, 108, 174]], [6, [255, 218, 166]],
+  [8, [255, 238, 190]], [11, [255, 244, 205]], [15, [255, 224, 180]],
+  [17, [255, 173, 119]], [19, [234, 126, 113]], [21, [106, 119, 190]],
+  [23, [67, 94, 166]], [24, [67, 94, 166]],
 ];
 
 export function getTimeColor(date = new Date()) {
@@ -18,9 +18,12 @@ export function getTimeColor(date = new Date()) {
 export function applyTimeTheme() {
   const rgb = getTimeColor();
   const root = document.documentElement;
+  const now = new Date();
+  const hour = now.getHours() + now.getMinutes() / 60;
   root.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   root.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
   root.style.setProperty('--time-halo-visible', `rgba(${rgb.join(',')}, .2)`);
+  root.style.setProperty('--aura-color', `rgba(${rgb.join(',')}, ${hour >= 7 && hour < 19 ? '.30' : '.22'})`);
   return rgb;
 }
 

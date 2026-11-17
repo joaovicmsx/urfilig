@@ -83,13 +83,13 @@ export function iniciarProspeccao() {
         if (lead.pitch) {
           card.append(create('small', '', 'Sugestão de mensagem (rascunho)'), create('p', 'prospeccao-lead-pitch', lead.pitch));
         }
-        const approve = create('button', 'profile-cancel', 'Marcar como revisada');
+        const approve = create('button', 'profile-cancel', 'Aprovar para envio');
         approve.type = 'button';
         approve.addEventListener('click', async () => {
           approve.disabled = true;
           try {
             await api(`/api/leads/${encodeURIComponent(lead.id)}/aprovar`, { method: 'POST' });
-            say('Empresa marcada como revisada. Nenhuma mensagem foi enviada.');
+            say('Empresa aprovada para envio. Nenhuma mensagem foi enviada automaticamente.');
             await loadLeads();
           } catch (error) { say(error.message); approve.disabled = false; }
         });
@@ -130,6 +130,10 @@ export function iniciarProspeccao() {
     localStorage.setItem(NICHE_KEY, nicheInput.value.trim());
     updateMapsLink();
   });
+  window.addEventListener('urfilig:prospeccao-lote-pronto', async (event) => {
+   say(event.detail?.mensagem || 'Novo lote pronto para sua aprovação.');
+   await loadLeads();
+ });
   mapsLink.addEventListener('click', (event) => {
     if (!nicheInput.value.trim()) {
       event.preventDefault();

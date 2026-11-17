@@ -10,6 +10,7 @@
     <style>html{visibility:hidden}html.auth-ready{visibility:visible}</style>
     <script>
       (() => {
+        try { document.documentElement.dataset.theme = localStorage.getItem('urfilig_theme') === 'light' ? 'light' : 'dark'; } catch { document.documentElement.dataset.theme = 'dark'; }
         let token = localStorage.getItem("urfilig_token");
         try {
           const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
@@ -28,9 +29,12 @@
   <body>
     <!-- Navegação fixa à esquerda -->
     <header id="top-hud-bar">
-      <nav class="hud-nav">
-        <button id="nav-chats" class="nav-item" type="button" title="Conversas" aria-controls="chat-historico" aria-expanded="false">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-7.5A7.5 7.5 0 0 1 10.5 6H13a7 7 0 0 1 7 5.5Z"/><path d="M8 10h8M8 14h5"/></svg>Conversas
+      <button id="menu-toggle" type="button" aria-label="Abrir menu" aria-controls="main-navigation" aria-expanded="false" title="Abrir menu">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+      </button>
+      <nav id="main-navigation" class="hud-nav" aria-label="Menu principal" hidden>
+        <button id="nav-chats" class="nav-item" type="button" title="Conversas" aria-label="Conversas" aria-controls="chat-historico" aria-expanded="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-7.5A7.5 7.5 0 0 1 10.5 6H13a7 7 0 0 1 7 5.5Z"/><path d="M8 10h8M8 14h5"/></svg><span class="nav-label">Conversas</span>
         </button>
         <div id="chat-sidebar-history" aria-label="Histórico de conversas" hidden>
           <div id="chat-sidebar-conversation-list" role="list"></div>
@@ -39,9 +43,8 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10s10-4.477 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
           Notas
         </button>
-        <button id="nav-calendario" class="nav-item" type="button">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Calendário
+        <button id="nav-calendario" class="nav-item" type="button" title="Calendário" aria-label="Calendário">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span class="nav-label">Calendário</span>
         </button>
         <button id="btn-lembretes" class="nav-item chat-tool-only" type="button" title="Lembretes">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
@@ -77,20 +80,21 @@
         <button id="nav-routines" class="nav-item chat-tool-only" type="button" title="Ver quadros e criar rotina" aria-controls="routine-board" aria-expanded="false">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Rotinas
         </button>
-        <button id="nav-profile" class="nav-item" type="button" title="Configurações" aria-haspopup="dialog" aria-controls="profile-drawer">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V4a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2.9Z"/></svg>Configurações
+        <button id="nav-profile" class="nav-item" type="button" title="Configurações" aria-label="Configurações" aria-haspopup="dialog" aria-controls="profile-drawer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V4a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2.9Z"/></svg><span class="nav-label">Configurações</span>
         </button>
-        <button id="nav-plugins" class="nav-item" type="button" title="Plugins" aria-haspopup="dialog" aria-controls="plugins-drawer">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3m8-3v3M5 8h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"/><path d="M8 8V6m8 2V6M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"/></svg>Plugins
+        <button id="nav-plugins" class="nav-item" type="button" title="Plugins" aria-label="Plugins" aria-haspopup="dialog" aria-controls="plugins-drawer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3m8-3v3M5 8h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"/><path d="M8 8V6m8 2V6M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"/></svg><span class="nav-label">Plugins</span>
         </button>
         <button id="mascot-overlay-toggle" class="nav-item mascot-overlay-toggle" type="button" aria-label="Sobrepor mascote" title="Sobrepor mascote" aria-pressed="false">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg>Mascote
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg><span class="nav-label">Mascote</span>
         </button>
-        <button id="nav-logout" class="nav-item nav-logout" type="button" title="Sair">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>Sair
+        <button id="nav-logout" class="nav-item nav-logout" type="button" title="Sair" aria-label="Sair">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg><span class="nav-label">Sair</span>
         </button>
       </nav>
     </header>
+    <div id="menu-backdrop" class="menu-backdrop" aria-hidden="true"></div>
 
     <div id="profile-backdrop" class="profile-backdrop" aria-hidden="true"></div>
     <aside id="profile-drawer" class="profile-drawer" role="dialog" aria-modal="true" aria-labelledby="profile-title" aria-hidden="true">
@@ -129,6 +133,12 @@
         <section class="profile-section">
           <h3>Elementos da tela</h3>
           <label class="profile-toggle"><input id="profile-show-weather" type="checkbox"> Mostrar clima no relógio</label>
+          <label class="appearance-choice" for="appearance-theme">Aparência
+            <select id="appearance-theme" aria-label="Aparência da Urfilig">
+              <option value="dark">Escura</option>
+              <option value="light">Clara</option>
+            </select>
+          </label>
         </section>
         <p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
         <footer class="profile-actions">
@@ -274,6 +284,10 @@
     <canvas id="hud-canvas" aria-label="Urfilig e sua esfera neural. Arraste para girar e selecione memórias." tabindex="0"></canvas>
     <canvas id="labels-canvas"></canvas>
     <div id="sky-events" aria-hidden="true"></div>
+    <section id="home-greeting" aria-live="off">
+      <h1 id="home-greeting-title">Bom dia</h1>
+      <p id="home-greeting-message">Respire fundo. Um passo de cada vez.</p>
+    </section>
     <section id="routine-board" aria-label="Quadros de rotinas" hidden></section>
     <section id="spotify-mini-player" class="spotify-mini-player" aria-label="Mini player Spotify" hidden>
       <img id="spotify-mini-image" alt="" hidden>
@@ -358,7 +372,7 @@
       </button>
 
       <form id="chat-form" class="chat-form-inferior">
-        <input id="chat-input" type="text" placeholder="Digite aqui" autocomplete="off" />
+        <input id="chat-input" type="text" placeholder="Escreva ou fale comigo…" autocomplete="off" />
         <button type="submit" class="chat-btn-enviar">Enviar</button>
       </form>
       <div id="chat-model-control" aria-label="Modelo de conversa">

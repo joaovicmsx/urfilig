@@ -61,7 +61,7 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
   }
 
   try {
-    if (provider && !['gemini', 'ollama'].includes(provider)) return res.status(400).json({ erro: 'Provedor inválido. Use gemini ou ollama.' });
+    if (provider && !['groq', 'gemini', 'ollama'].includes(provider)) return res.status(400).json({ erro: 'Provedor inválido. Use groq, gemini ou ollama.' });
     const resultado = await processarComando(req.usuarioId, texto, {
       provider,
       responseStyle,
@@ -70,8 +70,17 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
     });
     res.json(resultado);
   } catch (erro) {
-   console.error('[comando] falha ao processar:', erro);
+    const codigo = typeof erro?.code === 'string' ? erro.code : 'erro interno';
+    console.error(`[comando] falha ao processar (${codigo})`);
     emitirEstado(req.usuarioId, 'IDLE');
+    if (erro?.notaSaveError || erro?.notaActionError) {
+      return res.status(503).json({
+        erro: `${erro.notaSaveError ? 'Não consegui salvar a nota' : 'Não consegui concluir a ação da nota'} no banco${erro.code ? ` (código ${erro.code})` : ''}. Tente novamente quando a conexão estiver disponível.`,
+      });
+    }
+    if (erro?.message === 'Informe o nome da nota para criá-la.' || erro?.message === 'O conteúdo da nota deve ter até 20.000 caracteres.') {
+      return res.status(400).json({ erro: erro.message });
+    }
     res.status(500).json({ erro: 'Falha ao processar o comando.' });
   }
 });

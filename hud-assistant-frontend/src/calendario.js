@@ -259,6 +259,7 @@ function abrirModalEvento(evento = {}) {
       if (res.ok) {
         modal.remove();
         await carregarCalendarioUI();
+        await window.recarregarEsferaNeural?.();
       } else {
         const err = await res.json().catch(() => ({}));
         console.error('[Calendário] Erro do Backend:', err);

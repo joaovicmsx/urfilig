@@ -1,0 +1,3 @@
+Ajuste visual do avatar dentro das respostas do Urfilig.
+A miniatura agora tem traços de rosto e cores aproximadas do mascote, sem usar o canvas 3D atrás do chat.
+Backup desta revisão: backup-avatar-mascote-2026-11-11/

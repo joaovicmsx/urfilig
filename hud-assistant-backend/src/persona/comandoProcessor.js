@@ -2,6 +2,7 @@ import { perguntarLLM } from '../llm/llmClient.js';
 import { emitirEstado, emitirResposta, emitirParaUsuario } from '../socket/index.js';
 import { detectarSentimento } from './emotionDetector.js';
 import { detectarIntencaoDeNota } from './memoryIntent.js';
+import { processarAcaoDeNotaNoChat } from './notaChatActions.js';
 import { montarSystemPrompt, registrarInteracaoEmocional } from './promptBuilder.js';
 import { montarParticulas } from './particlesBuilder.js';
 import { sintetizarFala } from '../voice/piperClient.js';
@@ -50,6 +51,27 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
 
   emitirEstado(usuarioId, 'THINKING');
 
+  const acaoNota = await processarAcaoDeNotaNoChat(prisma, usuarioId, texto);
+  if (acaoNota.handled) {
+    const resposta = acaoNota.resposta;
+    if (respostaViaHttp) {
+      emitirEstado(usuarioId, 'IDLE');
+      return {
+        resposta,
+        audio: null,
+        ...(acaoNota.notaCriada && { notaCriada: { id: acaoNota.notaCriada.id, titulo: acaoNota.notaCriada.titulo, conteudo: acaoNota.notaCriada.conteudo } }),
+        ...(acaoNota.notaMovida && { notaMovida: { id: acaoNota.notaMovida.id, titulo: acaoNota.notaMovida.titulo, pastaId: acaoNota.notaMovida.pastaId } }),
+      };
+    }
+    emitirEstado(usuarioId, 'SPEAKING');
+    let audio = null;
+    try { audio = await sintetizarFala(resposta); } catch { /* áudio opcional */ }
+    emitirResposta(usuarioId, resposta, sentimento !== 'neutro' ? sentimento : undefined, audio);
+    if (acaoNota.notaCriada || acaoNota.notaMovida) emitirParaUsuario(usuarioId, 'mascot:particles', await montarParticulas(usuarioId));
+    setTimeout(() => emitirEstado(usuarioId, 'IDLE'), 1500);
+    return resposta;
+  }
+
   let textoParaGemini = texto;
   let eventoCriado = null;
 
@@ -59,7 +81,7 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
   // 2. Comando: Editar / Atualizar Nota existente
   const comandoEditarNota = texto.match(/(?:edita|editar|atualiza|atualizar)\s+(?:a\s+)?nota\s+(?:do|da|de)?\s*([^\n,]+)/i);
   const novoEvento = extrairNovoEvento(texto);
-  
+
   if (novoEvento) {
   const eventoSalvo = await prisma.evento.create({
     data: {
@@ -79,6 +101,12 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
     dataInicio: eventoSalvo.dataInicio.toISOString(),
     origem: 'urfilig',
   };
+
+ const respostaDireta = 'Evento "' + eventoSalvo.titulo + '" salvo no calendário para ' + eventoSalvo.dataInicio.toLocaleDateString('pt-BR', { timeZone: 'UTC' }) + '.';
+ if (respostaViaHttp) {
+   emitirEstado(usuarioId, 'IDLE');
+   return { resposta: respostaDireta, audio: null, eventoCriado };
+ }
 
   const dataFormatada = eventoSalvo.dataInicio.toLocaleDateString('pt-BR', {
     timeZone: 'UTC', day: '2-digit', month: 'long', year: 'numeric',

@@ -1,0 +1,13 @@
+ATUALIZAÇÃO VISUAL — VIDRO BOLHA E ÍCONES
+
+Copie e substitua SOMENTE estes arquivos em:
+C:\urfilig\hud-assistant-frontend\src\
+
+- chatHistory.js
+- styles.css
+
+O main.js não precisa ser trocado novamente se você já aplicou o pacote anterior.
+
+Esta atualização deixa a janela, mensagens e campo de texto com vidro translúcido (efeito bolha) e troca Ouvir, Copiar e Compartilhar por ícones circulares.
+
+Depois reinicie o frontend e atualize com Ctrl+F5.

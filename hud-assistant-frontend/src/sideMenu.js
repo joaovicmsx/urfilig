@@ -22,6 +22,8 @@ export function iniciarMenuLateral(socket) {
   const menuToggle = document.querySelector('#menu-toggle');
   const menuLateral = document.querySelector('#menu-lateral');
   const menuBackdrop = document.querySelector('#menu-backdrop');
+  const barraNavegacao = document.querySelector('#top-hud-bar');
+  const navegacaoPrincipal = document.querySelector('#main-navigation');
   const profileDrawer = document.querySelector('#profile-drawer');
   const profileBackdrop = document.querySelector('#profile-backdrop');
   const pluginsDrawer = document.querySelector('#plugins-drawer');
@@ -30,6 +32,15 @@ export function iniciarMenuLateral(socket) {
   const profileMessage = document.querySelector('#profile-message');
   const profileSaveButton = document.querySelector('#profile-save');
   const accountEmail = document.querySelector('#settings-account-email');
+  const appearanceTheme = document.querySelector('#appearance-theme');
+  const aplicarTema = (tema) => {
+    const valor = tema === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = valor;
+    try { localStorage.setItem('urfilig_theme', valor); } catch { /* tema ainda funciona nesta sessão */ }
+    if (appearanceTheme) appearanceTheme.value = valor;
+  };
+  aplicarTema(localStorage.getItem('urfilig_theme'));
+  appearanceTheme?.addEventListener('change', () => aplicarTema(appearanceTheme.value));
   const deleteEmailInput = document.querySelector('#settings-delete-email');
   const deleteAccountButton = document.querySelector('#settings-delete-account');
   const deleteMessage = document.querySelector('#settings-delete-message');
@@ -171,25 +182,37 @@ export function iniciarMenuLateral(socket) {
   menuBackdrop?.classList.remove('visible', 'aberto');
   menuLateral?.setAttribute('aria-hidden', 'true');
   menuToggle?.setAttribute('aria-expanded', 'false');
+  barraNavegacao?.classList.remove('menu-open');
+  navegacaoPrincipal?.setAttribute('hidden', '');
 
   function abrirMenu() {
     menuLateral?.classList.add('visible');
     menuBackdrop?.classList.add('visible');
     menuLateral?.setAttribute('aria-hidden', 'false');
+    barraNavegacao?.classList.add('menu-open');
+    navegacaoPrincipal?.removeAttribute('hidden');
+    menuBackdrop?.setAttribute('aria-hidden', 'false');
     menuToggle?.setAttribute('aria-expanded', 'true');
+    menuToggle?.setAttribute('aria-label', 'Fechar menu');
+    menuToggle?.setAttribute('title', 'Fechar menu');
   }
 
   function fecharMenu() {
     menuLateral?.classList.remove('visible');
     menuBackdrop?.classList.remove('visible');
     menuLateral?.setAttribute('aria-hidden', 'true');
+    barraNavegacao?.classList.remove('menu-open');
+    navegacaoPrincipal?.setAttribute('hidden', '');
+    menuBackdrop?.setAttribute('aria-hidden', 'true');
     menuToggle?.setAttribute('aria-expanded', 'false');
+    menuToggle?.setAttribute('aria-label', 'Abrir menu');
+    menuToggle?.setAttribute('title', 'Abrir menu');
   }
 
   menuToggle?.addEventListener('click', () => {
     fecharPerfil();
     fecharPlugins();
-    menuLateral?.classList.contains('visible') ? fecharMenu() : abrirMenu();
+    barraNavegacao?.classList.contains('menu-open') || menuLateral?.classList.contains('visible') ? fecharMenu() : abrirMenu();
   });
   const navItems = [...document.querySelectorAll('.hud-nav .nav-item:not(#nav-logout):not(#mascot-overlay-toggle)')];
   const estadoNavAberto = () => {
@@ -244,6 +267,9 @@ export function iniciarMenuLateral(socket) {
     childList: true,
   });
   sincronizarNavAtiva();
+  document.querySelectorAll('.hud-nav .nav-item').forEach((item) => {
+    item.addEventListener('click', fecharMenu, { capture: true });
+  });
   document.querySelectorAll('.hud-nav .nav-item:not(#nav-profile)').forEach((item) => {
     item.addEventListener('click', () => { fecharPerfil(); if (item.id !== 'nav-chats') minimizarChatAoNavegar(); }, { capture: true });
   });
