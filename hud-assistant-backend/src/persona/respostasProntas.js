@@ -1,4 +1,14 @@
 const VARIANTES = Object.freeze({
+  saudacao: [
+    (cumprimento) => `${cumprimento}! Estou por aqui. O que você gostaria de conversar?`,
+    (cumprimento) => `${cumprimento}! Bom ter você por aqui. Como posso acompanhar seu dia?`,
+    (cumprimento) => `${cumprimento}! Quer conversar sobre alguma coisa ou procurar algo que anotou?`,
+  ],
+  bemEstar: [
+    () => 'Tudo bem por aqui, obrigada por perguntar. E você, como está?',
+    () => 'Estou bem e pronta para conversar. Como você está hoje?',
+    () => 'Tudo certo por aqui. E por aí, como vão as coisas?',
+  ],
   evento: [
     (titulo, data) => `Anotei “${titulo}” no calendário para ${data}. Até o calendário já está mais organizado que a gente.`,
     (titulo, data) => `“${titulo}” ficou marcado para ${data}. Pronto, agora não vale esquecer.`,
@@ -34,4 +44,21 @@ export function respostaProntaComSorteio(tipo, random = Math.random, ...argument
 
 export function respostaQuandoNaoSabe() {
   return 'Isso eu ainda não sei. Anota no cofre ou pergunta de outro jeito.';
+}
+
+/** Responde saudações simples sem puxar assuntos que a pessoa não mencionou. */
+export function respostaDeConversaCasual(texto, random = Math.random) {
+  const mensagem = String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+  if (!mensagem) return null;
+  if (/\b(tudo bem|como voce esta|como vai voce|como voce vai)\b/.test(mensagem)) {
+    return respostaProntaComSorteio('bemEstar', random);
+  }
+  const semSaudacao = mensagem
+    .replace(/^(?:oi|ola|e ai|bom dia|boa tarde|boa noite)[,!.\s]*/u, '')
+    .replace(/[?!.,\s]+$/u, '');
+  if (!semSaudacao && /^(?:oi|ola|e ai|bom dia|boa tarde|boa noite)[!.\s]*$/u.test(mensagem)) {
+    const cumprimento = mensagem.match(/^(bom dia|boa tarde|boa noite)/)?.[1] || (mensagem.startsWith('ola') ? 'Olá' : mensagem.startsWith('e ai') ? 'E aí' : 'Oi');
+    return respostaProntaComSorteio('saudacao', random, cumprimento);
+  }
+  return null;
 }

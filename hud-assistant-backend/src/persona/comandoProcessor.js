@@ -8,8 +8,7 @@ import { montarParticulas } from './particlesBuilder.js';
 import { sintetizarFala } from '../voice/piperClient.js';
 import { prisma } from '../db/client.js';
 
-// Importação do cliente HTTP para a API em Python do Urfilig (ajuste o caminho se necessário)
-import { respostaPronta, respostaQuandoNaoSabe } from './respostasProntas.js';
+import { respostaPronta, respostaQuandoNaoSabe, respostaDeConversaCasual } from './respostasProntas.js';
 
 const MESES = {
   janeiro: 0, fevereiro: 1, marco: 2, abril: 3, maio: 4, junho: 5,
@@ -151,10 +150,11 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
   if (!resposta) {
     try {
       const resultado = await conversarComUrfilig(texto);
-      resposta = resultado.source !== 'none' && resultado.reply ? resultado.reply : respostaQuandoNaoSabe();
+      const respostaCasual = respostaDeConversaCasual(texto);
+      resposta = respostaCasual || (resultado.source !== 'none' && resultado.reply ? resultado.reply : respostaQuandoNaoSabe());
     } catch (err) {
       console.warn('[chat] API própria indisponível; usando resposta pronta:', err?.code || err?.name || 'falha');
-      resposta = respostaQuandoNaoSabe();
+      resposta = respostaDeConversaCasual(texto) || respostaQuandoNaoSabe();
     }
   }
 
