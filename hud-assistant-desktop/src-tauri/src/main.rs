@@ -115,6 +115,31 @@ fn main() {
 
                 let caminho_backend = diretorio_recursos.join("hud-assistant-backend");
                 let caminho_python = caminho_backend.join("python");
+                let caminho_configuracao = std::env::var_os("APPDATA")
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| diretorio_recursos.clone())
+                    .join("Urfilig")
+                    .join(".env");
+                if !caminho_configuracao.exists() {
+                    if let Some(pasta) = caminho_configuracao.parent() {
+                        fs::create_dir_all(pasta).ok();
+                    }
+                    let modelo_configuracao = caminho_backend.join(".env.example");
+                    let _ = fs::copy(modelo_configuracao, &caminho_configuracao);
+                }
+                let mut variaveis_backend = Vec::new();
+                if let Ok(conteudo) = fs::read_to_string(&caminho_configuracao) {
+                    for linha in conteudo.lines() {
+                        let linha = linha.trim();
+                        if linha.is_empty() || linha.starts_with('#') { continue; }
+                        let Some((chave, valor)) = linha.split_once('=') else { continue; };
+                        let chave = chave.trim();
+                        let valor = valor.trim().trim_matches('"').trim_matches('\'');
+                        if !valor.is_empty() && chave.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_') {
+                            variaveis_backend.push((chave.to_owned(), valor.to_owned()));
+                        }
+                    }
+                }
                 // O app empacotado inicia o backend sem janela de console.
                 // Grave stdout/stderr em AppData para diagnosticar falhas sem terminal.
                 let arquivo_log_backend = std::env::var_os("APPDATA")
@@ -141,6 +166,9 @@ fn main() {
                 comando_backend
                     .args(["/C", "npm.cmd", "start"])
                     .current_dir(&caminho_backend);
+                for (chave, valor) in variaveis_backend {
+                    comando_backend.env(chave, valor);
+                }
                 if let Some(mut arquivo_log) = saida_backend {
                     let _ = writeln!(arquivo_log, "\n=== Urfilig backend iniciado ===");
                     if let Ok(stdout_log) = arquivo_log.try_clone() {

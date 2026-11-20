@@ -15,6 +15,9 @@ const parseId = (id) => {
 const textoDentroDoLimite = (valor, maximo, obrigatorio = false) =>
   typeof valor === 'string' && valor.length <= maximo && (!obrigatorio || Boolean(valor.trim()));
 const logErroCerebro = (contexto, erro) => console.error(`[Cérebro] ${contexto}:`, erro?.code || erro?.name || 'erro interno');
+const erroDeCampoDeOrdenacaoAusente = (erro) => erro?.code === 'P2022'
+  || (erro?.name === 'PrismaClientValidationError'
+    && /Unknown argument.*(?:importante|ordem)|Unknown field.*(?:importante|ordem)/i.test(erro.message || ''));
 
 // ---------- NOTAS SOLTAS (Sem Pasta) ----------
 cerebroRouter.get('/notas-soltas', async (req, res) => {
@@ -39,6 +42,7 @@ cerebroRouter.get('/notas-soltas', async (req, res) => {
       });
     } catch (ordemErr) {
       // Fallback caso as colunas 'importante' ou 'ordem' não existam no banco
+      if (!erroDeCampoDeOrdenacaoAusente(ordemErr)) throw ordemErr;
       logErroCerebro('fallback ao ordenar notas soltas', ordemErr);
       notas = await prisma.nota.findMany({
         where: {
@@ -77,6 +81,7 @@ cerebroRouter.get('/pastas', async (req, res) => {
         },
       });
     } catch (ordemErr) {
+      if (!erroDeCampoDeOrdenacaoAusente(ordemErr)) throw ordemErr;
       logErroCerebro('fallback ao ordenar pastas/notas', ordemErr);
       pastas = await prisma.pasta.findMany({
         where: { usuarioId },

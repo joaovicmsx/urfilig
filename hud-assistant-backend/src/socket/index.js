@@ -1,8 +1,10 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { montarParticulas } from '../persona/particlesBuilder.js';
+import { configurarWakeWord } from '../wakeword/voskBridge.js';
 
 let io;
+const eventosGlobaisRecentes = new Map();
 
 /**
  * Inicializa o Socket.io em cima do servidor HTTP existente. Cada conexão
@@ -16,6 +18,7 @@ export function configurarSocket(httpServer) {
     cors: { origin: '*' }, // restrinja pro domínio/IP do frontend quando ele existir
     maxHttpBufferSize: 5 * 1024 * 1024,
   });
+  configurarWakeWord(io);
 
   io.use((socket, next) => {
     const token = socket.handshake.auth?.token;
@@ -32,6 +35,8 @@ export function configurarSocket(httpServer) {
   io.on('connection', (socket) => {
     socket.join(`usuario:${socket.usuarioId}`);
     console.log(`[socket] cliente conectado: ${socket.id} (usuário ${socket.usuarioId})`);
+    socket.on('mascot:playback-ended', () => emitirEstado(socket.usuarioId, 'IDLE'));
+    for (const [evento, payload] of eventosGlobaisRecentes) socket.emit(evento, payload);
 
     // Manda a Esfera Neural completa assim que conecta — antes disso, o
     // frontend só tinha os hobbies do perfil populados localmente, e essa
@@ -82,5 +87,11 @@ export function emitirParaUsuario(usuarioId, evento, payload) {
  * por usuário — hoje só o clima (mesma cidade hardcoded pra todo mundo).
  */
 export function emitirGlobal(evento, payload) {
+  if (evento === 'mascot:outfit' || evento === 'weather:update') eventosGlobaisRecentes.set(evento, payload);
   io?.emit(evento, payload);
+}
+
+export function listarUsuariosConectados() {
+  if (!io) return [];
+  return [...new Set([...io.sockets.sockets.values()].map((socket) => socket.usuarioId).filter(Boolean))];
 }

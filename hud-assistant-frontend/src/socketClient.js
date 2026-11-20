@@ -7,7 +7,7 @@ import { BACKEND_URL } from './authGuard.js';
  * agora tem mais de um sistema reagindo ao socket (stateMachine, motion
  * controller, esfera de partículas, expressões faciais).
  */
-export function conectarSocket({ stateMachine, motionController, onExpression, onParticles, onResponse, onWeather, onOutfit, onProspectingBatch, onProspectingError } = {}) {
+export function conectarSocket({ stateMachine, motionController, onState, onMode, onExpression, onParticles, onResponse, onWeather, onOutfit, onProspectingBatch, onProspectingError } = {}) {
    const socket = io(BACKEND_URL, {
    reconnectionDelay: 2000,
    auth: { token: localStorage.getItem('urfilig_token') },
@@ -28,9 +28,11 @@ export function conectarSocket({ stateMachine, motionController, onExpression, o
       window.location.href = '/login.html';
     }
   });
+  socket.on('prospeccao:lote-pronto', (dados) => onProspectingBatch?.(dados));
 
   socket.on('mascot:state', ({ state }) => {
     stateMachine?.transitionTo(state);
+    onState?.(state);
   });
 
   // Modo comportamental (ex: "orbit" vs "flutuar") — ainda não emitido pelo
@@ -39,6 +41,7 @@ export function conectarSocket({ stateMachine, motionController, onExpression, o
   socket.on('mascot:mode', ({ mode }) => {
     stateMachine?.setMode(mode);
     motionController?.setMode(mode);
+    onMode?.(mode);
   });
 
   socket.on('mascot:expression', ({ shape, weight }) => {
@@ -56,19 +59,15 @@ export function conectarSocket({ stateMachine, motionController, onExpression, o
     onResponse?.({ text, emotion, audio });
   });
 
+  socket.on('agenda:lembrete', (lembrete) => {
+    window.dispatchEvent(new CustomEvent('urfilig:lembrete', { detail: lembrete }));
+  });
+
   // Clima de Contagem, MG — ver src/weather/weatherService.js no backend
   socket.on('weather:update', (dados) => {
    onWeather?.(dados);
  });
  
- socket.on('prospeccao:lote', (lote) => {
-   onProspectingBatch?.(lote);
- });
- 
- socket.on('prospeccao:erro', (erro) => {
-   onProspectingError?.(erro);
- });
-
   // Alterna a visibilidade de uma parte nomeada do .glb do mascote (ex:
   // "Casaco" quando está frio). Só funciona se o modelo tiver essa peça.
   socket.on('mascot:outfit', ({ part, visible }) => {

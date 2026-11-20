@@ -51,7 +51,10 @@ comandoRouter.post('/comando/apresentacao', exigirAutenticacao, async (req, res)
  * por fala reconhecida em vez de uma requisição HTTP.
  */
 comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
-  const { texto, provider, responseStyle, responseTone } = req.body;
+  const { texto, responseStyle, responseTone } = req.body;
+  const historico = Array.isArray(req.body?.historico)
+    ? req.body.historico.slice(-12).filter((item) => item && ['Você', 'Urfilig'].includes(item.autor) && typeof item.texto === 'string').map(({ autor, texto: mensagem }) => ({ autor, texto: mensagem.slice(0, 4000) }))
+    : [];
 
   if (!texto || typeof texto !== 'string') {
     return res.status(400).json({ erro: 'Campo "texto" (string) é obrigatório' });
@@ -61,11 +64,10 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
   }
 
   try {
-    if (provider && !['groq', 'gemini', 'ollama'].includes(provider)) return res.status(400).json({ erro: 'Provedor inválido. Use groq, gemini ou ollama.' });
     const resultado = await processarComando(req.usuarioId, texto, {
-      provider,
       responseStyle,
       responseTone,
+      historico,
       respostaViaHttp: true,
     });
     res.json(resultado);
@@ -77,6 +79,9 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
       return res.status(503).json({
         erro: `${erro.notaSaveError ? 'Não consegui salvar a nota' : 'Não consegui concluir a ação da nota'} no banco${erro.code ? ` (código ${erro.code})` : ''}. Tente novamente quando a conexão estiver disponível.`,
       });
+    }
+    if (codigo === 'P2024') {
+      return res.status(503).json({ erro: 'O banco está ocupado agora. Aguarde alguns segundos e tente novamente.' });
     }
     if (erro?.message === 'Informe o nome da nota para criá-la.' || erro?.message === 'O conteúdo da nota deve ter até 20.000 caracteres.') {
       return res.status(400).json({ erro: erro.message });

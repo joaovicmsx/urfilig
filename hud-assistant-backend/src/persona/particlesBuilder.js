@@ -12,7 +12,10 @@ import { prisma } from '../db/client.js';
  * memoryIntent.js).
  */
 export async function montarParticulas(usuarioId) {
-  const [usuario, pastas, notasSoltas, bordoes, tracos, leads, diretrizes, reflexoes, memorias] = await Promise.all([
+  // Uma conexão Neon com pool reduzido não comporta nove consultas disparadas
+  // simultaneamente em cada conexão Socket ou resposta do chat. Limite cada
+  // onda a três consultas; isso evita tempestades de conexões em login/envio.
+  const [usuario, pastas, notasSoltas] = await Promise.all([
     prisma.usuario.findUnique({ where: { id: usuarioId } }),
     prisma.pasta.findMany({
       where: { usuarioId },
@@ -23,9 +26,13 @@ export async function montarParticulas(usuarioId) {
       where: { usuarioId, pastaId: null },
       orderBy: [{ ordem: 'asc' }, { dataCriacao: 'desc' }],
     }),
+  ]);
+  const [bordoes, tracos, leads] = await Promise.all([
     prisma.bordao.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' }, take: 40 }),
     prisma.temperamento.findMany({ where: { usuarioId, ativo: true } }),
     prisma.lead.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' }, take: 40 }),
+  ]);
+  const [diretrizes, reflexoes, memorias] = await Promise.all([
     prisma.diretriz.findMany({ where: { usuarioId, ativo: true }, take: 40 }),
     prisma.reflexao.findMany({ where: { usuarioId }, orderBy: { data: 'desc' }, take: 20 }),
     prisma.memory.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' }, take: 60 }),
@@ -35,6 +42,7 @@ export async function montarParticulas(usuarioId) {
     .split(',')
     .map((h) => h.trim())
     .filter(Boolean)
+    .filter((hobby, index, hobbies) => hobbies.indexOf(hobby) === index)
     .map((hobby) => ({ id: `hobby-${hobby}`, label: hobby, strength: 0.6 }));
 
   const particulasPastas = pastas.map((pasta) => ({
@@ -67,31 +75,37 @@ export async function montarParticulas(usuarioId) {
   }));
 
   const particulasTracos = tracos.map((t) => ({
+    id: `traco-${t.id}`,
     label: `Traço: ${t.traco}`,
     strength: t.intensidade / 5,
   }));
 
   const particulasBordoes = bordoes.map((b) => ({
+    id: `bordao-${b.id}`,
     label: `Bordão: ${b.texto.slice(0, 40)}`,
     strength: Math.min(b.vezesUsado / 10, 1),
   }));
 
   const particulasLeads = leads.map((l) => ({
+    id: `lead-${l.id}`,
     label: `Lead: ${l.nome}`,
     strength: Math.min((l.score || 0) / 6, 1),
   }));
 
   const particulasDiretrizes = diretrizes.map((d) => ({
+    id: `diretriz-${d.id}`,
     label: `Diretriz: ${d.conteudo.slice(0, 40)}`,
     strength: 0.7,
   }));
 
   const particulasReflexoes = reflexoes.map((r) => ({
+    id: `reflexao-${r.id}`,
     label: `Reflexão: ${r.conteudo.slice(0, 40)}`,
     strength: 0.5,
   }));
 
   const particulasMemorias = memorias.map((m) => ({
+    id: `memoria-${m.id}`,
     label: m.titulo,
     strength: 0.6,
   }));

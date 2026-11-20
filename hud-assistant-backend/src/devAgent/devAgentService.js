@@ -38,10 +38,10 @@ export function extrairJsonEstrito(texto) {
   }
 }
 
-export async function gerarPlanoDevAgent({ repositorio, descricao, provider }) {
+export async function gerarPlanoDevAgent({ repositorio, descricao }) {
   const prompt = `Repositório solicitado:\n${enveloparConteudoNaoConfiavel(repositorio)}\n\nTarefa solicitada:\n${enveloparConteudoNaoConfiavel(descricao)}\n\nCrie um plano seguro e objetivo.`;
   try {
-    const resposta = await perguntarLLM(prompt, PROMPT_SISTEMA, { formatoJson: true, provider });
+    const resposta = await perguntarLLM(prompt, PROMPT_SISTEMA, { formatoJson: true });
     return normalizarPlanoBruto(extrairJsonEstrito(resposta));
   } catch (erro) {
     console.warn('[dev-agent] plano da IA rejeitado:', erro?.code || erro?.name || 'resposta inválida');

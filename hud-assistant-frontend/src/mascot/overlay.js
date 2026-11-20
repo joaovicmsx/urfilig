@@ -4,6 +4,7 @@ import { emit, listen } from '@tauri-apps/api/event';
 import { HeadTracker } from './headTracker.js';
 import { carregarMascote } from './loader.js';
 import { MascotStateMachine } from './stateMachine.js';
+import { encontrarMeshComMorphTargets, setExpression } from './expressions.js';
 
 const canvas = document.querySelector('#overlay-canvas');
 const scene = new THREE.Scene();
@@ -31,6 +32,7 @@ let mascot = null;
 let tracker = null;
 let mixer = null;
 let mascotStateMachine = null;
+let faceMesh = null;
 let target = new THREE.Vector2();
 let pointerActive = false;
 const raycaster = new THREE.Raycaster();
@@ -50,9 +52,20 @@ carregarMascote('/models/mascote.glb', scene, 1.6).then(({ mascote, mixer: loade
   });
   mixer = loadedMixer;
   mascotStateMachine = new MascotStateMachine(mixer, clips);
+  faceMesh = encontrarMeshComMorphTargets(mascot);
   tracker = new HeadTracker(mascot, { distanciaAlvo: 4 });
 }).catch((error) => {
   console.error('[mascote-overlay] modelo indisponível:', error);
+});
+void listen('mascot:state', (event) => mascotStateMachine?.transitionTo(event.payload?.state));
+void listen('mascot:mode', (event) => mascotStateMachine?.setMode(event.payload?.mode));
+void listen('mascot:expression', (event) => {
+  const { shape, weight } = event.payload || {};
+  if (faceMesh && shape) setExpression(faceMesh, shape, weight);
+});
+void listen('mascot:outfit', (event) => {
+  const { part, visible } = event.payload || {};
+  mascot?.traverse((child) => { if (child.name === part) child.visible = Boolean(visible); });
 });
 void listen('mascot:mouse', (event) => {
   target.set(event.payload.x, event.payload.y);

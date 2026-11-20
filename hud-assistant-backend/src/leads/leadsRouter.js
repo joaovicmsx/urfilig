@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../db/client.js';
-import { perguntarOllama } from '../llm/ollamaClient.js';
+import { perguntarLLM } from '../llm/llmClient.js';
 import { emitirParaUsuario } from '../socket/index.js';
 import { montarParticulas } from '../persona/particlesBuilder.js';
 import { exigirAutenticacao } from '../auth/authMiddleware.js';
@@ -20,7 +20,7 @@ Nunca prometa prazo ou preço específico.
 `;
 
 /**
- * Pontua o lead antes de gastar uma chamada de Ollama gerando o pitch.
+ * Pontua o lead antes de gerar o rascunho de abordagem com a IA própria.
  * Mesma lógica que já estava na versão markdown, só que agora roda
  * antes de gravar no banco.
  */
@@ -53,14 +53,14 @@ leadsRouter.post('/leads/novo', async (req, res) => {
   try {
     let pitch = null;
     try {
-      pitch = await perguntarOllama(
+      pitch = await perguntarLLM(
         `Nicho: ${nicho || 'não informado'}\nBio: ${bio || ''}`,
         SYSTEM_PROMPT_PITCH
       );
     } catch {
       // A indisponibilidade do modelo não deve impedir o usuário de registrar
       // um lead; ele ainda pode revisar os dados e preparar o contato manualmente.
-      console.warn('[leads] Ollama indisponível; lead será salvo sem rascunho.');
+      console.warn('[leads] IA própria indisponível; lead será salvo sem rascunho.');
     }
 
     const lead = await prisma.lead.create({
@@ -78,7 +78,7 @@ leadsRouter.post('/leads/novo', async (req, res) => {
       return res.status(409).json({ erro: 'Você já tem um lead com esse contato' });
     }
     console.error('[leads] erro ao criar lead:', erro.message);
-    res.status(500).json({ erro: 'Falha ao criar lead (o Ollama está rodando?)' });
+    res.status(500).json({ erro: 'Falha ao criar lead.' });
   }
 });
 

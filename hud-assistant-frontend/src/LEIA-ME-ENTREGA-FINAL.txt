@@ -21,7 +21,7 @@ O QUE FOI CORRIGIDO
 - Janela de chat preserva o visual de vidro translúcido, sem gradientes de bolha marcantes.
 - Histórico das conversas sem fundo, inclusive itens, estado ativo, hover e pseudo-elementos.
 - Histórico continua exibindo somente nome, data e horário.
-- Nenhuma lógica de socket, backend, calendário, Groq, compartilhamento ou fluxo funcional foi alterada.
+- Nenhuma lógica de socket, backend, calendário, compartilhamento ou fluxo funcional foi alterada.
 
 VALIDAÇÃO
 - main.js: sintaxe validada.

@@ -29,7 +29,6 @@ export function iniciarDevAgent() {
   const form = document.querySelector('#dev-agent-form');
   const repoInput = document.querySelector('#dev-agent-repository');
   const descriptionInput = document.querySelector('#dev-agent-description');
-  const providerSelect = document.querySelector('#dev-agent-provider');
   const createButton = document.querySelector('#dev-agent-create');
   const tasksContainer = document.querySelector('#dev-agent-tasks');
   const message = document.querySelector('#dev-agent-message');
@@ -61,7 +60,6 @@ export function iniciarDevAgent() {
   const normalizar = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const repoRegex = /\b([a-z0-9](?:[a-z0-9_.-]{0,37}[a-z0-9])?)\/([a-z0-9](?:[a-z0-9_.-]{0,98}[a-z0-9])?)\b/i;
   const lerRepositorio = (texto) => texto.match(repoRegex)?.[0] || '';
-  const provedorAtual = () => localStorage.getItem('urfilig_llm_provider') === 'ollama' ? 'ollama' : 'gemini';
   const statusLabel = (status) => STATUS_LABELS[status] || status || 'Status indisponível';
 
   function mensagemChat(texto) {
@@ -188,18 +186,17 @@ export function iniciarDevAgent() {
     resultado = resultado.replace(/\b(?:no|do|para o|em|no\s+|em\s+)?\s*(?:reposit[oó]rio|repo)\b/gi, ' ');
     resultado = resultado.replace(/^\s*(?:para|sobre|de|que|:|-|,)+\s*/i, '');
     resultado = resultado.replace(/\s+\b(?:no|em|do)\s*$/i, '');
-    resultado = resultado.replace(/\s+(?:usando|com)\s+(?:o\s+)?(?:gemini|ollama|modelo local)\b.*$/i, '');
     return resultado.replace(/\s+/g, ' ').trim().replace(/[.?!]+$/, '');
   }
 
-  async function criarTarefaNoChat(repositorio, descricao, provider = provedorAtual()) {
+  async function criarTarefaNoChat(repositorio, descricao) {
     if (!repositorio) {
-      perguntaPendente = { tipo: 'criar-repositorio', descricao, provider };
+      perguntaPendente = { tipo: 'criar-repositorio', descricao };
       mensagemChat('Em qual repositório? Envie no formato organizacao/projeto.');
       return;
     }
     if (!descricao || descricao.length < 10) {
-      perguntaPendente = { tipo: 'criar-descricao', repositorio, provider };
+      perguntaPendente = { tipo: 'criar-descricao', repositorio };
       mensagemChat('O que a tarefa deve fazer? Descreva o resultado esperado em uma frase.');
       return;
     }
@@ -208,7 +205,7 @@ export function iniciarDevAgent() {
     try {
       const data = await api('/api/dev-agent/tarefas', {
         method: 'POST',
-        body: JSON.stringify({ repositorio, descricao, provider }),
+        body: JSON.stringify({ repositorio, descricao }),
       });
       const task = data.tarefa;
       progress.concluir();
@@ -296,13 +293,13 @@ export function iniciarDevAgent() {
         mensagemChat('Não identifiquei o repositório. Envie no formato organizacao/projeto.');
       } else {
         perguntaPendente = null;
-        await criarTarefaNoChat(repo, pendente.descricao, pendente.provider);
+        await criarTarefaNoChat(repo, pendente.descricao);
       }
       return true;
     }
     if (pendente.tipo === 'criar-descricao') {
       perguntaPendente = null;
-      await criarTarefaNoChat(pendente.repositorio, resposta, pendente.provider);
+      await criarTarefaNoChat(pendente.repositorio, resposta);
       return true;
     }
     if (pendente.tipo === 'escolher-tarefa') {
@@ -479,12 +476,10 @@ export function iniciarDevAgent() {
         body: JSON.stringify({
           repositorio: repoInput.value.trim(),
           descricao: descriptionInput.value.trim(),
-          provider: providerSelect.value,
         }),
       });
       say(data.aviso || 'Tarefa criada e plano preparado. Revise antes de aprovar.');
       form.reset();
-      providerSelect.value = 'gemini';
       await carregarTarefas();
     } catch (error) {
       say(error.message, true);

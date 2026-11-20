@@ -29,11 +29,11 @@ test('valida repositório e rejeita URL, caminho e separadores perigosos', () =>
   assert.match(validarRepositorio('owner//repo').erro, /formato/i);
 });
 
-test('rejeita corpo desconhecido, provider inválido e texto com controle', () => {
-  assert.match(validarCorpoCriarTarefa({ repositorio: 'joao/urfilig', descricao: 'Corrigir a tela de login.', provider: 'openai' }).erro, /provedor/i);
+test('rejeita corpo desconhecido, seleção de provedor e texto com controle', () => {
+  assert.match(validarCorpoCriarTarefa({ repositorio: 'joao/urfilig', descricao: 'Corrigir a tela de login.', provider: 'legacy' }).erro, /não permitidos/i);
   assert.match(validarCorpoCriarTarefa({ repositorio: 'joao/urfilig', descricao: 'Corrigir a tela de login.', extra: true }).erro, /não permitidos/i);
   assert.match(validarCorpoCriarTarefa({ repositorio: 'joao/urfilig', descricao: 'Corrigir\u0000 login.' }).erro, /controle/i);
-  assert.equal(validarCorpoCriarTarefa({ repositorio: 'joao/urfilig', descricao: 'Corrigir a tela de login.', provider: 'gemini' }).valor.provider, 'gemini');
+  assert.deepEqual(validarCorpoCriarTarefa({ repositorio: 'joao/urfilig', descricao: 'Corrigir a tela de login.' }).valor, { repositorio: 'joao/urfilig', descricao: 'Corrigir a tela de login.' });
 });
 
 test('bloqueia credenciais, caminhos fora do workspace e ids inválidos', () => {

@@ -2,11 +2,8 @@ import jwt from 'jsonwebtoken';
 
 /**
  * Middleware que exige um token JWT válido no header Authorization
- * (formato "Bearer <token>"). Ainda não está aplicado nas rotas existentes
- * (comando, leads, persona) — isso é proposital, ver a pendência de
- * isolamento de dados por usuário na nota do Obsidian. Quando essa
- * pendência for resolvida, é só importar e usar isso como middleware nas
- * rotas que precisam de dono.
+ * (formato "Bearer <token>") e associa a requisição ao usuário autenticado.
+ * Rotas com dados pessoais devem aplicá-lo antes de consultar o Prisma.
  */
 export function exigirAutenticacao(req, res, next) {
   const cabecalho = req.headers.authorization;

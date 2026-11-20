@@ -4,27 +4,46 @@ import { exigirAutenticacao } from '../auth/authMiddleware.js';
 
 export const agendaRouter = Router();
 agendaRouter.use(exigirAutenticacao);
+const TIMEZONE_AGENDA = 'America/Sao_Paulo';
+
+// Express 4 não encaminha rejeições de handlers async automaticamente.
+// Sem este adaptador, uma falha de conexão do Prisma pode virar unhandled
+// rejection e derrubar o processo inteiro do backend.
+const asyncRoute = (handler) => (req, res, next) => {
+  Promise.resolve(handler(req, res, next)).catch(next);
+};
+
+function dataLocalComoInstante(dataString, horario = '00:00') {
+  const data = String(dataString || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const hora = String(horario).match(/^(\d{2}):(\d{2})$/);
+  if (!data || !hora) return new Date(NaN);
+  const [ano, mes, dia] = data.slice(1).map(Number);
+  const [h, min] = hora.slice(1).map(Number);
+  const utcAlvo = Date.UTC(ano, mes - 1, dia, h, min);
+  const partes = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIMEZONE_AGENDA, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(utcAlvo)).reduce((obj, item) => ({ ...obj, [item.type]: item.value }), {});
+  const representadoComoUtc = Date.UTC(Number(partes.year), Number(partes.month) - 1, Number(partes.day), Number(partes.hour), Number(partes.minute));
+  return new Date(utcAlvo - (representadoComoUtc - utcAlvo));
+}
 
 function limitesDoDia(dataString) {
-  const base = dataString ? new Date(dataString) : new Date();
-  const inicio = new Date(base);
-  inicio.setHours(0, 0, 0, 0);
-  const fim = new Date(base);
-  fim.setHours(23, 59, 59, 999);
-  return { inicio, fim };
+  if (!dataString || !/^\d{4}-\d{2}-\d{2}$/.test(dataString)) {
+    const hoje = new Intl.DateTimeFormat('en-US', { timeZone: TIMEZONE_AGENDA, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date()).reduce((obj, item) => ({ ...obj, [item.type]: item.value }), {});
+    dataString = `${hoje.year}-${hoje.month}-${hoje.day}`;
+  }
+  const [ano, mes, dia] = dataString.split('-').map(Number);
+  const amanha = new Date(Date.UTC(ano, mes - 1, dia + 1)).toISOString().slice(0, 10);
+  return { inicio: dataLocalComoInstante(dataString), fim: new Date(dataLocalComoInstante(amanha).getTime() - 1) };
 }
 
 function dataDoLembrete(dataString, horario) {
-  const base = dataString ? new Date(dataString) : new Date();
-  if (horario && /^\d{2}:\d{2}$/.test(horario)) {
-    const [hora, minuto] = horario.split(':').map(Number);
-    base.setHours(hora, minuto, 0, 0);
-  }
-  return base;
+  return dataLocalComoInstante(dataString, horario);
 }
 
 /** Cria um lembrete e o registra também nas Notas e no Calendário. */
-agendaRouter.post('/lembretes', async (req, res) => {
+agendaRouter.post('/lembretes', asyncRoute(async (req, res) => {
   const titulo = String(req.body?.titulo || '').trim();
   const horario = String(req.body?.horario || '').trim();
   const data = req.body?.data;
@@ -65,12 +84,12 @@ agendaRouter.post('/lembretes', async (req, res) => {
   });
 
   res.status(201).json(item);
-});
+}));
 
 /**
  * POST /api/agenda  { titulo, horario?, data? }
  */
-agendaRouter.post('/agenda', async (req, res) => {
+agendaRouter.post('/agenda', asyncRoute(async (req, res) => {
   const { titulo, horario, data } = req.body;
 
   if (!titulo) {
@@ -87,12 +106,12 @@ agendaRouter.post('/agenda', async (req, res) => {
   });
 
   res.status(201).json(item);
-});
+}));
 
 /**
  * GET /api/agenda?data=2026-09-12  — lista os itens de um dia (padrão: hoje)
  */
-agendaRouter.get('/agenda', async (req, res) => {
+agendaRouter.get('/agenda', asyncRoute(async (req, res) => {
   if (req.query.lembretes === '1') {
     const [itens, eventos] = await Promise.all([
       prisma.agendaItem.findMany({ where: { usuarioId: req.usuarioId }, orderBy: [{ data: 'asc' }, { horario: 'asc' }] }),
@@ -114,12 +133,12 @@ agendaRouter.get('/agenda', async (req, res) => {
   });
 
   res.json(itens);
-});
+}));
 
 /**
  * POST /api/agenda/:id/concluir
  */
-agendaRouter.post('/agenda/:id/concluir', async (req, res) => {
+agendaRouter.post('/agenda/:id/concluir', asyncRoute(async (req, res) => {
   const resultado = await prisma.agendaItem.updateMany({
     where: { id: req.params.id, usuarioId: req.usuarioId },
     data: { concluido: true },
@@ -130,4 +149,4 @@ agendaRouter.post('/agenda/:id/concluir', async (req, res) => {
   }
 
   res.json({ ok: true });
-});
+}));

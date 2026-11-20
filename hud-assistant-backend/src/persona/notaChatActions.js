@@ -99,6 +99,19 @@ function alternativa(numero) {
   return null;
 }
 
+function alternativas(texto, quantidade) {
+  const entrada = normalizarNomeNota(texto);
+  if (/^(?:as duas|ambas|ambos|os dois|todas|todos)$/i.test(entrada)) {
+    return quantidade === 2 ? [0, 1] : null;
+  }
+  const numeros = [...entrada.matchAll(/\d+/g)].map((item) => Number(item[0]) - 1);
+  if (numeros.length > 1 && numeros.every((item) => item >= 0 && item < quantidade)) {
+    return [...new Set(numeros)];
+  }
+  const unica = alternativa(texto);
+  return unica !== null && unica < quantidade ? [unica] : null;
+}
+
 function salvarPendente(usuarioId, contexto) {
   contextosPendentes.set(usuarioId, { ...contexto, expiraEm: Date.now() + TTL_CONTEXTO_MS });
 }
@@ -177,13 +190,40 @@ async function concluirMovimento(prisma, usuarioId, nota, pasta) {
   return { resposta: `Mudei a nota “${atualizada.titulo}” para a pasta “${pasta.nome}”.`, notaMovida: atualizada };
 }
 
+async function concluirMovimentos(prisma, usuarioId, notas, pasta) {
+  const ids = notas.map((nota) => nota.id);
+  const resultado = await prisma.nota.updateMany({
+    where: { usuarioId, id: { in: ids } },
+    data: { pastaId: pasta.id },
+  });
+  if (resultado.count !== ids.length) {
+    const dados = await lerDadosDoUsuario(prisma, usuarioId);
+    const restantes = dados.notas.filter((nota) => ids.some((id) => String(id) === String(nota.id)));
+    salvarPendente(usuarioId, { acao: 'mover', notaIds: restantes.map((nota) => nota.id), pastaNome: pasta.nome, tipoPendente: 'nota', candidatos: restantes.map((nota) => nota.id) });
+    return { resposta: 'Uma das notas deixou de estar disponível. Confira quais notas ainda deseja mover.', precisaEsclarecer: true };
+  }
+  const atualizadas = await prisma.nota.findMany({ where: { usuarioId, id: { in: ids } } });
+  contextosPendentes.delete(usuarioId);
+  ultimaNotaPorUsuario.set(usuarioId, { id: atualizadas[0]?.id, titulo: atualizadas[0]?.titulo, expiraEm: Date.now() + TTL_CONTEXTO_MS });
+  return {
+    resposta: `Mudei ${atualizadas.length === 2 ? 'as duas notas' : `${atualizadas.length} notas`} para a pasta “${pasta.nome}”: ${atualizadas.map((nota) => `“${nota.titulo}”`).join(', ')}.`,
+    notaMovida: atualizadas[0],
+    notasMovidas: atualizadas,
+  };
+}
+
 async function executarAcaoPendente(prisma, usuarioId, pendente, selecao = null, criarPasta = false) {
   const { notas, pastas } = await lerDadosDoUsuario(prisma, usuarioId);
   let nota;
+  let notasSelecionadas = [];
   if (pendente.acao === 'criar') {
     nota = null;
   } else if (pendente.notaId !== undefined && pendente.notaId !== null) {
     nota = notas.find((item) => String(item.id) === String(pendente.notaId));
+    if (nota) notasSelecionadas = [nota];
+  } else if (Array.isArray(pendente.notaIds) && pendente.notaIds.length) {
+    notasSelecionadas = notas.filter((item) => pendente.notaIds.some((id) => String(id) === String(item.id)));
+    nota = notasSelecionadas[0];
   } else if (pendente.notaNome) {
     const opcoes = acharCorrespondencias(notas, pendente.notaNome, 'titulo');
     if (precisaEsclarecer(opcoes) && selecao === null) {
@@ -194,6 +234,7 @@ async function executarAcaoPendente(prisma, usuarioId, pendente, selecao = null,
       return { resposta: pergunta, precisaEsclarecer: true };
     }
     nota = selecao !== null ? opcoes[selecao] : opcoes[0];
+    if (nota) notasSelecionadas = [nota];
   }
   if (!nota && pendente.acao !== 'criar') {
     salvarPendente(usuarioId, { ...pendente, tipoPendente: 'nota', candidatos: null });
@@ -206,7 +247,7 @@ async function executarAcaoPendente(prisma, usuarioId, pendente, selecao = null,
     ? pastas.find((item) => String(item.id) === String(pendente.pastaId))
     : selecao !== null && pendente.tipoPendente === 'pasta' ? pastasDoMesmoNome[selecao] : resolucaoPasta.pasta;
   if (resolucaoPasta.ambigua && pendente.pastaId == null && !(selecao !== null && pendente.tipoPendente === 'pasta')) {
-    salvarPendente(usuarioId, { ...pendente, notaId: nota?.id ?? null, tipoPendente: 'pasta', candidatos: pastasDoMesmoNome.map((item) => item.id) });
+    salvarPendente(usuarioId, { ...pendente, notaId: notasSelecionadas.length > 1 ? null : (nota?.id ?? null), notaIds: notasSelecionadas.map((item) => item.id), tipoPendente: 'pasta', candidatos: pastasDoMesmoNome.map((item) => item.id) });
     const pergunta = `Encontrei pastas com nomes muito parecidos: ${listarOpcoes(pastasDoMesmoNome, 'nome')}. Qual delas?`;
     return { resposta: pergunta, precisaEsclarecer: true };
   }
@@ -215,11 +256,16 @@ async function executarAcaoPendente(prisma, usuarioId, pendente, selecao = null,
     pasta = await prisma.pasta.create({ data: { usuarioId, nome: pendente.pastaNome } });
   }
   if (!pasta) {
-    salvarPendente(usuarioId, { ...pendente, notaId: nota.id, tipoPendente: 'pasta', candidatos: null, aguardandoCriarPasta: true });
+    if (!pendente.pastaNome || normalizarNomeNota(pendente.pastaNome) === 'pasta') {
+      salvarPendente(usuarioId, { ...pendente, notaId: null, notaIds: notasSelecionadas.map((item) => item.id), tipoPendente: null, candidatos: null, aguardandoNomePasta: true });
+      return { resposta: 'Qual é o nome da pasta para onde devo mover a nota?', precisaEsclarecer: true };
+    }
+    salvarPendente(usuarioId, { ...pendente, notaId: notasSelecionadas.length > 1 ? null : nota.id, notaIds: notasSelecionadas.map((item) => item.id), tipoPendente: 'pasta', candidatos: null, aguardandoCriarPasta: true });
     return { resposta: `Não encontrei a pasta “${pendente.pastaNome}”. Quer que eu crie essa pasta?`, precisaEsclarecer: true };
   }
 
   if (pendente.acao === 'criar') return concluirCriacao(prisma, usuarioId, pendente.criacao, pasta);
+  if (notasSelecionadas.length > 1) return concluirMovimentos(prisma, usuarioId, notasSelecionadas, pasta);
   return concluirMovimento(prisma, usuarioId, nota, pasta);
 }
 
@@ -258,13 +304,21 @@ export async function processarAcaoDeNotaNoChat(prisma, usuarioId, texto) {
         const dadosAtuais = await lerDadosDoUsuario(prisma, usuarioId);
         const opcoesAtuais = pendente.tipoPendente === 'nota' ? dadosAtuais.notas : dadosAtuais.pastas;
         const itensValidos = opcoesAtuais.filter((item) => pendente.candidatos.some((id) => String(id) === String(item.id)));
-        const index = alternativa(texto);
+        const indices = alternativas(texto, itensValidos.length);
         const nomeCampo = pendente.tipoPendente === 'nota' ? 'titulo' : 'nome';
         const escolhaPorNome = itensValidos.filter((item) => normalizarNomeNota(item[nomeCampo]) === normalizarNomeNota(texto));
-        const selecionado = index !== null && index < pendente.candidatos.length
-          ? itensValidos.find((item) => String(item.id) === String(pendente.candidatos[index]))
+        const selecaoMultipla = pendente.tipoPendente === 'nota' && pendente.acao === 'mover' && indices?.length > 1
+          ? indices.map((index) => itensValidos[index]).filter(Boolean)
+          : null;
+        const selecionado = indices?.length === 1
+          ? itensValidos[indices[0]]
           : escolhaPorNome.length === 1 ? escolhaPorNome[0]
             : pendente.candidatos.length === 1 && eConfirmacaoCriar(texto) ? itensValidos[0] : null;
+        if (selecaoMultipla?.length > 1) {
+          const atualizada = { ...pendente, notaId: null, notaIds: selecaoMultipla.map((item) => item.id), tipoPendente: null, candidatos: null };
+          const resposta = await executarAcaoPendente(prisma, usuarioId, atualizada);
+          return { handled: true, ...resposta };
+        }
         if (selecionado) {
           const atualizada = { ...pendente, [pendente.tipoPendente === 'nota' ? 'notaId' : 'pastaId']: selecionado.id, tipoPendente: null, candidatos: null };
           if (pendente.tipoPendente === 'nota') atualizada.notaId = selecionado.id;
@@ -273,7 +327,23 @@ export async function processarAcaoDeNotaNoChat(prisma, usuarioId, texto) {
           return { handled: true, ...resposta };
         }
         const nomes = listarOpcoes(itensValidos, nomeCampo);
-        return { handled: true, resposta: `Responda com o número ou o título/nome exato do item: ${nomes || 'as opções anteriores'}.`, precisaEsclarecer: true };
+        const aceitarAmbas = pendente.tipoPendente === 'nota' && pendente.acao === 'mover' && itensValidos.length === 2 ? ' Você também pode responder “as duas”.' : '';
+        return { handled: true, resposta: `Responda com o número ou o título/nome exato do item: ${nomes || 'as opções anteriores'}.${aceitarAmbas}`, precisaEsclarecer: true };
+      }
+
+      if (pendente.aguardandoNomePasta) {
+        const nomeInformado = String(texto || '').trim().replace(/[.!?]+$/, '');
+        if (!nomeInformado || /^(?:sim|s|n[aã]o|ok|certo)$/i.test(nomeInformado)) {
+          return { handled: true, resposta: 'Diga o nome da pasta para onde devo mover a nota.', precisaEsclarecer: true };
+        }
+        const dados = await lerDadosDoUsuario(prisma, usuarioId);
+        const resolucao = resolverPastaPorNome(dados.pastas, nomeInformado);
+        if (resolucao.ambigua) {
+          salvarPendente(usuarioId, { ...pendente, pastaNome: nomeInformado, aguardandoNomePasta: false, tipoPendente: 'pasta', candidatos: resolucao.candidatas.map((item) => item.id) });
+          return { handled: true, resposta: `Encontrei pastas parecidas: ${listarOpcoes(resolucao.candidatas, 'nome')}. Qual delas?`, precisaEsclarecer: true };
+        }
+        const resposta = await executarAcaoPendente(prisma, usuarioId, { ...pendente, pastaNome: nomeInformado, aguardandoNomePasta: false });
+        return { handled: true, ...resposta };
       }
 
       if (pendente.aguardandoCriarPasta) {

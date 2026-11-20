@@ -1,7 +1,6 @@
 const REPOSITORIO_REGEX = /^(?!\.)(?!.*\.\.)([A-Za-z0-9](?:[A-Za-z0-9_.-]{0,37}[A-Za-z0-9])?)\/([A-Za-z0-9](?:[A-Za-z0-9_.-]{0,98}[A-Za-z0-9])?)$/;
 const ID_TAREFA_REGEX = /^[A-Za-z0-9_-]{10,64}$/;
-const PROVEDORES_PERMITIDOS = new Set(['gemini', 'ollama']);
-const CAMPOS_CRIAR_TAREFA = new Set(['repositorio', 'descricao', 'provider']);
+const CAMPOS_CRIAR_TAREFA = new Set(['repositorio', 'descricao']);
 const CAMPOS_PLANO = new Set(['objetivo', 'resumo', 'risco', 'etapas', 'arquivosProvaveis', 'testes', 'bloqueios']);
 const RISCOS_PERMITIDOS = new Set(['BAIXO', 'MEDIO', 'ALTO']);
 
@@ -70,9 +69,8 @@ export function validarCorpoCriarTarefa(corpo) {
   if (camposDesconhecidos.length) return { erro: `Campos não permitidos: ${camposDesconhecidos.join(', ')}.` };
   const repositorio = validarRepositorio(corpo.repositorio);
   const descricao = validarDescricaoTarefa(corpo.descricao);
-  const provider = validarProvider(corpo.provider);
-  if (repositorio.erro || descricao.erro || provider.erro) return { erro: repositorio.erro || descricao.erro || provider.erro };
-  return { valor: { repositorio: repositorio.valor, descricao: descricao.valor, provider: provider.valor } };
+  if (repositorio.erro || descricao.erro) return { erro: repositorio.erro || descricao.erro };
+  return { valor: { repositorio: repositorio.valor, descricao: descricao.valor } };
 }
 
 export function validarRepositorio(repositorio) {
@@ -84,12 +82,6 @@ export function validarRepositorio(repositorio) {
 
 export function validarDescricaoTarefa(descricao) {
   return textoSeguro(descricao, { campo: 'A tarefa', minimo: 10, maximo: 4000 });
-}
-
-export function validarProvider(provider) {
-  if (provider === undefined) return { valor: undefined };
-  if (typeof provider !== 'string' || !PROVEDORES_PERMITIDOS.has(provider)) return { erro: 'Provedor inválido. Use gemini ou ollama.' };
-  return { valor: provider };
 }
 
 export function validarIdTarefa(id) {

@@ -1,6 +1,8 @@
 :root {
   color-scheme: dark;
   --rail-width: 84px;
+  --content-center-shift: 34px;
+  --chat-center-offset: 64px;
   --surface: rgba(12, 25, 55, .76);
   --surface-raised: rgba(20, 39, 76, .84);
   --surface-input: rgba(210, 228, 255, .075);
@@ -405,7 +407,6 @@ body:has(.email-wrapper) { display: flex !important; flex-direction: column !imp
 .hud-clock-date, .hud-clock-weather { margin-top:4px; color:rgba(255,250,228,.88); font:600 .73rem "Comic Sans MS","Trebuchet MS",cursive !important; text-transform:capitalize; }
 #hud-quick-controls { position:fixed; z-index:155; left:calc(var(--rail-width) + 14px); bottom:14px; display:grid; grid-template-columns:auto minmax(130px, 190px); gap:6px 9px; align-items:center; padding:10px 12px; color:var(--text-secondary); background:rgba(12,13,16,.62); border:0; border-radius:14px; backdrop-filter:blur(20px) saturate(135%); -webkit-backdrop-filter:blur(20px) saturate(135%); box-shadow:0 9px 24px rgba(0,0,0,.2); font-size:.7rem; }
 #hud-quick-controls label { grid-column:1; color:var(--text-muted); }
-#quick-chat-provider { grid-column:2; min-width:0; width:100%; padding:6px 8px; color:var(--text-primary); background:rgba(255,255,255,.07); border:0; border-radius:8px; }
 #mascot-overlay-toggle { grid-column:1 / -1; padding:7px 9px !important; color:var(--text-primary) !important; background:rgba(255,255,255,.07) !important; border:0 !important; border-radius:9px !important; font-size:.7rem !important; cursor:pointer; }
 #mascot-overlay-toggle[aria-pressed="true"] { background:color-mix(in srgb,var(--time-accent) 24%,rgba(255,255,255,.06)) !important; }
 #routine-board { position:fixed; z-index:6; right:24px; bottom:24px; width:min(340px,calc(100vw - var(--rail-width) - 36px)); display:grid; gap:10px; pointer-events:auto; }
@@ -482,7 +483,6 @@ body:has(.email-wrapper) { display: flex !important; flex-direction: column !imp
 .email-wrapper { grid-template-columns: minmax(130px,164px) minmax(175px,230px) minmax(0,1fr) !important; }
 .email-caixas-card, .email-lista-card, .email-leitor-card { background: rgba(255,255,255,.028) !important; }
 .email-leitor-card { padding: 14px !important; }
-#chat-provider { flex: 0 0 auto; width: 104px; min-width: 90px; height: 34px; padding: 0 7px; color: var(--text-secondary) !important; background: rgba(255,255,255,.055) !important; font-size: .69rem !important; }
 .chat-form-inferior { gap: 8px !important; }
 @media (max-width: 700px) {
   #hud-clock-widget { top: 9px; }
@@ -502,12 +502,11 @@ body:has(.email-wrapper) { display: flex !important; flex-direction: column !imp
 .nav-logout { margin-top: auto !important; }
 #hud-quick-controls { position: fixed !important; z-index: 155 !important; left: calc(var(--rail-width) + 14px) !important; bottom: 16px !important; display: flex !important; flex-direction: row !important; align-items: center !important; gap: 8px !important; width: max-content !important; max-width: min(360px,calc(100vw - var(--rail-width) - 24px)) !important; padding: 9px 11px !important; color: var(--text-secondary); background: rgba(20,16,30,.66) !important; border: 1px solid rgba(255,255,255,.075) !important; border-radius: 14px !important; box-shadow: 0 12px 35px rgba(0,0,0,.26),0 0 24px rgba(151,79,213,.08) !important; backdrop-filter: blur(22px) saturate(135%) !important; -webkit-backdrop-filter: blur(22px) saturate(135%) !important; font-size: .67rem !important; }
 #hud-quick-controls label { white-space: nowrap; color: var(--text-muted); }
-#quick-chat-provider { flex: 0 1 148px; width: 148px; min-width: 105px; }
 #mascot-overlay-toggle { flex: 0 0 auto; white-space: nowrap; }
 #mascot-overlay-toggle.nav-item { flex: 0 0 auto; }
 #mascot-overlay-toggle[aria-pressed="true"] { color: color-mix(in srgb, var(--time-accent) 74%, white) !important; background: color-mix(in srgb, var(--time-accent) 11%, rgba(255,255,255,.045)) !important; }
 #mascot-overlay-toggle[aria-pressed="true"] svg { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--time-accent) 30%, transparent)); }
-#quick-chat-provider, #chat-provider, select { color-scheme: dark !important; color: var(--text-primary) !important; background-color: #17191e !important; border: 1px solid rgba(255,255,255,.09) !important; }
+select { color-scheme: dark !important; color: var(--text-primary) !important; background-color: #17191e !important; border: 1px solid rgba(255,255,255,.09) !important; }
 select option { color: #f0f1f3 !important; background: #17191e !important; }
 .hud-clock-time { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; font-weight: 400 !important; letter-spacing: .02em !important; }
 .hud-clock-date, .hud-clock-weather { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; font-weight: 400 !important; }
@@ -521,38 +520,8 @@ select option { color: #f0f1f3 !important; background: #17191e !important; }
 .routine-square.done { box-shadow: 0 0 8px color-mix(in srgb,var(--routine-color) 52%,transparent) !important; }
 .routine-square:not(.done) { background: rgba(255,255,255,.1) !important; }
 
-/* Poucas estrelas pequenas sobre o fundo liso, com cintilação quase imperceptível. */
-#sky-events::before, #sky-events::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background-repeat: no-repeat;
-}
-#sky-events::before {
-  opacity: .48;
-  background-image:
-    radial-gradient(1px 1px at 8% 17%, rgba(255,255,255,.72) 98%, transparent),
-    radial-gradient(1px 1px at 19% 68%, rgba(255,255,255,.54) 98%, transparent),
-    radial-gradient(1px 1px at 31% 31%, rgba(255,255,255,.62) 98%, transparent),
-    radial-gradient(1px 1px at 43% 82%, rgba(255,255,255,.48) 98%, transparent),
-    radial-gradient(1px 1px at 56% 14%, rgba(255,255,255,.64) 98%, transparent),
-    radial-gradient(1px 1px at 68% 58%, rgba(255,255,255,.5) 98%, transparent),
-    radial-gradient(1px 1px at 79% 26%, rgba(255,255,255,.68) 98%, transparent),
-    radial-gradient(1px 1px at 91% 74%, rgba(255,255,255,.52) 98%, transparent);
-  animation: star-twinkle 8s ease-in-out infinite alternate;
-}
-#sky-events::after {
-  opacity: .32;
-  background-image:
-    radial-gradient(1px 1px at 13% 43%, rgba(255,249,225,.72) 98%, transparent),
-    radial-gradient(1px 1px at 26% 89%, rgba(255,249,225,.56) 98%, transparent),
-    radial-gradient(1px 1px at 38% 9%, rgba(255,249,225,.62) 98%, transparent),
-    radial-gradient(1px 1px at 51% 47%, rgba(255,249,225,.52) 98%, transparent),
-    radial-gradient(1px 1px at 64% 91%, rgba(255,249,225,.6) 98%, transparent),
-    radial-gradient(1px 1px at 76% 67%, rgba(255,249,225,.58) 98%, transparent),
-    radial-gradient(1px 1px at 87% 39%, rgba(255,249,225,.68) 98%, transparent);
-  animation: star-twinkle 11s ease-in-out infinite alternate-reverse;
-}
-@keyframes star-twinkle { from { opacity: .22; } to { opacity: .52; } }
-@media (prefers-reduced-motion: reduce) { #sky-events::before, #sky-events::after { animation: none !important; } }
+/* Sem estrelas decorativas; o canvas continua reservado para as memórias. */
+#sky-events::before, #sky-events::after { content: none !important; display: none !important; }
 
 /* Glass-and-glow surfaces from the supplied visual reference. */
 .sidebar-cerebro,.sidebar,#email-painel,.intel-modal-card,.routine-modal,.routine-card,.routine-overlay-card { background:rgba(18,16,27,.68) !important; border:1px solid rgba(255,255,255,.075) !important; box-shadow:0 26px 80px rgba(0,0,0,.42),0 0 38px rgba(131,67,190,.1) !important; backdrop-filter:blur(30px) saturate(145%) !important; -webkit-backdrop-filter:blur(30px) saturate(145%) !important; }
@@ -586,7 +555,7 @@ select option { color: #f0f1f3 !important; background: #17191e !important; }
 .intel-trend-topics { display:flex; flex-wrap:wrap; gap:7px; padding:10px 12px; background:rgba(255,255,255,.035); border-radius:12px; }
 .intel-trend-topics strong { flex:0 0 100%; color:var(--text-primary); font-size:.75rem; }
 .intel-trend-topic { padding:5px 9px; color:#e8d9ff !important; background:rgba(159,96,218,.16) !important; border:1px solid rgba(192,138,239,.12) !important; border-radius:99px !important; font-size:.67rem; }
-@media (max-width:700px) { #hud-quick-controls { left:calc(var(--rail-width) + 8px) !important; bottom:10px !important; gap:5px !important; max-width:calc(100vw - var(--rail-width) - 16px) !important; padding:7px !important; } #quick-chat-provider { width:115px; min-width:80px; } #mascot-overlay-toggle { font-size:.62rem !important; padding-inline:7px !important; } .intel-modal.trends-wide .intel-modal-card { width:calc(100vw - 20px) !important; } .intel-trend-grid { grid-template-columns:1fr !important; } }
+@media (max-width:700px) { #hud-quick-controls { left:calc(var(--rail-width) + 8px) !important; bottom:10px !important; gap:5px !important; max-width:calc(100vw - var(--rail-width) - 16px) !important; padding:7px !important; } #mascot-overlay-toggle { font-size:.62rem !important; padding-inline:7px !important; } .intel-modal.trends-wide .intel-modal-card { width:calc(100vw - 20px) !important; } .intel-trend-grid { grid-template-columns:1fr !important; } }
 @media (max-height: 720px) { #top-hud-bar { padding-block: 6px !important; } .nav-item { min-height: 39px !important; } #hud-quick-controls { gap: 3px !important; } }
 @media (max-width: 700px) { #routine-board { bottom: 76px !important; right: 10px !important; width: min(330px,calc(100vw - var(--rail-width) - 18px)) !important; } }
 @media (prefers-reduced-motion: reduce) { #sky-events::before, #sky-events::after, .routine-progress span { animation:none !important; transition:none !important; } }
@@ -819,31 +788,9 @@ button:active, .nav-item:active { transform: scale(.96) !important; }
   box-shadow: 0 4px 14px rgba(182,78,191,.18), inset 0 1px rgba(255,255,255,.16) !important;
 }
 #chat-form .chat-btn-enviar:hover { filter: brightness(1.08); transform: translateY(-1px); }
-#chat-model-control {
-  position: fixed !important; z-index: 181 !important; right: 22px !important; bottom: 7px !important;
-  display: inline-flex !important; align-items: center; justify-content: flex-end;
-  color: rgba(236,229,247,.68) !important; background: transparent !important;
-  border: 0 !important; box-shadow: none !important;
-}
-#chat-model-control select {
-  width: auto !important; min-width: 0 !important; max-width: 190px !important;
-  padding: 3px 17px 3px 4px !important; color: rgba(236,229,247,.75) !important;
-  background: transparent !important; background-color: transparent !important;
-  border: 0 !important; border-radius: 0 !important; box-shadow: none !important;
-  appearance: none !important; -webkit-appearance: none !important; outline: none !important;
-  font-size: .71rem !important; text-align: right; cursor: pointer;
-}
-#chat-model-control::after {
-  content: ""; position: absolute; right: 4px; top: 50%; width: 6px; height: 6px;
-  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-  transform: translateY(-70%) rotate(45deg); pointer-events: none;
-}
-#chat-model-control:hover, #chat-model-control select:hover { color: #fff !important; }
 #hud-quick-controls { width: auto !important; }
 @media (max-width: 700px) {
   #chat-form.chat-form-inferior { bottom: 38px !important; width: calc(100vw - var(--rail-width) - 28px) !important; }
-  #chat-model-control { right: 12px !important; bottom: 7px !important; }
-  #chat-model-control select { max-width: 145px !important; font-size: .66rem !important; }
 }
 
 /* The profile is an in-app side panel, not a second onboarding page. */
@@ -1269,7 +1216,7 @@ button:active, .nav-item:active { transform: scale(.96) !important; }
 .spotify-connect-panel #spotify-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .spotify-library-panel { display: none !important; }
 
-/* The composer joins the chat launcher; the provider control stays clickable above the HUD. */
+/* The composer joins the chat launcher. */
 #chat-form.chat-form-inferior {
   left: auto !important; right: 68px !important; bottom: 24px !important;
   width: min(580px, calc(100vw - var(--rail-width) - 132px)) !important;
@@ -1288,18 +1235,11 @@ button:active, .nav-item:active { transform: scale(.96) !important; }
   pointer-events: auto !important;
 }
 #chat-restaurar:hover { color: var(--text-primary) !important; background: rgba(42,34,62,.84) !important; }
-#chat-model-control {
-  position: fixed !important; right: 68px !important; bottom: 3px !important;
-  z-index: 183 !important; display: inline-flex !important; align-items: center;
-  pointer-events: auto !important; cursor: pointer;
-}
-#chat-model-control select { pointer-events: auto !important; cursor: pointer !important; }
 #chat-painel.chat-expanded #chat-form.chat-form-inferior {
   right: 20px !important; bottom: 24px !important;
   width: min(580px, calc(100vw - var(--rail-width) - 48px)) !important;
   border-radius: 18px !important;
 }
-#chat-painel.chat-expanded #chat-model-control { right: 20px !important; }
 @media (max-width: 700px) {
   #chat-form.chat-form-inferior {
     right: 68px !important; bottom: 38px !important;
@@ -1307,9 +1247,7 @@ button:active, .nav-item:active { transform: scale(.96) !important; }
     min-width: 0 !important; padding-left: 12px !important;
   }
   #chat-restaurar { right: 20px !important; bottom: 38px !important; width: 48px !important; height: 52px !important; }
-  #chat-model-control { right: 68px !important; bottom: 8px !important; }
   #chat-painel.chat-expanded #chat-form.chat-form-inferior { right: 20px !important; width: calc(100vw - var(--rail-width) - 40px) !important; }
-  #chat-painel.chat-expanded #chat-model-control { right: 20px !important; }
 }
 
 /* Account settings and integrations live together behind the rail's settings item. */
@@ -2039,44 +1977,6 @@ body:has(.email-wrapper) .email-lendo.email-wrapper > .email-leitor-card {
   }
 }
 
-/* O seletor de provedor usa um menu próprio para não depender do popup nativo do sistema. */
-#chat-model-control { z-index: 12000 !important; }
-#chat-model-control::after { display: none !important; }
-#chat-model-trigger {
-  display: inline-flex !important; align-items: center; justify-content: center; gap: 5px;
-  min-height: 25px; padding: 3px 4px !important; color: rgba(236,229,247,.74) !important;
-  background: transparent !important; border: 0 !important; border-radius: 7px !important;
-  box-shadow: none !important; font: inherit !important; font-size: .69rem !important;
-  cursor: pointer; transition: color .16s ease, background .16s ease;
-}
-#chat-model-trigger:hover, #chat-model-trigger[aria-expanded="true"] {
-  color: var(--text-primary) !important; background: rgba(255,255,255,.055) !important;
-}
-#chat-model-trigger svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; transition: transform .18s ease; }
-#chat-model-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
-#chat-model-menu {
-  position: absolute; right: 0; bottom: calc(100% + 7px); z-index: 12001;
-  display: grid; min-width: 132px; gap: 2px; padding: 5px;
-  color: var(--text-primary); background: rgba(23,20,34,.96);
-  border: 1px solid rgba(255,255,255,.09); border-radius: 11px;
-  box-shadow: 0 12px 34px rgba(0,0,0,.36), inset 0 1px rgba(255,255,255,.04);
-  backdrop-filter: blur(22px) saturate(140%); -webkit-backdrop-filter: blur(22px) saturate(140%);
-  animation: glass-window-in .14s ease both;
-}
-#chat-model-menu[hidden] { display: none !important; }
-#chat-model-menu button {
-  width: 100%; min-height: 32px; padding: 6px 9px; color: var(--text-secondary);
-  background: transparent; border: 0; border-radius: 7px; font: inherit; font-size: .72rem;
-  text-align: left; cursor: pointer; transition: color .15s ease, background .15s ease;
-}
-#chat-model-menu button:hover, #chat-model-menu button[aria-checked="true"] {
-  color: var(--text-primary); background: rgba(255,255,255,.08);
-}
-#quick-chat-provider[hidden] { display: none !important; }
-@media (max-width: 700px) {
-  #chat-model-control { right: 68px !important; bottom: 8px !important; }
-  #chat-painel.chat-expanded #chat-model-control { right: 20px !important; }
-}
 
 /* Número do dia em uma cápsula de vidro, seguindo a referência enviada. */
 #routine-board .routine-card > header { display: flex; align-items: center; gap: 9px; }
@@ -2447,10 +2347,11 @@ body:has(#hud-canvas)::before {
   inset: 0 0 auto var(--rail-width) !important;
   height: min(54vh, 470px) !important;
   pointer-events: none !important;
-  background: radial-gradient(ellipse 58% 62% at 50% -8%, var(--aura-color), transparent 75%),
-    linear-gradient(180deg, color-mix(in srgb, var(--aura-color) 26%, transparent), transparent 92%) !important;
+  background:
+    radial-gradient(ellipse 48% 56% at 50% -12%, var(--aura-color), transparent 76%),
+    linear-gradient(180deg, color-mix(in srgb, var(--aura-color) 26%, transparent), transparent 94%) !important;
   mix-blend-mode: screen !important;
-  opacity: .92 !important;
+  opacity: .78 !important;
   animation: none !important;
   transition: background 1s ease, opacity 1s ease !important;
 }
@@ -2504,8 +2405,6 @@ html[data-theme="light"] body:has(#hud-canvas)::before { mix-blend-mode: soft-li
 #chat-composer { top: 50% !important; }
 #home-greeting { left: 50% !important; }
 #chat-composer .chat-form-inferior { position: relative !important; }
-#chat-composer #chat-model-trigger { color: var(--text-secondary) !important; }
-#chat-composer #chat-model-trigger:hover { color: var(--text-primary) !important; }
 html[data-theme="light"] .chat-msg.usuario,
 html[data-theme="light"] .chat-msg.urfilig,
 html[data-theme="light"] #chat-historico .chat-historico-header span,
@@ -2521,11 +2420,10 @@ html[data-theme="light"] #chat-composer #chat-input::placeholder { color: var(--
 html[data-theme="light"] #chat-composer .chat-btn-enviar { color: #fff !important; background: linear-gradient(135deg, #7289db, #5b8bd2) !important; }
 
 @media (max-width: 720px) {
-  :root { --rail-width: 76px; }
-  #home-greeting { top: 6vh !important; width: calc(100vw - var(--rail-width) - 22px) !important; }
+  :root { --rail-width: 76px; --content-center-shift: 14px; --chat-center-offset: 24px; }
+  #home-greeting { top: 6vh !important; left: 50% !important; width: calc(100vw - var(--rail-width) - 22px) !important; }
   #hud-clock-widget { top: auto !important; right: 12px !important; bottom: 12px !important; }
-  .hud-clock-date, .hud-clock-weather { display: none !important; }
-  #chat-composer { top: 55% !important; }
+  #chat-composer { top: 50% !important; left: calc(50% + var(--rail-width) / 2 + var(--content-center-shift)) !important; width: calc(100vw - var(--rail-width) - 32px) !important; }
   #chat-composer .chat-form-inferior { height: 116px !important; min-height: 116px !important; padding-inline: 13px !important; border-radius: 24px !important; }
   #chat-painel.chat-expanded #chat-composer { top: auto !important; }
 }
@@ -2556,15 +2454,17 @@ html[data-theme="light"] #chat-composer .chat-btn-enviar { color: #fff !importan
   height: 46px !important;
   padding: 10px !important;
   color: var(--text-primary) !important;
-  background: var(--nav-glass) !important;
-  border: 1px solid var(--nav-glass-edge) !important;
+  background: transparent !important;
+  border: 0 !important;
   border-radius: 15px !important;
-  box-shadow: 0 9px 24px rgba(0, 8, 18, .20), inset 0 1px rgba(255,255,255,.14) !important;
-  backdrop-filter: blur(24px) saturate(130%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(130%) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   cursor: pointer !important;
 }
 #menu-toggle svg { display: block !important; width: 24px !important; height: 24px !important; fill: none !important; stroke: currentColor !important; stroke-width: 2 !important; stroke-linecap: round !important; }
+#menu-toggle:hover { background: transparent !important; box-shadow: none !important; }
+#menu-toggle:focus-visible { outline: 2px solid var(--text-primary) !important; outline-offset: 2px !important; }
 .hud-nav, .hud-nav[hidden] { display: none !important; }
 #top-hud-bar.menu-open {
   inset: 12px auto 12px 12px !important;
@@ -2628,4 +2528,41 @@ html[data-theme="light"] #top-hud-bar.menu-open { background: linear-gradient(14
 @media (max-width: 720px) {
   #top-hud-bar.menu-open { inset: 10px auto 10px 10px !important; width: min(256px, calc(100vw - 20px)) !important; }
   #top-hud-bar.menu-open:hover, #top-hud-bar.menu-open:focus-within { width: min(256px, calc(100vw - 20px)) !important; }
+}
+
+/* Alinhamento final da área de conversa com a saudação e o mascote. */
+body:has(#hud-canvas) #chat-composer {
+  left: 50% !important;
+  width: min(740px, calc(100vw - var(--rail-width) - 48px)) !important;
+}
+body:has(#hud-canvas) #chat-composer .chat-form-inferior:focus-within,
+body:has(#hud-canvas) #chat-composer #chat-input:focus,
+body:has(#hud-canvas) #chat-composer #chat-input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+@media (max-width: 720px) {
+  body:has(#hud-canvas) #chat-composer {
+    left: 50% !important;
+    width: calc(100vw - var(--rail-width) - 32px) !important;
+  }
+}
+
+/* Data e clima permanecem no centro da tela, independentes do compositor. */
+body:has(#hud-canvas) #hud-clock-widget {
+  top: 16px !important;
+  right: auto !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  justify-items: center !important;
+}
+
+/* Mantém a aura no topo, com brilho contido. */
+body:has(#hud-canvas)::before {
+  height: min(38vh, 320px) !important;
+  background:
+    radial-gradient(ellipse 54% 62% at 50% -24%, var(--aura-color), transparent 72%),
+    linear-gradient(180deg, color-mix(in srgb, var(--aura-color) 22%, transparent), transparent 86%) !important;
+  opacity: .76 !important;
 }

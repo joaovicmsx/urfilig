@@ -23,10 +23,11 @@ Todas as rotas exigem `Authorization: Bearer <JWT>`.
 ```json
 {
   "repositorio": "joaovicmsx/urfilig",
-  "descricao": "Corrigir o tratamento de erros no login e cobrir com testes.",
-  "provider": "gemini"
+  "descricao": "Corrigir o tratamento de erros no login e cobrir com testes."
 }
 ```
+
+Os planos são gerados pela API própria do Urfilig configurada em `URFILIG_API_URL`.
 
 ### Consultar tarefas
 

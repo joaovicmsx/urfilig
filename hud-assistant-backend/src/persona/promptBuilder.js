@@ -40,10 +40,14 @@ Responda sempre em português, com clareza e sem repetir informações.`;
  * o bastante pra esse filtro simples não dar conta mais.
  */
 export async function montarSystemPrompt(usuarioId, { sentimento, prioridade, responseStyle = 'equilibrada', responseTone = 'natural' }) {
-  const [usuario, tracos, bordoes, diretrizes, reflexoes] = await Promise.all([
+  const [usuario, tracos, bordoes, notas, memorias] = await Promise.all([
     prisma.usuario.findUnique({ where: { id: usuarioId } }),
     prisma.temperamento.findMany({ where: { usuarioId, ativo: true }, orderBy: { intensidade: 'desc' }, take: 5 }),
     prisma.bordao.findMany({ where: { usuarioId }, orderBy: { createdAt: 'desc' }, take: 8 }),
+    prisma.nota.findMany({ where: { usuarioId }, orderBy: { dataCriacao: 'desc' }, take: 8, select: { titulo: true, conteudo: true } }),
+    prisma.memory.findMany({ where: { usuarioId }, orderBy: { updatedAt: 'desc' }, take: 8, select: { titulo: true, conteudo: true, categoria: true } }),
+  ]);
+  const [diretrizes, reflexoes] = await Promise.all([
     prisma.diretriz.findMany({ where: { usuarioId, ativo: true }, orderBy: { createdAt: 'desc' }, take: 10 }),
     prisma.reflexao.findMany({ where: { usuarioId }, orderBy: { data: 'desc' }, take: 3 }),
   ]);
@@ -61,6 +65,12 @@ export async function montarSystemPrompt(usuarioId, { sentimento, prioridade, re
     formal: 'Use um tom profissional e respeitoso.',
   };
   prompt += `\n\nPreferências de conversa: ${estilosResposta[responseStyle] || estilosResposta.equilibrada} ${tonsResposta[responseTone] || tonsResposta.natural}`;
+
+  const contextoPessoal = [
+    ...notas.map((item) => `Nota — ${item.titulo}: ${item.conteudo.slice(0, 500)}`),
+    ...memorias.map((item) => `Memória (${item.categoria}) — ${item.titulo}: ${item.conteudo.slice(0, 500)}`),
+  ].slice(0, 16);
+  if (contextoPessoal.length) prompt += `\n\nNotas e memórias recentes do usuário (use como contexto e não invente detalhes além do que está registrado):\n${contextoPessoal.map((item) => `- ${item}`).join('\n')}`;
 
   if (diretrizes.length > 0) {
     const listaDiretrizes = diretrizes.map((d) => `- ${d.conteudo}`).join('\n');

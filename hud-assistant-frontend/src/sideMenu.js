@@ -107,19 +107,20 @@ export function iniciarMenuLateral(socket) {
     const gmailStatus = document.querySelector('#settings-gmail-status');
     if (gmailStatus) gmailStatus.textContent = localStorage.getItem('google_access_token') ? 'Autorização salva; validade verificada ao abrir E-mails' : 'Não conectado';
 
-    const geminiStatus = document.querySelector('#settings-gemini-status');
-    const ollamaStatus = document.querySelector('#settings-ollama-status');
+    const urfiligStatus = document.querySelector('#settings-urfilig-status');
     try {
       const response = await fetch(`${BACKEND_URL}/api/inteligencia/llm-status`, { headers: cabecalhoAuth(), cache: 'no-store' });
       const status = response.ok ? await response.json() : null;
       if (!status) throw new Error('status indisponível');
-      if (geminiStatus) geminiStatus.textContent = status.gemini ? 'Chave configurada; validação ao enviar mensagem' : 'Configure uma chave da Gemini API';
-      if (ollamaStatus) ollamaStatus.textContent = status.ollama
-        ? `Disponível · ${status.ollamaModel}`
-        : status.ollamaServidor ? `Modelo ${status.ollamaModel} não encontrado` : 'Servidor local indisponível';
+      if (urfiligStatus) {
+        urfiligStatus.hidden = false;
+        urfiligStatus.textContent = status.disponivel ? 'IA própria conectada' : 'IA própria indisponível';
+      }
     } catch {
-      if (geminiStatus) geminiStatus.textContent = 'Não foi possível consultar a configuração';
-      if (ollamaStatus) ollamaStatus.textContent = 'Não foi possível consultar o serviço local';
+      if (urfiligStatus) {
+        urfiligStatus.hidden = false;
+        urfiligStatus.textContent = 'Não foi possível consultar a IA própria';
+      }
     }
   }
 
@@ -317,7 +318,7 @@ export function iniciarMenuLateral(socket) {
       if (!response.ok) throw new Error(result.erro || 'Não foi possível excluir a conta.');
       let usuario = {};
       try { usuario = JSON.parse(localStorage.getItem('urfilig_usuario') || '{}'); } catch { /* continua removendo o restante local */ }
-      for (const key of ['urfilig_preferencias', 'urfilig_llm_provider', 'urfilig_prospeccao_nicho', 'urfilig_routine_boards_v1', 'urfilig_contatos_favoritos', 'google_access_token', 'redirect_after_login']) localStorage.removeItem(key);
+      for (const key of ['urfilig_preferencias', 'urfilig_prospeccao_nicho', 'urfilig_routine_boards_v1', 'urfilig_contatos_favoritos', 'google_access_token', 'redirect_after_login']) localStorage.removeItem(key);
       if (usuario.id) localStorage.removeItem(`urfilig_spotify_session:${usuario.id}`);
       if (deleteMessage) deleteMessage.textContent = 'Conta excluída. Encerrando sessão…';
       window.setTimeout(() => window.sairDaUrfilig?.(), 350);
@@ -331,13 +332,6 @@ export function iniciarMenuLateral(socket) {
     const destination = button.dataset.settingsPlugin === 'spotify' ? '#nav-spotify' : '#nav-emails';
     fecharPerfil();
     document.querySelector(destination)?.click();
-  }));
-  document.querySelectorAll('[data-settings-provider]').forEach((button) => button.addEventListener('click', () => {
-    const provider = document.querySelector('#quick-chat-provider');
-    if (!provider) return;
-    provider.value = button.dataset.settingsProvider;
-    provider.dispatchEvent(new Event('change', { bubbles: true }));
-    if (profileMessage) profileMessage.textContent = `${button.dataset.settingsProvider === 'ollama' ? 'Ollama local' : 'Gemini'} selecionado para o chat.`;
   }));
   const linksServicos = {
     obsidian: ['https://obsidian.md', 'Obsidian', '#settings-obsidian-status'],

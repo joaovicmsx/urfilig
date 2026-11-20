@@ -50,7 +50,7 @@ if ('speechSynthesis' in window) {
  * resposta da IA chega (ver onResponse no main.js) — não precisa ser
  * disparado manualmente em cada lugar que recebe texto.
  */
-export function falar(texto) {
+export function falar(texto, { onEnd } = {}) {
   if (!ativa || !texto || !('speechSynthesis' in window)) return false;
 
   window.speechSynthesis.cancel(); // interrompe qualquer fala anterior ainda em andamento
@@ -68,6 +68,7 @@ export function falar(texto) {
   utterance.lang = 'pt-BR';
   utterance.onerror = (evento) => console.warn('[voz] a voz do sistema falhou:', evento.error || 'erro sem detalhe');
   utterance.onstart = () => console.info('[voz] voz do sistema iniciada');
+  utterance.onend = () => onEnd?.();
 
   // Tom mais fino e ritmo natural. Limpa marcação de listas para evitar que
   // símbolos e quebras artificiais causem pausas estranhas na fala.

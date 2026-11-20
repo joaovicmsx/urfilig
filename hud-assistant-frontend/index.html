@@ -169,12 +169,6 @@
         <button class="settings-plugin-option" type="button" data-settings-plugin="gmail" aria-label="Conectar Gmail">
           <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path fill="#4285f4" d="M4 8.2v17.3h5V12.1z"/><path fill="#34a853" d="M23 12.1v13.4h5V8.2z"/><path fill="#ea4335" d="m4 8.2 12 9.1 12-9.1a3.1 3.1 0 0 0-4.9-2.5L16 11.8 8.9 5.7A3.1 3.1 0 0 0 4 8.2Z"/><path fill="#fbbc04" d="M4 8.2v5.9l5 3.8v-5.8z"/><path fill="#c5221f" d="m23 12.1 5-3.9v5.9l-5 3.8z"/></svg><span>Conectar</span>
         </button>
-        <button class="settings-plugin-option" type="button" data-settings-provider="gemini" aria-label="Conectar Gemini">
-          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="gemini-brand-gradient" x1="4" y1="28" x2="28" y2="4" gradientUnits="userSpaceOnUse"><stop stop-color="#4285f4"/><stop offset=".5" stop-color="#9b72cb"/><stop offset="1" stop-color="#d96570"/></linearGradient></defs><path d="M16 2.5c2.5 7.2 4.3 9 13.5 13.5C20.3 18.5 18.5 20.3 16 29.5 13.5 20.3 11.7 18.5 2.5 16 11.7 13.5 13.5 11.7 16 2.5Z" fill="url(#gemini-brand-gradient)"/><path d="M25.5 3v5M23 5.5h5M6 23v5M3.5 25.5h5" stroke="#8ab4f8" stroke-width="1.4" stroke-linecap="round"/></svg><span>Conectar</span>
-        </button>
-        <button class="settings-plugin-option" type="button" data-settings-provider="ollama" aria-label="Conectar Ollama local">
-          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5 27.5 9v14L16 29.5 4.5 23V9L16 2.5Z" fill="#f7a36b"/><path d="M9.3 20.8V12c0-.8.9-1.2 1.5-.7l5.2 4.2v-3.3l5.2 4.1v5.7l-5.2-4.1v3.3l-5.2-4.1v3.7H9.3Z" fill="#17131a"/><circle cx="22.1" cy="10" r="1.2" fill="#17131a"/></svg><span>Conectar</span>
-        </button>
         <button class="settings-plugin-option" type="button" data-settings-service="obsidian" aria-label="Conectar Obsidian">
           <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m14 2 5 2 2 6 5 5-2 10-7 5-5-3-6-1-2-8 4-7 1-6Z" fill="#8e69cf"/><path d="m14 2 2 9-7 8-5-1 4-7 1-6ZM16 11l10 4-2 10-7 5-1-10-7-1Z" fill="#b695ff"/><path d="m9 19 7 1 1 10-5-3-6-1Z" fill="#65469e"/></svg><span>Conectar</span>
         </button>
@@ -189,8 +183,7 @@
         </button>
         <small id="settings-spotify-status" hidden>Verificando conexão…</small>
         <small id="settings-gmail-status" hidden>Verificando autorização…</small>
-        <small id="settings-gemini-status" hidden>Verificando configuração…</small>
-        <small id="settings-ollama-status" hidden>Verificando serviço local…</small>
+        <small id="settings-urfilig-status" hidden>Verificando a IA própria…</small>
         <small id="settings-obsidian-status" hidden>Não vinculado</small>
         <small id="settings-notion-status" hidden>Não vinculado</small>
         <small id="settings-claude-status" hidden>Não vinculado</small>
@@ -240,7 +233,6 @@
         <form id="dev-agent-form" class="dev-agent-form">
           <label>Repositório (organização/projeto)<input id="dev-agent-repository" name="repositorio" placeholder="ex.: minha-equipe/meu-projeto" required maxlength="140" autocomplete="off"></label>
           <label>Descrição da tarefa<textarea id="dev-agent-description" name="descricao" rows="4" minlength="10" maxlength="4000" required placeholder="Descreva o resultado esperado"></textarea></label>
-          <label>Provider<select id="dev-agent-provider" name="provider"><option value="gemini">Gemini</option><option value="ollama">Local (Ollama)</option></select></label>
           <button id="dev-agent-create" type="submit" class="profile-save">Criar tarefa e plano</button>
         </form>
         <p id="dev-agent-message" class="dev-agent-message" role="status" aria-live="polite"></p>
@@ -286,6 +278,7 @@
     <div id="sky-events" aria-hidden="true"></div>
     <section id="home-greeting" aria-live="off">
       <h1 id="home-greeting-title">Bom dia</h1>
+      <div class="hud-clock-time" id="hud-clock-time" aria-label="Horário">--:--:--</div>
       <p id="home-greeting-message">Respire fundo. Um passo de cada vez.</p>
     </section>
     <section id="routine-board" aria-label="Quadros de rotinas" hidden></section>
@@ -295,8 +288,7 @@
       <button id="spotify-mini-toggle" type="button" aria-label="Reproduzir ou pausar">▶</button>
       <button id="spotify-mini-open" type="button" aria-label="Abrir Spotify">···</button>
     </section>
-    <section id="hud-clock-widget" aria-label="Relógio e clima">
-      <div class="hud-clock-time" id="hud-clock-time">--:--:--</div>
+    <section id="hud-clock-widget" aria-label="Data e clima">
       <div class="hud-clock-date" id="hud-clock-date">Carregando data…</div>
       <div class="hud-clock-weather" id="hud-clock-weather">Clima indisponível</div>
     </section>
@@ -372,22 +364,9 @@
       </button>
 
       <form id="chat-form" class="chat-form-inferior">
-        <input id="chat-input" type="text" placeholder="Escreva ou fale comigo…" autocomplete="off" />
+        <input id="chat-input" type="text" aria-label="Mensagem para o chat" placeholder="Digite aqui" autocomplete="off" />
         <button type="submit" class="chat-btn-enviar">Enviar</button>
       </form>
-      <div id="chat-model-control" aria-label="Modelo de conversa">
-        <button id="chat-model-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Mudar modelo de conversa">
-          <span id="chat-model-label">Gemini</span>
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
-        </button>
-        <div id="chat-model-menu" role="menu" aria-label="Escolher modelo" hidden>
-          <button type="button" role="menuitemradio" data-chat-provider="gemini" aria-checked="true">Gemini</button>
-          <button type="button" role="menuitemradio" data-chat-provider="ollama" aria-checked="false">Local</button>
-        </div>
-        <select id="quick-chat-provider" class="visually-hidden" aria-hidden="true" tabindex="-1">
-          <option value="gemini">Gemini</option><option value="ollama">Local</option>
-        </select>
-      </div>
     </div>
 
     <div id="cerebro-painel" class="sidebar-cerebro">

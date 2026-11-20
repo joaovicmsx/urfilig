@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import http from 'node:http';
 import cron from 'node-cron';
-import { configurarSocket } from './socket/index.js';
+import { configurarSocket, listarUsuariosConectados } from './socket/index.js';
 
 // Routers
 import { contatosRouter } from './persona/contatosRouter.js';
@@ -24,6 +24,7 @@ import { evoluirPersonalidadeDoUsuario, evoluirPersonalidadeDeTodos } from './pe
 import { gerarReflexaoDiariaDoUsuario, gerarReflexaoDiariaDeTodos } from './persona/reflectionJob.js';
 import { atualizarClimaEEmitir } from './weather/weatherService.js';
 import { prisma } from './db/client.js';
+import { emitirParaUsuario } from './socket/index.js';
 
 const app = express();
 
@@ -133,6 +134,30 @@ cron.schedule('0 23 * * *', () => {
 cron.schedule('30 23 * * *', () => {
   console.log('[persona] rodando reflexão diária agendada (todos os usuários)...');
   gerarReflexaoDiariaDeTodos();
+});
+
+// Alerta lembretes no minuto configurado enquanto a sessão do usuário está conectada.
+cron.schedule('* * * * *', async () => {
+  const usuariosConectados = listarUsuariosConectados();
+  if (!usuariosConectados.length) return;
+  const inicio = new Date();
+  inicio.setSeconds(0, 0);
+  const fim = new Date(inicio.getTime() + 60_000);
+  try {
+    const lembretes = await prisma.agendaItem.findMany({
+      where: { usuarioId: { in: usuariosConectados }, concluido: false, data: { gte: inicio, lt: fim } },
+      select: { id: true, usuarioId: true, titulo: true, data: true },
+    });
+    const alertasEmitidos = new Set();
+    for (const lembrete of lembretes) {
+      const chave = `${lembrete.usuarioId}|${lembrete.titulo}|${lembrete.data.getTime()}`;
+      if (alertasEmitidos.has(chave)) continue;
+      alertasEmitidos.add(chave);
+      emitirParaUsuario(lembrete.usuarioId, 'agenda:lembrete', lembrete);
+    }
+  } catch (erro) {
+    console.error('[agenda] falha ao verificar lembretes:', erro?.code || erro?.name || 'erro interno');
+  }
 });
 
 atualizarClimaEEmitir();

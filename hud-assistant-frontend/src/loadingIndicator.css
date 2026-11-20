@@ -1,4 +1,5 @@
 .urfilig-loading-indicator {
+  display: none !important;
   position: fixed;
   z-index: 2147483000;
   top: 50%;

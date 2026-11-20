@@ -1,8 +1,7 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { exigirAutenticacao } from '../auth/authMiddleware.js';
+import { prisma } from '../db/client.js';
 
-const prisma = new PrismaClient();
 export const eventosRouter = Router();
 
 eventosRouter.use(exigirAutenticacao);
@@ -86,9 +85,28 @@ eventosRouter.put('/eventos/:id', async (req, res) => {
     };
     if (!Object.keys(data).length) return res.status(400).json({ erro: 'Informe ao menos um campo para atualizar.' });
 
-    const eventoAtualizado = await prisma.evento.updateMany({
-      where: { id, usuarioId },
-      data,
+    const eventoAtualizado = await prisma.$transaction(async (tx) => {
+      const atual = await tx.evento.findFirst({ where: { id, usuarioId } });
+      if (!atual) return { count: 0 };
+      const resultado = await tx.evento.updateMany({ where: { id, usuarioId }, data });
+      if (atual.etiqueta === 'Lembrete') {
+        const novaData = data.dataInicio || atual.dataInicio;
+        const novoTitulo = data.titulo || atual.titulo;
+        await tx.agendaItem.updateMany({
+          where: { usuarioId, titulo: atual.titulo, data: atual.dataInicio },
+          data: {
+            ...(data.titulo !== undefined && { titulo: data.titulo }),
+            ...(data.dataInicio !== undefined && { data: data.dataInicio }),
+            ...(data.dataInicio !== undefined && { horario: data.dataInicio.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false }) }),
+          },
+        });
+        const conteudoAntigo = `Lembrete para ${atual.dataInicio.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`;
+        await tx.nota.updateMany({
+          where: { usuarioId, titulo: atual.titulo, conteudo: conteudoAntigo, pasta: { nome: 'Lembretes' } },
+          data: { titulo: novoTitulo, conteudo: `Lembrete para ${novaData.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.` },
+        });
+      }
+      return resultado;
     });
 
     if (eventoAtualizado.count === 0) {
@@ -109,8 +127,15 @@ eventosRouter.delete('/eventos/:id', async (req, res) => {
   if (typeof id !== 'string' || id.length > 64) return res.status(400).json({ erro: 'Identificador de evento inválido.' });
 
   try {
-    const deletado = await prisma.evento.deleteMany({
-      where: { id, usuarioId },
+    const deletado = await prisma.$transaction(async (tx) => {
+      const evento = await tx.evento.findFirst({ where: { id, usuarioId } });
+      if (!evento) return { count: 0 };
+      if (evento.etiqueta === 'Lembrete') {
+        await tx.agendaItem.deleteMany({ where: { usuarioId, titulo: evento.titulo, data: evento.dataInicio } });
+        const conteudo = `Lembrete para ${evento.dataInicio.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`;
+        await tx.nota.deleteMany({ where: { usuarioId, titulo: evento.titulo, conteudo, pasta: { nome: 'Lembretes' } } });
+      }
+      return tx.evento.deleteMany({ where: { id, usuarioId } });
     });
 
     if (deletado.count === 0) {

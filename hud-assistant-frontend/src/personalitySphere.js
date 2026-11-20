@@ -208,7 +208,7 @@ export class PersonalitySphere {
       const destinoBase = pontoFibonacci(idx, totalCentros, this.raio);
       const keyPasta = dado.id || dado.label;
 
-      let existente = this.particulas.find((p) => (p.id && p.id === dado.id) || p.label === dado.label);
+      let existente = this.particulas.find((p) => dado.id ? p.id === dado.id : p.label === dado.label);
       if (!existente && this.particulas.length < this.maxParticles) {
         const posInit = destinoBase.clone().normalize().multiplyScalar(this.raio * 2.5);
         const idxCor = this.particulas.length;
@@ -275,7 +275,7 @@ export class PersonalitySphere {
 
           const destinoNota = destinoBase.clone().add(posRelativa);
 
-          let existenteNota = this.particulas.find((p) => (p.id && p.id === notaDado.id) || p.label === notaDado.label);
+          let existenteNota = this.particulas.find((p) => notaDado.id ? p.id === notaDado.id : p.label === notaDado.label);
           if (!existenteNota && this.particulas.length < this.maxParticles) {
             const posInitNota = destinoNota.clone().normalize().multiplyScalar(this.raio * 2.5);
             const idxCorNota = this.particulas.length;

@@ -10,7 +10,6 @@ import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { PersonalitySphere } from './personalitySphere.js';
 import { carregarMascote } from './mascot/loader.js';
 import { MascotMotionController } from './mascot/float.js';
-import { HeadTracker } from './mascot/headTracker.js';
 import { encontrarMeshComMorphTargets, setExpression } from './mascot/expressions.js';
 import { MascotStateMachine } from './mascot/stateMachine.js';
 import { conectarSocket } from './socketClient.js';
@@ -46,8 +45,8 @@ function aplicarVisualFinalDoChat() {
     body > div[style*="z-index: 10000"] { z-index: 10060 !important; }
     /* Mesmo timing do menu lateral: o painel fica montado e a classe muda apenas seu estado visual. */
     #chat-historico.chat-historico-direita {
-      position: fixed !important; inset: auto !important; top: 50vh !important; left: 50vw !important;
-      width: min(920px, calc(100vw - 72px)) !important;
+      position: fixed !important; inset: auto !important; top: 50vh !important; left: calc(50vw + var(--rail-width) / 2 + var(--content-center-shift)) !important;
+      width: min(920px, calc(100vw - var(--rail-width) - 72px)) !important;
       height: min(610px, calc(100vh - 190px)) !important; min-height: 400px !important;
       margin: 0 !important; overflow: hidden !important;
       padding-bottom: 82px !important; box-sizing: border-box !important;
@@ -57,9 +56,9 @@ function aplicarVisualFinalDoChat() {
       transition: transform .26s cubic-bezier(.22, 1, .36, 1), opacity .16s ease, visibility 0s linear .26s, border-radius .26s cubic-bezier(.22, 1, .36, 1) !important;
       animation: none !important;
       background: rgba(12,18,40,.045) !important;
-      border: 1px solid rgba(255,255,255,.18) !important; border-top-color: rgba(255,255,255,.28) !important;
+      border: 0 !important;
       border-radius: 30px !important;
-      box-shadow: 0 22px 58px rgba(0,0,0,.22), inset 0 1px 1px rgba(255,255,255,.18) !important;
+      box-shadow: 0 22px 58px rgba(0,0,0,.22) !important;
       backdrop-filter: blur(20px) saturate(118%) !important; -webkit-backdrop-filter: blur(20px) saturate(118%) !important;
     }
     #chat-historico.chat-historico-direita.chat-aberto {
@@ -119,8 +118,8 @@ function aplicarVisualFinalDoChat() {
     #chat-restaurar:hover { transform: translateY(-2px) !important; }
     /* Barra permanente: não pertence à janela do histórico, fica sempre no centro inferior. */
     #chat-composer {
-      position: fixed !important; z-index: 10042 !important; left: 50% !important; top: 50% !important; bottom: auto !important;
-      width: min(740px, calc(100vw - 48px)) !important; transform: translate(-50%, -50%) !important;
+      position: fixed !important; z-index: 10042 !important; left: calc(50% + var(--rail-width) / 2 + var(--content-center-shift)) !important; top: calc(50% + 12px) !important; bottom: auto !important;
+      width: min(740px, calc(100vw - var(--rail-width) - 48px)) !important; transform: translate(-50%, -50%) !important;
       display: flex !important; align-items: center !important; gap: 9px !important; pointer-events: auto !important;
     }
     #chat-composer .chat-form-inferior {
@@ -129,48 +128,41 @@ function aplicarVisualFinalDoChat() {
       display: grid !important; grid-template-columns: minmax(0,1fr) !important; grid-template-rows: 20px minmax(24px,1fr) 34px !important;
       transform: none !important; padding: 14px 16px 12px !important; gap: 5px 8px !important; align-items: center !important;
       border-radius: 30px !important; background: var(--composer-surface) !important;
-      border: 0 !important; outline: 0 !important; box-shadow: 0 18px 42px rgba(0,0,0,.16) !important;
+      border: 0 !important; box-shadow: none !important;
       backdrop-filter: blur(24px) saturate(120%) !important; -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
     }
-    #chat-composer .chat-form-inferior::before { content: "Clique para conversar" !important; grid-column: 1 / -1 !important; grid-row: 1 !important; color: var(--text-secondary) !important; font-size: .82rem !important; }
+    #chat-composer .chat-form-inferior::before { content: none !important; }
     #chat-composer #chat-input { grid-column: 1 / -1 !important; grid-row: 2 !important; align-self: start !important; height: 30px !important; padding: 0 !important; color: var(--text-primary) !important; background: transparent !important; border: 0 !important; box-shadow: none !important; font-size: .86rem !important; line-height: 1.2 !important; }
     #chat-composer .chat-btn-enviar { min-height: 32px !important; margin-left: 2px !important; padding: 5px 14px !important; border-radius: 17px !important; font-size: .72rem !important; }
-    #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 3 !important; display: flex !important; align-items: center !important; gap: 8px !important; width: 100% !important; min-width: 0 !important; }
+    #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 3 !important; display: flex !important; align-items: center !important; gap: 2px !important; width: 100% !important; min-width: 0 !important; }
     /* Nova conversa: bolha independente, no fim do compositor, ao lado de Enviar. */
     #chat-composer #chat-new-conversation {
       position: relative !important; z-index: 10045 !important; flex: 0 0 32px !important;
       width: 32px !important; height: 32px !important; min-width: 32px !important; padding: 0 !important;
       display: grid !important; place-items: center !important; border-radius: 50% !important; overflow: hidden !important;
-      color: var(--text-primary) !important; background: var(--composer-control) !important;
-      border: 1px solid rgba(255,255,255,.25) !important; box-shadow: 0 5px 14px rgba(0,0,0,.18) !important;
-      font-size: 0 !important; line-height: 1 !important; backdrop-filter: blur(15px) saturate(125%) !important;
-      -webkit-backdrop-filter: blur(15px) saturate(125%) !important;
+      color: var(--text-primary) !important; background: transparent !important;
+      border: 0 !important; box-shadow: none !important;
+      font-size: 0 !important; line-height: 1 !important; backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
     }
     #chat-composer #chat-new-conversation::before { content: '+' !important; font-size: 22px !important; font-weight: 300 !important; line-height: 1 !important; }
     #chat-composer #chat-new-conversation { margin-right: auto !important; }
-    #chat-composer #chat-new-conversation:hover { background: var(--composer-control-hover) !important; transform: translateY(-1px) !important; }
+    #chat-composer #chat-new-conversation:hover { background: transparent !important; transform: translateY(-1px) !important; }
+    #chat-composer #chat-new-conversation:focus-visible, #chat-composer #chat-input:focus-visible, #chat-historico .chat-resposta-acao:focus-visible { outline: 2px solid var(--text-primary) !important; outline-offset: 3px !important; }
     #chat-historico .chat-historico-header { pointer-events: none !important; }
     #chat-historico .chat-historico-header #chat-minimizar, #chat-composer #chat-new-conversation { pointer-events: auto !important; }
     #chat-composer .chat-form-inferior { overflow: visible !important; }
-    #chat-composer #chat-model-control {
-      position: relative !important; z-index: 10043 !important; display: flex !important; align-items: center !important;
-      flex: 0 0 auto !important; height: 32px !important; margin-left: auto !important;
-    }
-    #chat-model-trigger { height: 32px !important; min-width: 78px !important; padding: 0 9px !important; border-radius: 11px !important; font-size: .7rem !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 6px !important; white-space: nowrap !important; }
-    #chat-model-trigger svg { width: 13px !important; height: 13px !important; flex: 0 0 13px !important; }
-    #chat-model-menu { position: absolute !important; z-index: 10044 !important; right: 0 !important; bottom: calc(100% + 7px) !important; min-width: 116px !important; }
-    #chat-model-menu[hidden] { display: none !important; }
     #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 22px !important; transform: translateX(-50%) !important; }
     #chat-painel.chat-expanded #chat-composer .chat-form-inferior { height: 76px !important; min-height: 76px !important; grid-template-columns: minmax(0,1fr) !important; grid-template-rows: 32px 34px !important; padding: 4px 9px !important; gap: 2px !important; border-radius: 28px !important; }
     #chat-painel.chat-expanded #chat-composer .chat-form-inferior::before { display: none !important; }
     #chat-painel.chat-expanded #chat-composer #chat-input { grid-column: 1 !important; grid-row: 1 !important; align-self: center !important; height: 32px !important; }
     #chat-painel.chat-expanded #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 2 !important; justify-content: flex-end !important; }
     #chat-painel.chat-expanded #chat-composer #chat-new-conversation { margin-right: auto !important; }
-    @media (max-width: 720px) { #chat-composer { width: calc(100vw - 24px) !important; top: 50% !important; gap: 6px !important; } #chat-model-trigger { min-width: 68px !important; padding: 0 7px !important; } #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 14px !important; } }
+    @media (max-width: 720px) { #chat-composer { width: calc(100vw - var(--rail-width) - 32px) !important; left: calc(50% + var(--rail-width) / 2 + var(--content-center-shift)) !important; top: calc(50% + 12px) !important; gap: 6px !important; } #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 14px !important; } }
     #chat-historico .chat-menu-compartilhar { background: rgba(34,40,78,.42) !important; border-color: rgba(255,255,255,.24) !important; backdrop-filter: blur(18px) !important; -webkit-backdrop-filter: blur(18px) !important; }
     @keyframes urfiligIconeOuvindo { 50% { opacity: .42; transform: scale(1.18); } }
     @media (max-width: 720px) {
-      #chat-historico.chat-historico-direita { width: calc(100vw - 24px) !important; height: min(610px, calc(100vh - 150px)) !important; min-height: 350px !important; }
+      #chat-historico.chat-historico-direita { left: calc(50vw + var(--rail-width) / 2 + var(--content-center-shift)) !important; width: calc(100vw - var(--rail-width) - 24px) !important; height: min(610px, calc(100vh - 150px)) !important; min-height: 350px !important; }
     }
   `;
   document.head.appendChild(estilo);
@@ -183,11 +175,11 @@ function aplicarVisualFinalDoChat() {
   const reforcarVisual = () => {
     const historico = document.getElementById('chat-historico');
     aplicar(historico, {
-      position: 'fixed', inset: 'auto', top: '50vh', left: '50vw', right: 'auto', bottom: 'auto',
+      position: 'fixed', inset: 'auto', top: '50vh', left: 'calc(50vw + var(--rail-width) / 2 + var(--content-center-shift))', right: 'auto', bottom: 'auto',
       width: 'min(920px, calc(100vw - 72px))', height: 'min(610px, calc(100vh - 190px))',
       'min-height': '400px', margin: '0',
-      background: 'rgba(12,18,40,.045)', 'border-radius': '30px', 'border-color': 'rgba(255,255,255,.18)',
-      'border-top-color': 'rgba(255,255,255,.28)', 'box-shadow': '0 22px 58px rgba(0,0,0,.22), inset 0 1px 1px rgba(255,255,255,.18)',
+      background: 'rgba(12,18,40,.045)', 'border-radius': '30px', border: '0',
+      'box-shadow': '0 22px 58px rgba(0,0,0,.22)',
       'backdrop-filter': 'blur(20px) saturate(118%)', '-webkit-backdrop-filter': 'blur(20px) saturate(118%)'
     });
     historico?.classList.toggle('chat-aberto', historico.style.display !== 'none' && !historico.classList.contains('is-chat-closing'));
@@ -207,7 +199,7 @@ function aplicarVisualFinalDoChat() {
       background: 'rgba(116,82,192,.026)', border: '0', 'box-shadow': '0 8px 20px rgba(94,65,157,.045)'
     }));
     document.querySelectorAll('#chat-historico .chat-resposta-acao').forEach((botao) => aplicar(botao, {
-      background: 'transparent', border: '0', 'box-shadow': 'none', outline: '0', padding: '0', width: '26px', height: '26px'
+      background: 'transparent', border: '0', 'box-shadow': 'none', padding: '0', width: '26px', height: '26px'
     }));
   };
   const corrigirBotaoOuvir = (botao) => {
@@ -468,10 +460,8 @@ let mixer = null;
 let mascotRef = null;
 let mascotStateMachine = null;
 let motionController = null;
-let headTracker = null;
 let faceMesh = null;
 let muted = false;
-let mousePresenteNaTela = false;
 let mascotePensando = false;
 let escalaBaseMascote = 1;
 let escalaAlvoMascote = 1;
@@ -525,6 +515,15 @@ const memorySphere = new PersonalitySphere(scene, {
 // como uma pequena constelação, sem sair da cena nem perder os controles 3D.
 memorySphere.grupo.position.set(0, -3.35, 0);
 memorySphere.grupo.scale.setScalar(0.38);
+function centralizarEsferaNaTela() {
+  const rect = canvas?.getBoundingClientRect();
+  if (!rect?.width) return;
+  const deslocamentoPx = window.innerWidth / 2 - (rect.left + rect.width / 2);
+  const larguraMundo = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+    * camera.position.z * camera.aspect;
+  memorySphere.grupo.position.x = deslocamentoPx * larguraMundo / rect.width;
+}
+centralizarEsferaNaTela();
 
 function atualizarTemaPorHorario() {
   const rgb = getTimeColor();
@@ -532,6 +531,9 @@ function atualizarTemaPorHorario() {
   const uniforms = fundoEtereo.material.uniforms;
   const agora = new Date();
   const hora = agora.getHours() + agora.getMinutes() / 60;
+  const periodo = hora < 12 ? 'morning' : hora < 18 ? 'afternoon' : 'night';
+  const coresAura = { morning: [255, 225, 150], afternoon: [255, 157, 105], night: [112, 151, 255] };
+  const auraRgb = coresAura[periodo];
   const temaClaro = document.documentElement.dataset.theme === 'light';
   const cores = (temaClaro
     ? ['#f2e8ff', '#bfd1fa', '#78bce9', '#d1c7ef']
@@ -544,8 +546,8 @@ function atualizarTemaPorHorario() {
   memorySphere.setTimeColor(cor);
   document.documentElement.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   document.documentElement.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
-  document.documentElement.style.setProperty('--aura-color', `rgba(${rgb.join(',')}, ${temaClaro ? '.36' : '.30'})`);
-  document.documentElement.dataset.timePeriod = hora < 11 ? 'morning' : hora < 17 ? 'afternoon' : 'night';
+  document.documentElement.style.setProperty('--aura-color', `rgba(${auraRgb.join(',')}, ${temaClaro ? '.22' : '.26'})`);
+  document.documentElement.dataset.timePeriod = periodo;
 }
 atualizarTemaPorHorario();
 setInterval(atualizarTemaPorHorario, 60_000);
@@ -592,8 +594,11 @@ const motionProxy = {
 const socket = conectarSocket({
   stateMachine: stateProxy,
   motionController: motionProxy,
+  onState: (state) => { if (isTauri()) void emitTo('mascote-overlay', 'mascot:state', { state }); },
+  onMode: (mode) => { if (isTauri()) void emitTo('mascote-overlay', 'mascot:mode', { mode }); },
   onExpression: (shape, weight) => {
     if (faceMesh) setExpression(faceMesh, shape, weight);
+    if (isTauri()) void emitTo('mascote-overlay', 'mascot:expression', { shape, weight });
   },
   onParticles: (particles) => {
     if (Array.isArray(particles) && particles.length > 0) {
@@ -614,7 +619,7 @@ const socket = conectarSocket({
       });
     } else {
       console.warn('[voz] a resposta chegou sem áudio do Piper; usando síntese do sistema');
-      falar(text);
+      falar(text, { onEnd: concluirFalaMascote });
     }
     setLiveStatus('Resposta recebida' + (emotion ? '. Tom: ' + emotion + '.' : '.'));
 
@@ -623,7 +628,10 @@ const socket = conectarSocket({
     }
   },
   onWeather: (dados) => showWeather(dados),
-  onOutfit: (part, visible) => alternarPecaDoMascote(part, visible),
+  onOutfit: (part, visible) => {
+    alternarPecaDoMascote(part, visible);
+    if (isTauri()) void emitTo('mascote-overlay', 'mascot:outfit', { part, visible });
+  },
 });
 
 iniciarMenuLateral(socket);
@@ -632,6 +640,34 @@ const processarComandoDevAgent = iniciarDevAgent();
 iniciarSpotify();
 
 window.recarregarEsferaNeural = carregarMemoriasECerebro;
+
+function reconstruirCriacaoDeNotaPendente(texto) {
+  const mensagens = lerHistoricoChat();
+  const indicePergunta = mensagens.findLastIndex((mensagem) => mensagem.autor === 'Urfilig');
+  if (indicePergunta < 0 || !/^Qual nome você quer dar à nota\?$/i.test(String(mensagens[indicePergunta].texto || '').trim())) {
+    return texto;
+  }
+
+  const pedidoAnterior = [...mensagens.slice(0, indicePergunta)].reverse()
+    .find((mensagem) => mensagem.autor === 'Você')?.texto?.trim();
+  const pedido = pedidoAnterior?.match(/^\s*(?:cria|crie|criar|faz|faça|faca)\s+(?:(?:uma?|a)\s+)?nota\b(.*)$/i);
+  if (!pedido) return texto;
+
+  let restante = pedido[1].trim();
+  let pasta = '';
+  const pastaMatch = restante.match(/\s+(?:na|em)\s+pasta\s+(.+?)\s*[.!?]*$/i);
+  if (pastaMatch) {
+    pasta = pastaMatch[1].trim();
+    restante = restante.slice(0, pastaMatch.index).trim();
+  }
+  restante = restante.replace(/^(?:nova|novo)\b\s*/i, '').trim();
+  restante = restante.replace(/^(?:(?:com\s+(?:o\s+)?nome\s+de)|chamad[oa])\s*$/i, '').trim();
+  if (restante) return texto;
+
+  const titulo = String(texto || '').trim();
+  if (!titulo) return texto;
+  return `cria uma nota chamada "${titulo}"${pasta ? ` na pasta "${pasta}"` : ''}`;
+}
 
 function atualizarBolinhasDaEsfera(particulas) {
   memorySphere.setParticles(particulas);
@@ -723,9 +759,18 @@ function montarParticulasDaFonte(fonte, valor) {
   return resultado;
 }
 
+let carregamentoCerebroAtivo = false;
+let carregamentoCerebroPendente = false;
 async function carregarMemoriasECerebro() {
+  // A tela chama esta carga no início, ao conectar o socket e após respostas.
+  // Evite disparar os mesmos quatro endpoints em paralelo nesses momentos.
+  if (carregamentoCerebroAtivo) {
+    carregamentoCerebroPendente = true;
+    return;
+  }
   const token = localStorage.getItem('urfilig_token');
   if (!token) return;
+  carregamentoCerebroAtivo = true;
 
   const buscarJson = async (rota) => {
     const resposta = await fetch(`${BACKEND_URL}${rota}`, {
@@ -800,6 +845,12 @@ async function carregarMemoriasECerebro() {
     atualizarBolinhasDaEsfera([...preservadas, ...Object.values(atualizacoes).flat()]);
   } catch (erro) {
     console.warn('[main] Erro ao carregar esfera neural:', erro.message);
+  } finally {
+    carregamentoCerebroAtivo = false;
+    if (carregamentoCerebroPendente) {
+      carregamentoCerebroPendente = false;
+      queueMicrotask(() => void carregarMemoriasECerebro());
+    }
   }
 }
 
@@ -851,6 +902,7 @@ function hitTestPersonalizado(clientX, clientY) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  localStorage.removeItem('urfilig_llm_provider');
   const chatHistorico = document.getElementById('chat-historico');
   const btnMinimizar = document.getElementById('chat-minimizar');
   const btnRestaurar = document.getElementById('chat-restaurar');
@@ -921,7 +973,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (chatForm) {
     const novoForm = chatForm.cloneNode(true);
     chatForm.parentNode.replaceChild(novoForm, chatForm);
-    // Formulário e seletor são irmãos. Assim o seletor não dispara o envio nem disputa a área do botão.
+    // O formulário é separado do painel do histórico para manter o compositor fixo.
     const composer = document.createElement('div');
     composer.id = 'chat-composer';
     chatPainel?.appendChild(composer);
@@ -941,81 +993,42 @@ document.addEventListener('DOMContentLoaded', () => {
         iniciarNovaConversaChat();
       });
     }
-    const modelControl = document.getElementById('chat-model-control');
-    if (modelControl) composerActions.appendChild(modelControl);
     const sendButton = novoForm.querySelector('.chat-btn-enviar');
+    const botaoMicrofone = document.createElement('button');
+    botaoMicrofone.type = 'button';
+    botaoMicrofone.className = 'chat-btn-microfone';
+    botaoMicrofone.textContent = '🎙';
+    botaoMicrofone.title = 'Ativar microfone';
+    botaoMicrofone.setAttribute('aria-label', 'Ativar microfone');
+    botaoMicrofone.style.cssText = 'min-height:32px;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;padding:0 9px';
+    botaoMicrofone.addEventListener('click', () => {
+      if (!microfoneAtivo) {
+        void iniciarMicrofoneLocal().then(() => {
+          botaoMicrofone.textContent = microfoneAtivo ? '⏹' : '🎙';
+          botaoMicrofone.title = microfoneAtivo ? 'Desativar microfone' : 'Ativar microfone';
+          botaoMicrofone.setAttribute('aria-label', botaoMicrofone.title);
+        });
+      } else {
+        pararMicrofoneLocal();
+        botaoMicrofone.textContent = '🎙';
+        botaoMicrofone.title = 'Ativar microfone';
+        botaoMicrofone.setAttribute('aria-label', botaoMicrofone.title);
+      }
+    });
+    composerActions.appendChild(botaoMicrofone);
     if (sendButton) composerActions.appendChild(sendButton);
     const expandirChatPelaBarra = () => {
       if (!chatHistorico?.classList.contains('chat-aberto')) abrirChat();
     };
     novoForm.addEventListener('pointerdown', expandirChatPelaBarra);
     novoForm.addEventListener('focusin', expandirChatPelaBarra);
-    const quickProvider = document.querySelector('#quick-chat-provider');
-    const provider = quickProvider;
-    if (quickProvider) {
-      const trigger = document.querySelector('#chat-model-trigger');
-      const label = document.querySelector('#chat-model-label');
-      const menu = document.querySelector('#chat-model-menu');
-      // Acrescenta Groq sem alterar o HTML e sem duplicar o item.
-      if (!quickProvider.querySelector('option[value="groq"]')) {
-        quickProvider.add(new Option('Groq', 'groq'));
-      }
-      if (menu && !menu.querySelector('[data-chat-provider="groq"]')) {
-        const opcaoGroq = document.createElement('button');
-        opcaoGroq.type = 'button';
-        opcaoGroq.setAttribute('role', 'menuitemradio');
-        opcaoGroq.dataset.chatProvider = 'groq';
-        opcaoGroq.setAttribute('aria-checked', 'false');
-        opcaoGroq.textContent = 'Groq';
-        menu.prepend(opcaoGroq);
-      }
-      const opcoesValidas = ['groq', 'gemini', 'ollama'];
-      const salvo = localStorage.getItem('urfilig_llm_provider');
-      quickProvider.value = opcoesValidas.includes(salvo) ? salvo : 'groq';
-      const renderProvider = () => {
-        const provider = opcoesValidas.includes(quickProvider.value) ? quickProvider.value : 'groq';
-        quickProvider.value = provider;
-        if (label) label.textContent = { groq: 'Groq', gemini: 'Gemini', ollama: 'Local' }[provider];
-        menu?.querySelectorAll('[data-chat-provider]').forEach((option) => {
-          option.setAttribute('aria-checked', String(option.dataset.chatProvider === provider));
-        });
-      };
-      renderProvider();
-      quickProvider.addEventListener('change', () => {
-        renderProvider();
-        localStorage.setItem('urfilig_llm_provider', quickProvider.value);
-      });
-      trigger?.addEventListener('click', () => {
-        const abrir = menu?.hidden;
-        if (menu) menu.hidden = !abrir;
-        trigger.setAttribute('aria-expanded', String(Boolean(abrir)));
-      });
-      menu?.querySelectorAll('[data-chat-provider]').forEach((option) => option.addEventListener('click', () => {
-        quickProvider.value = option.dataset.chatProvider;
-        quickProvider.dispatchEvent(new Event('change', { bubbles: true }));
-        menu.hidden = true;
-        trigger?.setAttribute('aria-expanded', 'false');
-      }));
-      document.addEventListener('pointerdown', (event) => {
-        const control = document.getElementById('chat-model-control');
-        if (control && !control.contains(event.target) && menu && !menu.hidden) {
-          menu.hidden = true;
-          trigger?.setAttribute('aria-expanded', 'false');
-        }
-      });
-      document.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape' || !menu || menu.hidden) return;
-        menu.hidden = true;
-        trigger?.setAttribute('aria-expanded', 'false');
-        trigger?.focus();
-      });
-    }
 
     novoForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const input = document.getElementById('chat-input');
       const texto = input?.value?.trim();
       if (!texto) return;
+      const textoParaEnviar = reconstruirCriacaoDeNotaPendente(texto);
 
       input.value = '';
       abrirChat();
@@ -1050,10 +1063,10 @@ document.addEventListener('DOMContentLoaded', () => {
             Authorization: `Bearer ${localStorage.getItem('urfilig_token')}`,
           },
           body: JSON.stringify({
-            texto,
-            provider: provider?.value || localStorage.getItem('urfilig_llm_provider') || 'groq',
-            responseStyle: preferencias.responseStyle || 'equilibrada',
-            responseTone: preferencias.responseTone || 'natural',
+            texto: textoParaEnviar,
+            historico: lerHistoricoChat().slice(-13, -1).map(({ autor, texto: mensagem }) => ({ autor, texto: String(mensagem || '').slice(0, 4000) })),
+            responseStyle: preferencias.responseStyle,
+            responseTone: preferencias.responseTone,
           }),
         });
 
@@ -1070,21 +1083,23 @@ document.addEventListener('DOMContentLoaded', () => {
               if (botaoAudio) botaoAudio.textContent = iniciou ? 'Ouvir novamente' : 'Ouvir resposta';
             });
           } else {
-            falar(dados.resposta);
+            falar(dados.resposta, { onEnd: concluirFalaMascote });
           }
           if (typeof registroRotina === 'string') adicionarMensagemChat('Rotina', registroRotina);
           if (dados.eventoCriado && typeof window.carregarCalendarioUI === 'function') {
   await window.carregarCalendarioUI();
 }
-          carregarMemoriasECerebro();
-          if (typeof window.recarregarInterfaceNotas === 'function') {
+          if (dados.notaCriada || dados.notaMovida) {
+            carregarMemoriasECerebro();
+          }
+          if ((dados.notaCriada || dados.notaMovida) && typeof window.recarregarInterfaceNotas === 'function') {
             await window.recarregarInterfaceNotas();
           }
         } else {
           ocultarIndicadorPensando();
           mascotePensando = false;
           escalaAlvoMascote = escalaBaseMascote;
-          adicionarMensagemChat('Urfilig', dados.detalhe || dados.erro || 'Não consegui responder agora. Confira o provedor selecionado.');
+          adicionarMensagemChat('Urfilig', dados.detalhe || dados.erro || 'Não consegui responder agora. Confira se a IA própria do Urfilig está disponível.');
         }
       } catch (err) {
         ocultarIndicadorPensando();
@@ -1116,7 +1131,6 @@ document.addEventListener('DOMContentLoaded', () => {
   inicializarConversasChat();
   restaurarHistoricoChat();
   renderizarListaConversasChat();
-  carregarMemoriasECerebro();
 });
 
 socket.on('connect', () => {
@@ -1126,6 +1140,9 @@ socket.on('connect', () => {
 let solicitacaoMicrofone;
 let microfoneAtivo = false;
 let microfoneRecusado = false;
+let streamMicrofone;
+let contextoMicrofone;
+let processadorMicrofone;
 function pedirConsentimentoMicrofone() {
   const modal = document.querySelector('#microfone-modal');
   if (!modal) return Promise.resolve(false);
@@ -1166,10 +1183,11 @@ async function iniciarMicrofoneComConsentimento() {
     }
     if (isTauri()) await invoke('autorizar_microfone');
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const audioCtx = new AudioContext();
+    streamMicrofone = stream;
+    const audioCtx = contextoMicrofone = new AudioContext();
     microfoneAtivo = true;
     const source = audioCtx.createMediaStreamSource(stream);
-    const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+    const processor = processadorMicrofone = audioCtx.createScriptProcessor(4096, 1, 1);
 
     socket.emit('audio:config', { sampleRate: audioCtx.sampleRate });
 
@@ -1191,6 +1209,17 @@ async function iniciarMicrofoneComConsentimento() {
     console.error('[microfone] Não foi possível iniciar:', erro);
     setLiveStatus('Microfone indisponível.');
   }
+}
+
+function pararMicrofoneLocal() {
+  processadorMicrofone?.disconnect();
+  streamMicrofone?.getTracks().forEach((track) => track.stop());
+  void contextoMicrofone?.close();
+  processadorMicrofone = null;
+  streamMicrofone = null;
+  contextoMicrofone = null;
+  microfoneAtivo = false;
+  setLiveStatus('Microfone desativado.');
 }
 
 carregarMascote('/models/mascote.glb', scene)
@@ -1224,7 +1253,6 @@ carregarMascote('/models/mascote.glb', scene)
     mascote.rotation.y = Math.PI / 2;
     mascote.visible = !mascotOverlayActive;
 
-    headTracker = new HeadTracker(mascote);
     faceMesh = encontrarMeshComMorphTargets(mascote);
     setLiveStatus('Pronta.');
   })
@@ -1244,28 +1272,28 @@ function posicionarMascoteSobreChat() {
   if (motionController.modo !== 'fixo') motionController.setMode?.('fixo');
 
   const chatHistorico = document.getElementById('chat-historico');
+  const chatAberto = chatHistorico?.classList.contains('chat-aberto');
+  if (chatAberto || chatHistorico?.classList.contains('is-chat-closing')) {
+    mascotRef.visible = false;
+    return;
+  }
+
   const composerDoChat = document.getElementById('chat-composer');
   const canvasRect = canvas?.getBoundingClientRect();
-  const chatRect = chatHistorico?.classList.contains('chat-aberto')
-    ? chatHistorico.getBoundingClientRect()
-    : (composerDoChat || document.getElementById('chat-form'))?.getBoundingClientRect();
+  const chatRect = (composerDoChat || document.getElementById('chat-form'))?.getBoundingClientRect();
   if (!canvasRect?.width || !canvasRect.height || !chatRect?.width) return;
 
-  const chatAberto = chatHistorico?.classList.contains('chat-aberto');
   mascotRef.visible = true;
-  // Frente da cena: o modelo não disputa profundidade com a esfera e não fica
-  // escondido pelo vidro do chat. Fora do chat, mantém a profundidade original.
-  const depth = chatAberto ? 6.85 : 7.45;
+  const depth = 7.45;
   const distance = Math.max(.1, camera.position.z - depth);
   const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
   const visibleWidth = visibleHeight * camera.aspect;
 
-  // Mascote compacto: ele repousa logo acima do canto esquerdo da barra,
-  // sem cobrir a digitação nem o histórico, aberto ou minimizado.
-  const alvoX = chatRect.left + chatRect.width / 2;
-  const alvoY = chatAberto
-    ? chatRect.bottom - 86
-    : chatRect.top - 170;
+  // Mantém o mascote acima da barra quando o histórico está recolhido.
+  const alvoX = window.innerWidth / 2;
+  // O modelo cresce acima do ponto de ancoragem; deixá-lo 20 px acima do
+  // compositor mantém o relógio e a saudação livres e evita cobrir a barra.
+  const alvoY = chatRect.top - 20;
   const ndcX = ((alvoX - canvasRect.left) / canvasRect.width) * 2 - 1;
   const ndcY = 1 - ((alvoY - canvasRect.top) / canvasRect.height) * 2;
   motionController.posicaoFixa.set(
@@ -1279,14 +1307,14 @@ function posicionarMascoteSobreChat() {
     20
   );
   // O modo fixo não aplica alterações posteriores a posicaoFixa sozinho.
-  // Atualize o modelo carregado junto com o ponto de destino calculado.
+  // Atualize a posição sem substituir a orientação frontal do modelo.
   mascotRef.position.copy(motionController.posicaoFixa);
-  mascotRef.lookAt(motionController.pontoParaOlhar);
 }
 let audioPiperAtual = null;
 let urlAudioPiperTemporaria = null;
 let contextoAudioPiper = null;
 let fonteAudioPiper = null;
+function concluirFalaMascote() { socket.emit('mascot:playback-ended'); }
 
 // Libera o Web Audio dentro de um gesto real do usuário (política de autoplay do WebView2).
 function prepararAudioPiper() {
@@ -1304,7 +1332,7 @@ window.addEventListener('pointerdown', () => { void prepararAudioPiper(); }, { p
 window.addEventListener('keydown', () => { void prepararAudioPiper(); }, { passive: true });
 
 async function tocarAudioPiper(audioBase64, textoReserva = '') {
-  if (textoReserva && falar(textoReserva)) {
+  if (textoReserva && falar(textoReserva, { onEnd: concluirFalaMascote })) {
     console.info('[voz] reprodução natural selecionada pelo sistema.');
     return true;
   }
@@ -1341,6 +1369,7 @@ async function tocarAudioPiper(audioBase64, textoReserva = '') {
       const buffer = await contextoAudioPiper.decodeAudioData(bytes.buffer.slice(0));
       fonteAudioPiper = contextoAudioPiper.createBufferSource();
       fonteAudioPiper.buffer = buffer;
+      fonteAudioPiper.onended = concluirFalaMascote;
       fonteAudioPiper.connect(contextoAudioPiper.destination);
       fonteAudioPiper.start();
       console.info('[voz] reprodução do Piper iniciada pelo Web Audio');
@@ -1358,6 +1387,7 @@ async function tocarAudioPiper(audioBase64, textoReserva = '') {
       audioPiperAtual.muted = false;
       audioPiperAtual.volume = 1;
       audioPiperAtual.src = urlAudioPiperTemporaria;
+      audioPiperAtual.onended = concluirFalaMascote;
       await audioPiperAtual.play();
       console.info('[voz] reprodução do Piper iniciada pelo elemento de áudio');
       return true;
@@ -1367,7 +1397,7 @@ async function tocarAudioPiper(audioBase64, textoReserva = '') {
   }
 
   console.warn('[voz] usando síntese de voz do sistema como reserva. Áudio Piper recebido:', Boolean(audioBase64));
-  if (textoReserva) falar(textoReserva);
+  if (textoReserva) falar(textoReserva, { onEnd: concluirFalaMascote });
   return false;
 }
 
@@ -1398,8 +1428,15 @@ document.addEventListener('urfilig:ouvir-resposta', async (event) => {
   const botao = event.detail?.botao;
   if (!texto || !botao) return;
   definirEstadoBotaoOuvir(botao, true);
-  falar(texto);
+  falar(texto, { onEnd: concluirFalaMascote });
   window.setTimeout(() => definirEstadoBotaoOuvir(botao, false), 700);
+});
+
+document.addEventListener('urfilig:lembrete', (event) => {
+  const lembrete = event.detail || {};
+  const texto = `Lembrete: ${String(lembrete.titulo || 'compromisso')}`;
+  setLiveStatus(texto);
+  adicionarMensagemChat('Urfilig', texto);
 });
 
 function showWeather({ temperatura, codigo }) {
@@ -1591,7 +1628,6 @@ canvas.addEventListener('pointerdown', (event) => {
 canvas.addEventListener('pointermove', (event) => {
   try {
     lastPointer = { x: event.clientX, y: event.clientY };
-    mousePresenteNaTela = true;
 
     if (drag?.pointerId === event.pointerId) {
       const deltaX = event.clientX - drag.lastX;
@@ -1675,13 +1711,10 @@ canvas.addEventListener('pointermove', (event) => {
 
 window.addEventListener('pointermove', (event) => {
   lastPointer = { x: event.clientX, y: event.clientY };
-  mousePresenteNaTela = true;
   const rect = canvas.getBoundingClientRect();
   ndcMouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
   ndcMouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 }, { passive: true });
-window.addEventListener('pointerleave', () => { mousePresenteNaTela = false; });
-window.addEventListener('blur', () => { mousePresenteNaTela = false; });
 
 canvas.addEventListener('pointerup', (event) => {
   try {
@@ -1730,6 +1763,7 @@ window.addEventListener('resize', () => {
   camera.aspect = width / window.innerHeight;
   camera.updateMatrixWorld();
   camera.updateProjectionMatrix();
+  centralizarEsferaNaTela();
   renderer.setPixelRatio(currentDpr);
   renderer.setSize(width, window.innerHeight, false);
   composer.setPixelRatio(currentDpr);
@@ -1826,16 +1860,9 @@ function animate() {
   const delta = Math.min(clock.getDelta(), 0.1);
   const elapsed = clock.elapsedTime;
   mixer?.update(delta);
+  if (mascotRef) mascotRef.scale.setScalar(THREE.MathUtils.lerp(mascotRef.scale.x, escalaAlvoMascote, Math.min(1, delta * 8)));
   posicionarMascoteSobreChat();
   motionController?.update(elapsed, delta);
-
-  if (headTracker) {
-    if (mousePresenteNaTela) {
-      raycasterMouse.setFromCamera(ndcMouse, camera);
-      headTracker.atualizarAlvoComRaycaster(raycasterMouse);
-    }
-    headTracker.update(delta, mousePresenteNaTela);
-  }
 
   memorySphere.grupo.scale.setScalar(
     THREE.MathUtils.lerp(memorySphere.grupo.scale.x, targetSphereScale, 0.1)

@@ -23,7 +23,10 @@ export function applyTimeTheme() {
   root.style.setProperty('--time-accent', `rgb(${rgb.join(',')})`);
   root.style.setProperty('--time-halo', `rgba(${rgb.join(',')}, .11)`);
   root.style.setProperty('--time-halo-visible', `rgba(${rgb.join(',')}, .2)`);
-  root.style.setProperty('--aura-color', `rgba(${rgb.join(',')}, ${hour >= 7 && hour < 19 ? '.30' : '.22'})`);
+  const periodo = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'night';
+  const coresAura = { morning: [255, 225, 150], afternoon: [255, 157, 105], night: [112, 151, 255] };
+  const auraRgb = coresAura[periodo];
+  root.style.setProperty('--aura-color', `rgba(${auraRgb.join(',')}, .26)`);
   return rgb;
 }
 

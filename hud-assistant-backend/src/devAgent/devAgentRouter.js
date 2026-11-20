@@ -53,8 +53,8 @@ devAgentRouter.post('/tarefas', async (req, res) => {
   if (corpo.erro) return res.status(400).json({ erro: corpo.erro });
 
   try {
-    const { repositorio, descricao, provider } = corpo.valor;
-    const plano = await gerarPlanoDevAgent({ repositorio, descricao, provider });
+    const { repositorio, descricao } = corpo.valor;
+    const plano = await gerarPlanoDevAgent({ repositorio, descricao });
     const tarefa = await prisma.devAgentTask.create({
       data: {
         usuarioId: req.usuarioId,

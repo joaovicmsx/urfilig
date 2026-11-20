@@ -1,28 +1,18 @@
- import { perguntarGemini } from './geminiClient.js';
- import { perguntarOllama } from './ollamaClient.js';
- import { perguntarGroq } from './groqClient.js';
- 
- const FALLBACK_ATIVO = (process.env.LLM_FALLBACK ?? 'true') !== 'false';
- 
- export async function perguntarLLM(prompt, systemPrompt = '', { formatoJson = false, provider } = {}) {
-   const escolhido = provider || process.env.LLM_PROVIDER || 'groq';
- 
-   if (escolhido === 'ollama') return perguntarOllama(prompt, systemPrompt, { formatoJson });
-   if (!['gemini', 'groq'].includes(escolhido)) {
-     throw new Error('Provedor de IA inválido. Use Groq, Gemini ou Ollama.');
-   }
- 
-   try {
-     if (escolhido === 'groq') return await perguntarGroq(prompt, systemPrompt, { formatoJson });
-     return await perguntarGemini(prompt, systemPrompt, { formatoJson });
-   } catch (erro) {
-     if (!FALLBACK_ATIVO) throw erro;
- 
-     console.warn('[llmClient] ' + escolhido + ' falhou; caindo pro Ollama local.', erro.message);
-    try {
-       return await perguntarOllama(prompt, systemPrompt, { formatoJson });
-     } catch (erroOllama) {
-      throw new Error(escolhido + ' falhou (' + erro.message + ') e o fallback Ollama também falhou (' + erroOllama.message + ')');
-     }
-   }
- }
+import { askUrfilig } from '../services/UrfiligClient.js';
+
+/** Usa a IA própria do Urfilig para gerar texto; o Piper continua responsável pela voz. */
+export async function perguntarLLM(prompt, systemPrompt = '', { formatoJson = false } = {}) {
+  const instrucoes = [
+    systemPrompt.trim(),
+    formatoJson ? 'Responda somente com um objeto JSON válido, sem Markdown ou texto adicional.' : '',
+  ].filter(Boolean).join('\n\n');
+  const mensagem = instrucoes ? `${instrucoes}\n\nSolicitação:\n${prompt}` : prompt;
+  const resultado = await askUrfilig(mensagem, false);
+  const resposta = typeof resultado?.reply === 'string' ? resultado.reply.trim() : '';
+  if (!resposta || resultado?.source === 'none') {
+    const erro = new Error('A IA própria do Urfilig não conseguiu gerar uma resposta.');
+    erro.code = 'URFILIG_NO_RESPONSE';
+    throw erro;
+  }
+  return resposta;
+}

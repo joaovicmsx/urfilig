@@ -1,5 +1,7 @@
 import { showAlert, showConfirm } from './uiDialogs.js';
 import { BACKEND_URL } from './authGuard.js';
+import { isTauri } from '@tauri-apps/api/core';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 
 const STORAGE_KEY = 'urfilig_routine_boards_v1';
 const VIEW_KEY = 'urfilig_routine_board_view_v1';
@@ -27,6 +29,29 @@ export function iniciarQuadrosRotina() {
   const boardRoot = document.querySelector('#routine-board');
   const addButton = document.querySelector('#nav-routines');
   if (!addButton || !boardRoot) return;
+
+  async function abrirSobreposicaoRotina() {
+    if (!isTauri()) return;
+    try {
+      let overlay = await WebviewWindow.getByLabel('routine-overlay');
+      if (!overlay) {
+        overlay = new WebviewWindow('routine-overlay', {
+          url: 'routine-overlay.html', title: 'Rotinas', width: 340, height: 250,
+          decorations: false, transparent: true, alwaysOnTop: true,
+          resizable: true, skipTaskbar: true, shadow: false,
+        });
+        await new Promise((resolve, reject) => {
+          overlay.once('tauri://created', resolve);
+          overlay.once('tauri://error', (event) => reject(event.payload || event));
+        });
+      } else {
+        await overlay.show();
+      }
+    } catch (erro) {
+      console.error('[rotinas] não foi possível abrir a sobreposição:', erro);
+      await showAlert('Não foi possível abrir a janela flutuante de rotinas.', 'Rotinas');
+    }
+  }
 
   const save = (boards) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
@@ -128,7 +153,8 @@ export function iniciarQuadrosRotina() {
     if (boards.length) {
       const heading = document.createElement('header');
       heading.className = 'routine-list-header';
-      heading.innerHTML = `<strong>Rotinas</strong><div class="routine-list-actions"><button type="button" class="routine-add">Nova rotina</button><button type="button" class="routine-size" data-size="-1" aria-label="Diminuir quadro" title="Diminuir quadro">−</button><button type="button" class="routine-size" data-size="1" aria-label="Aumentar quadro" title="Aumentar quadro">+</button><button type="button" class="routine-move" aria-label="Mover quadro" title="Arraste para mover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3m3-3 3 3M12 21l-3-3m3 3 3-3M3 12l3-3m-3 3 3 3m12-3 3-3m-3 3 3 3"/></svg></button><button type="button" class="routine-collapse" aria-label="Recolher quadro" title="Recolher quadro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>`;
+      heading.innerHTML = `<strong>Rotinas</strong><div class="routine-list-actions">${isTauri() ? '<button type="button" class="routine-overlay-open" title="Abrir janela flutuante">Flutuante</button>' : ''}<button type="button" class="routine-add">Nova rotina</button><button type="button" class="routine-size" data-size="-1" aria-label="Diminuir quadro" title="Diminuir quadro">−</button><button type="button" class="routine-size" data-size="1" aria-label="Aumentar quadro" title="Aumentar quadro">+</button><button type="button" class="routine-move" aria-label="Mover quadro" title="Arraste para mover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3m3-3 3 3M12 21l-3-3m3 3 3-3M3 12l3-3m-3 3 3 3m12-3 3-3m-3 3 3 3"/></svg></button><button type="button" class="routine-collapse" aria-label="Recolher quadro" title="Recolher quadro"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button></div>`;
+      heading.querySelector('.routine-overlay-open')?.addEventListener('click', () => void abrirSobreposicaoRotina());
       heading.querySelector('.routine-add').addEventListener('click', openForm);
       heading.querySelectorAll('.routine-size').forEach((button) => button.addEventListener('click', () => {
         const step = Number(button.dataset.size);

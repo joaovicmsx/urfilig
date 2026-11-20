@@ -72,7 +72,6 @@ uma lista robótica de itens separados.`;
   console.log(`[saudacao] usuário ${usuarioId}: "${resposta}"`);
 
   emitirParaUsuario(usuarioId, 'mascot:particles', await montarParticulas(usuarioId));
-  setTimeout(() => emitirEstado(usuarioId, 'IDLE'), 1500);
 
   return resposta;
 }

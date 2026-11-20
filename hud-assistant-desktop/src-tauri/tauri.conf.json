@@ -36,7 +36,13 @@
       "icons/icon.ico"
     ],
     "resources": {
-      "../../hud-assistant-backend": "hud-assistant-backend"
+      "../../hud-assistant-backend/src/": "hud-assistant-backend/src/",
+      "../../hud-assistant-backend/prisma/": "hud-assistant-backend/prisma/",
+      "../../hud-assistant-backend/node_modules/": "hud-assistant-backend/node_modules/",
+      "../../hud-assistant-backend/piper/": "hud-assistant-backend/piper/",
+      "../../hud-assistant-backend/package.json": "hud-assistant-backend/package.json",
+      "../../hud-assistant-backend/package-lock.json": "hud-assistant-backend/package-lock.json",
+      "../../hud-assistant-backend/.env.example": "hud-assistant-backend/.env.example"
     }
   }
 }

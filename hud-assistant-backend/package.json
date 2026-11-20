@@ -1,7 +1,7 @@
 {
   "name": "hud-assistant-backend",
   "version": "0.1.0",
-  "description": "Fase 1 do HUD Assistente: Express + Socket.io + Ollama",
+  "description": "Backend do HUD Assistente com IA própria do Urfilig e Piper TTS",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
@@ -14,7 +14,6 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@google/genai": "^2.23.0",
     "@prisma/client": "^5.19.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
