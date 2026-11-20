@@ -8,24 +8,7 @@ import { montarParticulas } from './particlesBuilder.js';
 import { sintetizarFala } from '../voice/piperClient.js';
 import { prisma } from '../db/client.js';
 
-import { respostaPronta, respostaQuandoNaoSabe, respostaDeConversaCasual, tipoConversaCasual } from './respostasProntas.js';
-
-const sequenciasCasualPorUsuario = new Map();
-
-function responderConversaCasual(usuarioId, texto) {
-  const tipo = tipoConversaCasual(texto);
-  if (!tipo) return null;
-  const sequencia = sequenciasCasualPorUsuario.get(usuarioId) || { saudacao: 0, bemEstar: 0 };
-  const indice = sequencia[tipo];
-  const resposta = respostaDeConversaCasual(texto, indice);
-  if (resposta) {
-    sequenciasCasualPorUsuario.set(usuarioId, { ...sequencia, [tipo]: indice + 1 });
-    if (sequenciasCasualPorUsuario.size > 500) {
-      sequenciasCasualPorUsuario.delete(sequenciasCasualPorUsuario.keys().next().value);
-    }
-  }
-  return resposta;
-}
+import { respostaPronta, respostaQuandoNaoSabe } from './respostasProntas.js';
 
 const MESES = {
   janeiro: 0, fevereiro: 1, marco: 2, abril: 3, maio: 4, junho: 5,
@@ -167,11 +150,10 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
   if (!resposta) {
     try {
       const resultado = await conversarComUrfilig(texto);
-      const respostaCasual = responderConversaCasual(usuarioId, texto);
-      resposta = respostaCasual || (resultado.source !== 'none' && resultado.reply ? resultado.reply : respostaQuandoNaoSabe());
+      resposta = resultado.source !== 'none' && resultado.reply ? resultado.reply : respostaQuandoNaoSabe();
     } catch (err) {
       console.warn('[chat] API própria indisponível; usando resposta pronta:', err?.code || err?.name || 'falha');
-      resposta = responderConversaCasual(usuarioId, texto) || respostaQuandoNaoSabe();
+      resposta = respostaQuandoNaoSabe();
     }
   }
 
