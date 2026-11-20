@@ -1,8 +1,8 @@
 const VARIANTES = Object.freeze({
   saudacao: [
-    (cumprimento) => `${cumprimento}! Estou por aqui. O que você gostaria de conversar?`,
-    (cumprimento) => `${cumprimento}! Bom ter você por aqui. Como posso acompanhar seu dia?`,
-    (cumprimento) => `${cumprimento}! Quer conversar sobre alguma coisa ou procurar algo que anotou?`,
+    (cumprimento) => `${cumprimento}! Sou a Urfilig. Posso conversar com você e ajudar a localizar o que já está nas suas notas. O que você tem em mente?`,
+    (cumprimento) => `${cumprimento}! Posso ajudar a encontrar informações no seu cofre ou simplesmente conversar. Por onde começamos?`,
+    (cumprimento) => `${cumprimento}! Estou aqui para conversar e ajudar com suas notas. O que você gostaria de ver?`,
   ],
   bemEstar: [
     () => 'Tudo bem por aqui, obrigada por perguntar. E você, como está?',
