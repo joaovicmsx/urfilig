@@ -45,14 +45,14 @@ function aplicarVisualFinalDoChat() {
     body > div[style*="z-index: 10000"] { z-index: 10060 !important; }
     /* Mesmo timing do menu lateral: o painel fica montado e a classe muda apenas seu estado visual. */
     #chat-historico.chat-historico-direita {
-      position: fixed !important; inset: auto !important; top: 50vh !important; left: 50vw !important;
+      position: fixed !important; inset: auto !important; top: auto !important; bottom: 112px !important; left: 50vw !important;
       width: min(920px, calc(100vw - var(--rail-width) - 72px)) !important;
-      height: min(610px, calc(100vh - 190px)) !important; min-height: 400px !important;
+      height: min(360px, 35vh) !important; min-height: 240px !important;
       margin: 0 !important; overflow: hidden !important;
-      padding-bottom: 82px !important; box-sizing: border-box !important;
+      padding-bottom: 0 !important; box-sizing: border-box !important;
       opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;
-      transform: translate3d(calc(-50% + var(--chat-origem-x, 0px)), calc(-50% + var(--chat-origem-y, 0px)), 0) scale(.24) !important;
-      transform-origin: center center !important;
+      transform: translate3d(calc(-50% + var(--chat-origem-x, 0px)), calc(100% + var(--chat-origem-y, 0px)), 0) scale(.24) !important;
+      transform-origin: center bottom !important;
       transition: transform .26s cubic-bezier(.22, 1, .36, 1), opacity .16s ease, visibility 0s linear .26s, border-radius .26s cubic-bezier(.22, 1, .36, 1) !important;
       animation: none !important;
       background: rgba(12,18,40,.045) !important;
@@ -63,7 +63,7 @@ function aplicarVisualFinalDoChat() {
     }
     #chat-historico.chat-historico-direita.chat-aberto {
       opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;
-      transform: translate3d(-50%, -50%, 0) scale(1) !important;
+      transform: translate3d(-50%, 0, 0) scale(1) !important;
       border-radius: 30px !important;
       transition: transform .26s cubic-bezier(.22, 1, .36, 1), opacity .16s ease, visibility 0s linear 0s, border-radius .26s cubic-bezier(.22, 1, .36, 1) !important;
     }
@@ -162,7 +162,7 @@ function aplicarVisualFinalDoChat() {
     #chat-historico .chat-menu-compartilhar { background: rgba(34,40,78,.42) !important; border-color: rgba(255,255,255,.24) !important; backdrop-filter: blur(18px) !important; -webkit-backdrop-filter: blur(18px) !important; }
     @keyframes urfiligIconeOuvindo { 50% { opacity: .42; transform: scale(1.18); } }
     @media (max-width: 720px) {
-      #chat-historico.chat-historico-direita { left: 50vw !important; width: calc(100vw - 24px) !important; height: min(610px, calc(100vh - 150px)) !important; min-height: 350px !important; }
+      #chat-historico.chat-historico-direita { left: 50vw !important; bottom: 102px !important; width: calc(100vw - 24px) !important; height: min(360px, 35vh) !important; min-height: 220px !important; }
     }
   `;
   document.head.appendChild(estilo);
@@ -174,10 +174,11 @@ function aplicarVisualFinalDoChat() {
   };
   const reforcarVisual = () => {
     const historico = document.getElementById('chat-historico');
+    const telaEstreita = window.innerWidth <= 720;
     aplicar(historico, {
-      position: 'fixed', inset: 'auto', top: '50vh', left: '50vw', right: 'auto', bottom: 'auto',
-      width: 'min(920px, calc(100vw - 72px))', height: 'min(610px, calc(100vh - 190px))',
-      'min-height': '400px', margin: '0',
+      position: 'fixed', inset: 'auto', top: 'auto', left: '50vw', right: 'auto', bottom: telaEstreita ? '102px' : '112px',
+      width: telaEstreita ? 'calc(100vw - 24px)' : 'min(920px, calc(100vw - 72px))', height: 'min(360px, 35vh)',
+      'min-height': telaEstreita ? '220px' : '240px', margin: '0',
       background: 'rgba(12,18,40,.045)', 'border-radius': '30px', border: '0',
       'box-shadow': '0 22px 58px rgba(0,0,0,.22)',
       'backdrop-filter': 'blur(20px) saturate(118%)', '-webkit-backdrop-filter': 'blur(20px) saturate(118%)'
@@ -207,6 +208,7 @@ function aplicarVisualFinalDoChat() {
     botao.innerHTML = iconeOuvir;
   };
   reforcarVisual();
+  window.addEventListener('resize', reforcarVisual);
   document.querySelectorAll('#chat-historico .chat-acao-ouvir').forEach(corrigirBotaoOuvir);
   new MutationObserver(() => {
     reforcarVisual();
