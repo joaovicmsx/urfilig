@@ -1,18 +1,28 @@
 import { askUrfilig } from '../services/UrfiligClient.js';
 
-/** Usa a IA própria do Urfilig para gerar texto; o Piper continua responsável pela voz. */
-export async function perguntarLLM(prompt, systemPrompt = '', { formatoJson = false } = {}) {
-  const instrucoes = [
-    systemPrompt.trim(),
-    formatoJson ? 'Responda somente com um objeto JSON válido, sem Markdown ou texto adicional.' : '',
-  ].filter(Boolean).join('\n\n');
-  const mensagem = instrucoes ? `${instrucoes}\n\nSolicitação:\n${prompt}` : prompt;
-  const resultado = await askUrfilig(mensagem, false);
-  const resposta = typeof resultado?.reply === 'string' ? resultado.reply.trim() : '';
-  if (!resposta || resultado?.source === 'none') {
-    const erro = new Error('A IA própria do Urfilig não conseguiu gerar uma resposta.');
-    erro.code = 'URFILIG_NO_RESPONSE';
+const TIMEOUT_MS = 30_000;
+
+/** Envia somente o texto digitado no chat para a API conversacional própria. */
+export async function conversarComUrfilig(texto) {
+  const mensagem = typeof texto === 'string' ? texto.trim() : '';
+  if (!mensagem || mensagem.length > 2000) {
+    const erro = new Error('A mensagem deve conter entre 1 e 2000 caracteres.');
+    erro.code = 'URFILIG_API_ERROR';
+    erro.status = 400;
     throw erro;
   }
-  return resposta;
+
+  try {
+    const resultado = await askUrfilig(mensagem, false, TIMEOUT_MS);
+    return {
+      reply: typeof resultado?.reply === 'string' ? resultado.reply.trim() : '',
+      source: typeof resultado?.source === 'string' ? resultado.source : 'none',
+    };
+  } catch (causa) {
+    const erro = new Error('A API própria do Urfilig está indisponível ou rejeitou a solicitação.');
+    erro.code = 'URFILIG_API_ERROR';
+    if (Number.isInteger(causa?.status)) erro.status = causa.status;
+    erro.cause = causa;
+    throw erro;
+  }
 }

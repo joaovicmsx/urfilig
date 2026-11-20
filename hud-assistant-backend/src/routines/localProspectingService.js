@@ -1,6 +1,6 @@
 import { prisma } from '../db/client.js';
-import { perguntarLLM } from '../llm/llmClient.js';
 import { emitirParaUsuario } from '../socket/index.js';
+import { criarRascunhoPadrao } from './pitchTemplates.js';
 
 const SERPER_PLACES_URL = 'https://google.serper.dev/places';
 const NICHOS_PADRAO = ['barbearia', 'salão de beleza', 'oficina mecânica', 'restaurante', 'clínica de estética', 'pet shop', 'academia', 'loja de roupas'];
@@ -47,30 +47,6 @@ async function pesquisarNoSerper({ consulta, localizacao }) {
   return lerResultados(payload);
 }
 
-function criarRascunhoPadrao({ nome, categoria, endereco }) {
-  const detalhe = categoria || 'negócio local';
-  const bairro = endereco ? ` Vi que vocês atendem em ${endereco.split(',').slice(0, 2).join(',')}.` : '';
-  return 'Oi, tudo bem? Encontrei a ' + nome + ', um ' + detalhe + bairro + '. Eu crio sites simples para reunir serviços, informações e formas de contato em um só lugar. Posso te mostrar uma ideia rápida?';
-}
-
-async function gerarPitch(empresa) {
-  const fallback = criarRascunhoPadrao(empresa);
-  try {
-    const texto = await perguntarLLM(
-      `Negócio: ${empresa.nome}
-Categoria: ${empresa.categoria || 'não informada'}
-Endereço público: ${empresa.endereco || 'não informado'}
-
-Escreva somente uma mensagem de WhatsApp em português brasileiro, com no máximo 420 caracteres. Ela oferece criação de site para esse negócio, é educada, específica ao segmento e termina perguntando se pode mostrar uma ideia. Não diga que a empresa não tem site, não invente dados, preços ou prazo.`,
-      'Você cria rascunhos comerciais humanos e curtos. Nunca use links, emojis ou linguagem de spam.'
-    );
-    return textoSeguro(texto, 500) || fallback;
-  } catch (erro) {
-    console.warn('[prospeccao] IA indisponível; usando rascunho padrão:', erro.message);
-    return fallback;
-  }
-}
-
 /** Pesquisa somente contatos públicos e nunca envia mensagens. */
 export async function prepararLoteProspeccao({ usuarioId, execucao, quantidade }) {
   const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { localizacao: true } });
@@ -98,7 +74,7 @@ export async function prepararLoteProspeccao({ usuarioId, execucao, quantidade }
 
   const leads = [];
   for (const empresa of candidatos) {
-    const pitch = await gerarPitch(empresa);
+    const pitch = criarRascunhoPadrao(empresa);
     try {
       const lead = await prisma.lead.create({ data: {
         usuarioId, nome: empresa.nome, contato: empresa.telefone, nicho: empresa.categoria,

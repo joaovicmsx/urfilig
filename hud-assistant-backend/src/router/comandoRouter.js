@@ -51,10 +51,7 @@ comandoRouter.post('/comando/apresentacao', exigirAutenticacao, async (req, res)
  * por fala reconhecida em vez de uma requisição HTTP.
  */
 comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
-  const { texto, responseStyle, responseTone } = req.body;
-  const historico = Array.isArray(req.body?.historico)
-    ? req.body.historico.slice(-12).filter((item) => item && ['Você', 'Urfilig'].includes(item.autor) && typeof item.texto === 'string').map(({ autor, texto: mensagem }) => ({ autor, texto: mensagem.slice(0, 4000) }))
-    : [];
+  const { texto } = req.body;
 
   if (!texto || typeof texto !== 'string') {
     return res.status(400).json({ erro: 'Campo "texto" (string) é obrigatório' });
@@ -65,9 +62,6 @@ comandoRouter.post('/comando', exigirAutenticacao, async (req, res) => {
 
   try {
     const resultado = await processarComando(req.usuarioId, texto, {
-      responseStyle,
-      responseTone,
-      historico,
       respostaViaHttp: true,
     });
     res.json(resultado);

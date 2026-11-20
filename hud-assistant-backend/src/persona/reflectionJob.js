@@ -1,65 +1,51 @@
 import { prisma } from '../db/client.js';
-import { perguntarLLM } from '../llm/llmClient.js';
 
-const SYSTEM_PROMPT_REFLEXAO = `
-Você é a Urfilig, assistente pessoal do usuário. Escreva uma reflexão curta
-(2-4 frases, primeira pessoa) sobre o dia de hoje, baseada nos dados abaixo.
-Não é uma mensagem pro usuário — é uma anotação sua, pro seu próprio cofre
-de memória, que você mesma vai reler depois. Seja honesta sobre o que
-realmente aconteceu; se o dia foi tranquilo e sem muito dado, diga isso
-em vez de inventar drama.
+function contarPorTipo(itens, campo = 'tipo') {
+  return itens.reduce((contagem, item) => {
+    const tipo = item[campo] || 'não classificado';
+    contagem[tipo] = (contagem[tipo] || 0) + 1;
+    return contagem;
+  }, {});
+}
 
-Responda só o texto da reflexão, sem aspas, sem markdown, sem prefixo.
-`;
+export function gerarTextoReflexao({ estatisticas = [], registrosEmocionais = [] } = {}) {
+  const contagens = contarPorTipo(estatisticas);
+  const usos = Object.values(contagens).reduce((soma, n) => soma + n, 0);
+  const emocao = contarPorTipo(registrosEmocionais, 'sentimentoDetectado');
+  const dominante = Object.entries(emocao).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const resumoUso = usos
+    ? `Hoje registrei ${usos} interação${usos === 1 ? '' : 'ões'}${Object.keys(contagens).length ? ` em ${Object.keys(contagens).length} tipo${Object.keys(contagens).length === 1 ? '' : 's'} de uso` : ''}.`
+    : 'Hoje não há interações de uso registradas.';
+  const resumoEmocao = dominante
+    ? `O sinal emocional mais frequente foi “${dominante}”, com ${emocao[dominante]} registro${emocao[dominante] === 1 ? '' : 's'}.`
+    : 'Não há sinais emocionais registrados hoje.';
+  return `${resumoUso} ${resumoEmocao}`;
+}
 
-/**
- * Gera a reflexão diária PRA UM usuário específico.
- */
 export async function gerarReflexaoDiariaDoUsuario(usuarioId) {
   const inicioDoDia = new Date();
   inicioDoDia.setHours(0, 0, 0, 0);
-
-  const [estatisticas, registrosEmocionais] = await Promise.all([
-    prisma.estatisticaUso.findMany({ where: { usuarioId, createdAt: { gte: inicioDoDia } } }),
-    prisma.registroEmocional.findMany({ where: { usuarioId, createdAt: { gte: inicioDoDia } } }),
-  ]);
-
-  if (estatisticas.length === 0 && registrosEmocionais.length === 0) {
-    console.log(`[persona] usuário ${usuarioId}: sem interações hoje — pulando a reflexão diária.`);
-    return;
-  }
-
-  const prompt = `
-Estatísticas de uso de hoje:
-${JSON.stringify(resumirPorTipo(estatisticas), null, 2)}
-
-Sinais emocionais detectados hoje:
-${JSON.stringify(resumirPorTipo(registrosEmocionais.map((r) => ({ tipo: r.sentimentoDetectado }))), null, 2)}
-`;
-
   try {
-    const reflexao = await perguntarLLM(prompt, SYSTEM_PROMPT_REFLEXAO);
-    await prisma.reflexao.create({ data: { usuarioId, conteudo: reflexao.trim() } });
-    console.log(`[persona] usuário ${usuarioId}: reflexão diária registrada.`);
+    const [estatisticas, registrosEmocionais] = await Promise.all([
+      prisma.estatisticaUso.findMany({ where: { usuarioId, createdAt: { gte: inicioDoDia } } }),
+      prisma.registroEmocional.findMany({ where: { usuarioId, createdAt: { gte: inicioDoDia } } }),
+    ]);
+    if (!estatisticas.length && !registrosEmocionais.length) {
+      console.log(`[persona] usuário ${usuarioId}: sem interações hoje — pulando a reflexão diária.`);
+      return;
+    }
+    await prisma.reflexao.create({ data: { usuarioId, conteudo: gerarTextoReflexao({ estatisticas, registrosEmocionais }) } });
+    console.log(`[persona] usuário ${usuarioId}: reflexão diária por regras registrada.`);
   } catch (erro) {
-    console.error(`[persona] usuário ${usuarioId}: falha ao gerar a reflexão diária:`, erro.message);
+    console.error(`[persona] usuário ${usuarioId}: falha ao registrar a reflexão diária:`, erro?.code || erro?.name || 'falha');
   }
 }
 
-/**
- * Roda a reflexão diária pra TODOS os usuários — usado pelo cron noturno.
- */
 export async function gerarReflexaoDiariaDeTodos() {
-  const usuarios = await prisma.usuario.findMany({ select: { id: true } });
-  for (const { id } of usuarios) {
-    await gerarReflexaoDiariaDoUsuario(id);
+  try {
+    const usuarios = await prisma.usuario.findMany({ select: { id: true } });
+    for (const { id } of usuarios) await gerarReflexaoDiariaDoUsuario(id);
+  } catch (erro) {
+    console.error('[persona] falha ao listar usuários para reflexão diária:', erro?.code || erro?.name || 'falha');
   }
-}
-
-function resumirPorTipo(itens) {
-  const contagem = {};
-  for (const item of itens) {
-    contagem[item.tipo] = (contagem[item.tipo] || 0) + 1;
-  }
-  return contagem;
 }

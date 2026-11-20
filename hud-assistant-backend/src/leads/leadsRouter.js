@@ -1,23 +1,12 @@
 import { Router } from 'express';
 import { prisma } from '../db/client.js';
-import { perguntarLLM } from '../llm/llmClient.js';
+import { criarRascunhoPadrao } from '../routines/pitchTemplates.js';
 import { emitirParaUsuario } from '../socket/index.js';
 import { montarParticulas } from '../persona/particlesBuilder.js';
 import { exigirAutenticacao } from '../auth/authMiddleware.js';
 
 export const leadsRouter = Router();
 leadsRouter.use(exigirAutenticacao); // toda rota de leads exige login
-
-const SYSTEM_PROMPT_PITCH = `
-Você é assistente de vendas B2B de um desenvolvedor freelancer.
-Stack: Java, Spring Boot, APIs REST, HTML/CSS.
-Portfólio real: landing page para restaurante japonês (Kiyo Koi, mobile-first,
-botão flutuante de WhatsApp), site para chaveiro com seção de serviços,
-sistema de folha de pagamento em Java (Payroll Management System).
-Gere uma mensagem curta (3-4 frases), persuasiva, sem parecer spam,
-citando 1 exemplo concreto de portfólio relevante ao nicho do lead.
-Nunca prometa prazo ou preço específico.
-`;
 
 /**
  * Pontua o lead antes de gerar o rascunho de abordagem com a IA própria.
@@ -51,17 +40,7 @@ leadsRouter.post('/leads/novo', async (req, res) => {
   const score = calcularScore(bio, nicho);
 
   try {
-    let pitch = null;
-    try {
-      pitch = await perguntarLLM(
-        `Nicho: ${nicho || 'não informado'}\nBio: ${bio || ''}`,
-        SYSTEM_PROMPT_PITCH
-      );
-    } catch {
-      // A indisponibilidade do modelo não deve impedir o usuário de registrar
-      // um lead; ele ainda pode revisar os dados e preparar o contato manualmente.
-      console.warn('[leads] IA própria indisponível; lead será salvo sem rascunho.');
-    }
+    const pitch = criarRascunhoPadrao({ nome, categoria: nicho, endereco: '' });
 
     const lead = await prisma.lead.create({
       data: { usuarioId: req.usuarioId, nome, contato, nicho, bio, score, pitch },

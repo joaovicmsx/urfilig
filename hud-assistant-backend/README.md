@@ -6,7 +6,7 @@ Backend em Node.js para o assistente virtual 3D, construído com arquitetura Saa
 
 - **Node.js** (Express & WebSockets com Socket.io)
 - **Prisma ORM** (SQLite)
-- **IA própria do Urfilig** (API local configurável)
+- **API conversacional própria do Urfilig** (somente para mensagens do chat)
 - **Piper TTS** (Síntese de voz local)
 - **JWT & Bcrypt** (Autenticação e segurança multiusuário)
 
@@ -15,7 +15,9 @@ Backend em Node.js para o assistente virtual 3D, construído com arquitetura Saa
 - **Node.js** 18+
 - Executável do **Piper** e modelo de voz `.onnx` configurados na pasta `./piper`
 - API própria do Urfilig acessível em `http://127.0.0.1:8780` (ou configure `URFILIG_API_URL`)
-- Token opcional em `URFILIG_API_TOKEN` quando o servidor exigir autenticação
+- Token recomendado em `URFILIG_API_TOKEN`; a API o recebe no cabeçalho `X-Urfilig-Token`
+
+A API conversacional é usada somente para responder mensagens do chat. O backend envia apenas o texto atual escrito pela pessoa usuária (até 2000 caracteres), sem perfil, histórico ou instruções internas. Saudações, apresentações do perfil, pitches, reflexões e planos do Dev Agent usam regras e templates locais; nenhum desses fluxos chama um modelo generativo.
 
 ### Conexão com Spotify
 

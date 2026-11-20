@@ -5,7 +5,7 @@ A primeira versão do Dev Agent prepara tarefas de código sem editar ou publica
 ## Fluxo
 
 1. A pessoa cria uma tarefa com repositório e objetivo.
-2. A IA devolve um plano estruturado, com risco, possíveis arquivos e testes.
+2. O backend cria um plano genérico determinístico, com risco alto, passos seguros e sem presumir arquivos do repositório.
 3. O plano fica em `AGUARDANDO_APROVACAO`.
 4. Ao aprovar, a aprovação é registrada. A execução continua bloqueada até a próxima etapa: GitHub App + workspace temporário isolado.
 5. Na próxima etapa, o executor deverá criar branch temporária, aplicar um patch, rodar somente checks permitidos e mostrar o diff antes de push ou Pull Request.
@@ -27,7 +27,7 @@ Todas as rotas exigem `Authorization: Bearer <JWT>`.
 }
 ```
 
-Os planos são gerados pela API própria do Urfilig configurada em `URFILIG_API_URL`.
+Os planos usam `planoFallback` local. A API própria do Urfilig configurada em `URFILIG_API_URL` é usada somente para mensagens do chat; o Dev Agent não envia tarefas a um modelo.
 
 ### Consultar tarefas
 
