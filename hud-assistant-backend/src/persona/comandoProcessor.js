@@ -152,7 +152,7 @@ export async function processarComando(usuarioId, texto, opcoesLLM = {}) {
       const resultado = await conversarComUrfilig(texto);
       resposta = resultado.source !== 'none' && resultado.reply ? resultado.reply : respostaQuandoNaoSabe();
     } catch (err) {
-      console.warn('[chat] API própria indisponível; usando resposta pronta:', err?.code || err?.name || 'falha');
+      console.warn('[chat] API própria indisponível; usando resposta pronta:', err?.causaTecnica || err?.code || err?.name || 'falha');
       resposta = respostaQuandoNaoSabe();
     }
   }

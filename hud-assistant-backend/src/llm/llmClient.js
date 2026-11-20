@@ -22,6 +22,7 @@ export async function conversarComUrfilig(texto) {
     const erro = new Error('A API própria do Urfilig está indisponível ou rejeitou a solicitação.');
     erro.code = 'URFILIG_API_ERROR';
     if (Number.isInteger(causa?.status)) erro.status = causa.status;
+    erro.causaTecnica = causa?.causaTecnica || causa?.cause?.code || causa?.name || 'falha de rede';
     erro.cause = causa;
     throw erro;
   }

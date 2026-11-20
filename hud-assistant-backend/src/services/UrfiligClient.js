@@ -1,4 +1,4 @@
-const BASE = process.env.URFILIG_API_URL || 'http://127.0.0.1:8780';
+const BASE = (process.env.URFILIG_API_URL || 'http://127.0.0.1:8780').replace(/\/+$/, '');
 const TOKEN = process.env.URFILIG_API_TOKEN || '';
 
 async function call(path, body, timeoutMs = 30000) {
@@ -17,12 +17,21 @@ async function call(path, body, timeoutMs = 30000) {
     options.body = JSON.stringify(body);
   }
 
-  const res = await fetch(`${BASE}${path}`, options);
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, options);
+  } catch (causa) {
+    const erro = new Error('Falha de conexão com a API própria do Urfilig.');
+    erro.code = 'URFILIG_API_ERROR';
+    erro.causaTecnica = causa?.cause?.code || causa?.name || 'falha de rede';
+    throw erro;
+  }
 
   if (!res.ok) {
     const erro = new Error(`Urfilig API ${path} respondeu ${res.status}`);
     erro.status = res.status;
     erro.code = 'URFILIG_API_ERROR';
+    erro.causaTecnica = `HTTP_${res.status}`;
     throw erro;
   }
   return res.json();
