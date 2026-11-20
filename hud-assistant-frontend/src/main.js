@@ -45,7 +45,7 @@ function aplicarVisualFinalDoChat() {
     body > div[style*="z-index: 10000"] { z-index: 10060 !important; }
     /* Mesmo timing do menu lateral: o painel fica montado e a classe muda apenas seu estado visual. */
     #chat-historico.chat-historico-direita {
-      position: fixed !important; inset: auto !important; top: 50vh !important; left: calc(50vw + var(--rail-width) / 2 + var(--content-center-shift)) !important;
+      position: fixed !important; inset: auto !important; top: 50vh !important; left: 50vw !important;
       width: min(920px, calc(100vw - var(--rail-width) - 72px)) !important;
       height: min(610px, calc(100vh - 190px)) !important; min-height: 400px !important;
       margin: 0 !important; overflow: hidden !important;
@@ -118,7 +118,7 @@ function aplicarVisualFinalDoChat() {
     #chat-restaurar:hover { transform: translateY(-2px) !important; }
     /* Barra permanente: não pertence à janela do histórico, fica sempre no centro inferior. */
     #chat-composer {
-      position: fixed !important; z-index: 10042 !important; left: calc(50% + var(--rail-width) / 2 + var(--content-center-shift)) !important; top: calc(50% + 12px) !important; bottom: auto !important;
+      position: fixed !important; z-index: 10042 !important; left: 50vw !important; top: calc(50% + 12px) !important; bottom: auto !important;
       width: min(740px, calc(100vw - var(--rail-width) - 48px)) !important; transform: translate(-50%, -50%) !important;
       display: flex !important; align-items: center !important; gap: 9px !important; pointer-events: auto !important;
     }
@@ -158,11 +158,11 @@ function aplicarVisualFinalDoChat() {
     #chat-painel.chat-expanded #chat-composer #chat-input { grid-column: 1 !important; grid-row: 1 !important; align-self: center !important; height: 32px !important; }
     #chat-painel.chat-expanded #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 2 !important; justify-content: flex-end !important; }
     #chat-painel.chat-expanded #chat-composer #chat-new-conversation { margin-right: auto !important; }
-    @media (max-width: 720px) { #chat-composer { width: calc(100vw - var(--rail-width) - 32px) !important; left: calc(50% + var(--rail-width) / 2 + var(--content-center-shift)) !important; top: calc(50% + 12px) !important; gap: 6px !important; } #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 14px !important; } }
+    @media (max-width: 720px) { #chat-composer { width: calc(100vw - 24px) !important; left: 50vw !important; top: calc(50% + 12px) !important; gap: 6px !important; } #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 14px !important; } }
     #chat-historico .chat-menu-compartilhar { background: rgba(34,40,78,.42) !important; border-color: rgba(255,255,255,.24) !important; backdrop-filter: blur(18px) !important; -webkit-backdrop-filter: blur(18px) !important; }
     @keyframes urfiligIconeOuvindo { 50% { opacity: .42; transform: scale(1.18); } }
     @media (max-width: 720px) {
-      #chat-historico.chat-historico-direita { left: calc(50vw + var(--rail-width) / 2 + var(--content-center-shift)) !important; width: calc(100vw - var(--rail-width) - 24px) !important; height: min(610px, calc(100vh - 150px)) !important; min-height: 350px !important; }
+      #chat-historico.chat-historico-direita { left: 50vw !important; width: calc(100vw - 24px) !important; height: min(610px, calc(100vh - 150px)) !important; min-height: 350px !important; }
     }
   `;
   document.head.appendChild(estilo);
@@ -175,7 +175,7 @@ function aplicarVisualFinalDoChat() {
   const reforcarVisual = () => {
     const historico = document.getElementById('chat-historico');
     aplicar(historico, {
-      position: 'fixed', inset: 'auto', top: '50vh', left: 'calc(50vw + var(--rail-width) / 2 + var(--content-center-shift))', right: 'auto', bottom: 'auto',
+      position: 'fixed', inset: 'auto', top: '50vh', left: '50vw', right: 'auto', bottom: 'auto',
       width: 'min(920px, calc(100vw - 72px))', height: 'min(610px, calc(100vh - 190px))',
       'min-height': '400px', margin: '0',
       background: 'rgba(12,18,40,.045)', 'border-radius': '30px', border: '0',
