@@ -1,13 +1,13 @@
 const VARIANTES = Object.freeze({
   saudacao: [
-    (cumprimento) => `${cumprimento}! Sou a Urfilig. Posso conversar com você e ajudar a localizar o que já está nas suas notas. O que você tem em mente?`,
-    (cumprimento) => `${cumprimento}! Posso ajudar a encontrar informações no seu cofre ou simplesmente conversar. Por onde começamos?`,
-    (cumprimento) => `${cumprimento}! Estou aqui para conversar e ajudar com suas notas. O que você gostaria de ver?`,
+    (cumprimento) => `${cumprimento}! Sou a Urfilig. Posso conversar e localizar informações nas suas notas.`,
+    (cumprimento) => `${cumprimento} de novo! Espero que seu dia esteja indo bem.`,
+    (cumprimento) => `${cumprimento}! Estou por aqui caso queira puxar algum assunto.`,
   ],
   bemEstar: [
     () => 'Tudo bem por aqui, obrigada por perguntar. E você, como está?',
-    () => 'Estou bem e pronta para conversar. Como você está hoje?',
-    () => 'Tudo certo por aqui. E por aí, como vão as coisas?',
+    () => 'Por aqui tudo certo. Como vai seu dia?',
+    () => 'Bem, obrigada. Espero que você também esteja bem.',
   ],
   evento: [
     (titulo, data) => `Anotei “${titulo}” no calendário para ${data}. Até o calendário já está mais organizado que a gente.`,
@@ -47,18 +47,30 @@ export function respostaQuandoNaoSabe() {
 }
 
 /** Responde saudações simples sem puxar assuntos que a pessoa não mencionou. */
-export function respostaDeConversaCasual(texto, random = Math.random) {
-  const mensagem = String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+function normalizarConversa(texto) {
+  return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+}
+
+export function tipoConversaCasual(texto) {
+  const mensagem = normalizarConversa(texto);
   if (!mensagem) return null;
-  if (/\b(tudo bem|como voce esta|como vai voce|como voce vai)\b/.test(mensagem)) {
-    return respostaProntaComSorteio('bemEstar', random);
-  }
+  if (/\b(tudo bem|como voce esta|como vai voce|como voce vai)\b/.test(mensagem)) return 'bemEstar';
   const semSaudacao = mensagem
-    .replace(/^(?:oi|ola|e ai|bom dia|boa tarde|boa noite)[,!.\s]*/u, '')
+    .replace(/^(?:oi|ola|e ai|bom dia|boa tarde|boa noite)[,!\.\s]*/u, '')
     .replace(/[?!.,\s]+$/u, '');
-  if (!semSaudacao && /^(?:oi|ola|e ai|bom dia|boa tarde|boa noite)[!.\s]*$/u.test(mensagem)) {
-    const cumprimento = mensagem.match(/^(bom dia|boa tarde|boa noite)/)?.[1] || (mensagem.startsWith('ola') ? 'Olá' : mensagem.startsWith('e ai') ? 'E aí' : 'Oi');
-    return respostaProntaComSorteio('saudacao', random, cumprimento);
+  return !semSaudacao && /^(?:oi|ola|e ai|bom dia|boa tarde|boa noite)[!.\s]*$/u.test(mensagem)
+    ? 'saudacao'
+    : null;
+}
+
+export function respostaDeConversaCasual(texto, indiceVariacao = 0) {
+  const mensagem = normalizarConversa(texto);
+  const tipo = tipoConversaCasual(texto);
+  if (!tipo) return null;
+  if (tipo === 'bemEstar') {
+    return VARIANTES.bemEstar[Math.abs(Math.trunc(indiceVariacao)) % VARIANTES.bemEstar.length]();
   }
-  return null;
+  const cumprimento = mensagem.match(/^(bom dia|boa tarde|boa noite)/)?.[1] || (mensagem.startsWith('ola') ? 'Olá' : mensagem.startsWith('e ai') ? 'E aí' : 'Oi');
+  const variante = VARIANTES.saudacao[Math.abs(Math.trunc(indiceVariacao)) % VARIANTES.saudacao.length];
+  return variante(cumprimento);
 }
