@@ -215,7 +215,7 @@ export function iniciarMenuLateral(socket) {
     fecharPlugins();
     barraNavegacao?.classList.contains('menu-open') || menuLateral?.classList.contains('visible') ? fecharMenu() : abrirMenu();
   });
-  const navItems = [...document.querySelectorAll('.hud-nav .nav-item:not(#nav-logout):not(#mascot-overlay-toggle)')];
+  const navItems = [...document.querySelectorAll('.hud-nav .nav-item:not(#nav-logout)')];
   const estadoNavAberto = () => {
     const aberto = (seletor) => Boolean(document.querySelector(seletor));
     const modalDados = document.querySelector('#intel-modal.visible');

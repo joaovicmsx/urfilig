@@ -1,5 +1,3 @@
-import { isTauri } from '@tauri-apps/api/core';
-import { emitTo } from '@tauri-apps/api/event';
 
 const CHAT_HISTORY_PREFIX = 'urfilig_chat_history_v1:';
 const CHAT_CONVERSATIONS_PREFIX = 'urfilig_chat_conversations_v1:';
@@ -521,5 +519,4 @@ export function adicionarMensagemChat(autor, texto) {
  const titulo = document.getElementById('chat-active-title');
  if (titulo) titulo.textContent = conversa.titulo;
  renderizarListaConversasChat();
- if (isTauri()) void emitTo('mascote-overlay', 'mascot:chat-message', { autor, texto: mensagem });
 }

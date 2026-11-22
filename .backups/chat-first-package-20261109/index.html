@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>Urfilig</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+    <link rel="stylesheet" href="./src/theme.css" />
+    <style>html{visibility:hidden}html.auth-ready{visibility:visible}</style>
+    <script>
+      (() => {
+        let token = localStorage.getItem("urfilig_token");
+        try {
+          const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+          if (!payload.exp || payload.exp * 1000 <= Date.now() + 30000) token = null;
+        } catch { token = null; }
+        if (!token) {
+          localStorage.removeItem("urfilig_token");
+          localStorage.removeItem("urfilig_usuario");
+          location.replace("./login.html");
+          return;
+        }
+        document.documentElement.classList.add("auth-ready");
+      })();
+    </script>
+  </head>
+  <body>
+    <!-- Navegação fixa à esquerda -->
+    <header id="top-hud-bar">
+      <nav class="hud-nav">
+        <button id="nav-chats" class="nav-item" type="button" title="Conversas" aria-controls="chat-historico" aria-expanded="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-2 2v-7.5A7.5 7.5 0 0 1 10.5 6H13a7 7 0 0 1 7 5.5Z"/><path d="M8 10h8M8 14h5"/></svg>Conversas
+        </button>
+        <div id="chat-sidebar-history" aria-label="Histórico de conversas" hidden>
+          <div id="chat-sidebar-conversation-list" role="list"></div>
+        </div>
+        <button id="nav-cerebro" class="nav-item" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 0 0-10 10c0 5.523 4.477 10 10 10s10-4.477 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"/></svg>
+          Notas
+        </button>
+        <button id="nav-calendario" class="nav-item" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Calendário
+        </button>
+        <button id="btn-lembretes" class="nav-item" type="button" title="Lembretes">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+          Lembretes
+        </button>
+        <button id="nav-emails" class="nav-item" type="button" aria-haspopup="dialog" aria-controls="email-painel">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          E-mails
+        </button>
+        <button id="nav-spotify" class="nav-item" type="button" title="Spotify" aria-haspopup="dialog" aria-controls="spotify-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M7.2 9.3c3.6-1.1 7.8-.7 10.5 1.1M8 12.2c3-.8 6.4-.4 8.7 1M8.8 15c2.3-.5 4.7-.2 6.8.8"/></svg>
+          Spotify
+        </button>
+        <button id="nav-contatos" class="nav-item" type="button">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 1 0 7.75"/></svg>
+          Contatos
+        </button>
+        <button id="nav-prospeccao" class="nav-item" type="button" title="Buscar empresas">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5M8 10h5M10.5 7.5v5"/></svg>Empresas
+        </button>
+        <button id="nav-dev-agent" class="nav-item" type="button" title="Dev Agent" aria-haspopup="dialog" aria-controls="dev-agent-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/></svg>Dev Agent
+        </button>
+        <button id="btn-tendencias" class="nav-item" type="button" title="Tendências">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>Tendências
+        </button>
+        <button id="btn-plano-hoje" class="nav-item" type="button" title="Plano de hoje">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M8 11h8M8 15h5"/></svg>Plano de hoje
+        </button>
+        <button id="btn-revisao-semanal" class="nav-item" type="button" title="Resumo semanal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M7 15v-3M12 15V8M17 15v-5"/></svg>Resumo semanal
+        </button>
+        <button id="nav-routines" class="nav-item" type="button" title="Ver quadros e criar rotina" aria-controls="routine-board" aria-expanded="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Rotinas
+        </button>
+        <button id="nav-profile" class="nav-item" type="button" title="Configurações" aria-haspopup="dialog" aria-controls="profile-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/><path d="m19.4 15 .1.1a1.7 1.7 0 0 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 0 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1a1.7 1.7 0 0 0-1.2-2.9H4a1.7 1.7 0 0 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V4a1.7 1.7 0 0 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 0 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2.9Z"/></svg>Configurações
+        </button>
+        <button id="nav-plugins" class="nav-item" type="button" title="Plugins" aria-haspopup="dialog" aria-controls="plugins-drawer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3m8-3v3M5 8h14a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"/><path d="M8 8V6m8 2V6M8 13h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01M16 17h.01"/></svg>Plugins
+        </button>
+        <button id="mascot-overlay-toggle" class="nav-item mascot-overlay-toggle" type="button" aria-label="Sobrepor mascote" title="Sobrepor mascote" aria-pressed="false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="10" r="3"/><path d="M7.5 18a4.5 4.5 0 0 1 9 0"/></svg>Mascote
+        </button>
+        <button id="nav-logout" class="nav-item nav-logout" type="button" title="Sair">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>Sair
+        </button>
+      </nav>
+    </header>
+
+    <div id="profile-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="profile-drawer" class="profile-drawer" role="dialog" aria-modal="true" aria-labelledby="profile-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="profile-back" type="button" class="profile-back" aria-label="Voltar" title="Voltar"></button>
+        <h2 id="profile-title">Configurações</h2>
+        <button id="profile-close" type="button" class="profile-close" aria-label="Fechar configurações">×</button>
+      </header>
+      <div id="settings-account-panel" class="settings-panel">
+      <form id="profile-form" class="profile-form">
+        <section class="profile-section">
+          <h3>Sobre você</h3>
+          <div class="profile-fields">
+            <label>Nome<input name="nome" id="profile-name" autocomplete="name" required maxlength="80"></label>
+            <label>Idade<input name="idade" id="profile-age" type="number" min="1" max="120"></label>
+            <label>Cidade e estado<input name="localizacao" id="profile-location" maxlength="100"></label>
+            <label>Profissão ou atividade<input name="profissao" id="profile-profession" maxlength="100"></label>
+            <label class="profile-field-wide">Interesses e atividades<textarea name="hobbies" id="profile-interests" rows="3" maxlength="600"></textarea></label>
+          </div>
+        </section>
+        <section class="profile-section">
+          <h3>Como a Urfilig conversa</h3>
+          <fieldset class="profile-option-list">
+            <legend>Extensão das respostas</legend>
+            <label><input type="radio" name="profile-response-style" value="curta"><span>Curtas</span></label>
+            <label><input type="radio" name="profile-response-style" value="equilibrada"><span>Equilibradas</span></label>
+            <label><input type="radio" name="profile-response-style" value="detalhada"><span>Detalhadas</span></label>
+          </fieldset>
+          <fieldset class="profile-option-list">
+            <legend>Tom de conversa</legend>
+            <label><input type="radio" name="profile-response-tone" value="natural"><span>Natural</span></label>
+            <label><input type="radio" name="profile-response-tone" value="acolhedor"><span>Acolhedor</span></label>
+            <label><input type="radio" name="profile-response-tone" value="formal"><span>Formal</span></label>
+          </fieldset>
+        </section>
+        <section class="profile-section">
+          <h3>Elementos da tela</h3>
+          <label class="profile-toggle"><input id="profile-show-weather" type="checkbox"> Mostrar clima no relógio</label>
+        </section>
+        <p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
+        <footer class="profile-actions">
+          <button id="profile-cancel" type="button" class="profile-cancel">Voltar sem salvar</button>
+          <button id="profile-save" type="submit" class="profile-save">Salvar alterações</button>
+        </footer>
+      </form>
+      <section class="settings-danger-zone" aria-labelledby="settings-delete-title">
+        <div><h3 id="settings-delete-title">Excluir conta</h3><p>Apaga permanentemente seu perfil, notas, contatos, eventos e demais dados associados.</p></div>
+        <p class="settings-account-email">Conta: <strong id="settings-account-email">Carregando conta…</strong></p>
+        <label class="settings-delete-field">Digite seu e-mail para confirmar<input id="settings-delete-email" type="email" autocomplete="off"></label>
+        <button id="settings-delete-account" type="button" disabled>Excluir minha conta</button>
+        <p id="settings-delete-message" class="profile-message" role="status" aria-live="polite"></p>
+      </section>
+      </div>
+    </aside>
+    <div id="plugins-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="plugins-drawer" class="profile-drawer plugins-drawer" role="dialog" aria-modal="true" aria-labelledby="plugins-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="plugins-back" type="button" class="profile-back" aria-label="Voltar" title="Voltar"></button>
+        <h2 id="plugins-title">Plugins</h2>
+        <button id="plugins-close" type="button" class="profile-close" aria-label="Fechar plugins">×</button>
+      </header>
+      <section id="plugins-panel" class="settings-panel settings-plugins-panel" aria-label="Plugins disponíveis">
+        <button class="settings-plugin-option" type="button" data-settings-plugin="spotify" aria-label="Conectar Spotify">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#1ed760"/><path d="M8 12.2c5.3-1.6 11.6-.9 16 1.9M9.1 16.2c4.4-1.3 9.5-.7 13.2 1.6m-12.1 2.1c3.4-1 7.2-.5 10 1.2" fill="none" stroke="#102016" stroke-width="2.2" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-plugin="gmail" aria-label="Conectar Gmail">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path fill="#4285f4" d="M4 8.2v17.3h5V12.1z"/><path fill="#34a853" d="M23 12.1v13.4h5V8.2z"/><path fill="#ea4335" d="m4 8.2 12 9.1 12-9.1a3.1 3.1 0 0 0-4.9-2.5L16 11.8 8.9 5.7A3.1 3.1 0 0 0 4 8.2Z"/><path fill="#fbbc04" d="M4 8.2v5.9l5 3.8v-5.8z"/><path fill="#c5221f" d="m23 12.1 5-3.9v5.9l-5 3.8z"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-provider="gemini" aria-label="Conectar Gemini">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="gemini-brand-gradient" x1="4" y1="28" x2="28" y2="4" gradientUnits="userSpaceOnUse"><stop stop-color="#4285f4"/><stop offset=".5" stop-color="#9b72cb"/><stop offset="1" stop-color="#d96570"/></linearGradient></defs><path d="M16 2.5c2.5 7.2 4.3 9 13.5 13.5C20.3 18.5 18.5 20.3 16 29.5 13.5 20.3 11.7 18.5 2.5 16 11.7 13.5 13.5 11.7 16 2.5Z" fill="url(#gemini-brand-gradient)"/><path d="M25.5 3v5M23 5.5h5M6 23v5M3.5 25.5h5" stroke="#8ab4f8" stroke-width="1.4" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-provider="ollama" aria-label="Conectar Ollama local">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2.5 27.5 9v14L16 29.5 4.5 23V9L16 2.5Z" fill="#f7a36b"/><path d="M9.3 20.8V12c0-.8.9-1.2 1.5-.7l5.2 4.2v-3.3l5.2 4.1v5.7l-5.2-4.1v3.3l-5.2-4.1v3.7H9.3Z" fill="#17131a"/><circle cx="22.1" cy="10" r="1.2" fill="#17131a"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="obsidian" aria-label="Conectar Obsidian">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="m14 2 5 2 2 6 5 5-2 10-7 5-5-3-6-1-2-8 4-7 1-6Z" fill="#8e69cf"/><path d="m14 2 2 9-7 8-5-1 4-7 1-6ZM16 11l10 4-2 10-7 5-1-10-7-1Z" fill="#b695ff"/><path d="m9 19 7 1 1 10-5-3-6-1Z" fill="#65469e"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="notion" aria-label="Conectar Notion">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="3" fill="#f4f2ee"/><path d="M10 7.2h3.8l8.2 11V7.2h3v17.6h-3.7l-8.2-11v11h-3.1V7.2Z" fill="#191919"/><path d="M8 7.2h2v17.6H8z" fill="#191919"/></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="claude" aria-label="Conectar Claude">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><g stroke="#e58e56" stroke-width="2.2" stroke-linecap="round"><path d="M16 3v6M16 23v6M3 16h6M23 16h6M6.8 6.8l4.2 4.2m10 10 4.2 4.2m0-18.4L21 11M11 21l-4.2 4.2M10.7 4.5l2 5.6m6.6 11.8 2 5.6M4.5 10.7l5.6 2m11.8 6.6 5.6 2m-23 0 5.6-2m11.8-6.6 5.6-2m-16.2 17 2-5.6M19.3 10.1l2-5.6"/></g></svg><span>Conectar</span>
+        </button>
+        <button class="settings-plugin-option" type="button" data-settings-service="openai" aria-label="Conectar GPT / Codex">
+          <svg class="settings-plugin-icon" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3.5a7 7 0 0 1 6.7 5.2 6.6 6.6 0 0 1 3.9 11.8 7 7 0 0 1-10.6 7.3 7 7 0 0 1-10.9-7.3 6.6 6.6 0 0 1 3.9-11.8A7 7 0 0 1 16 3.5Z" fill="none" stroke="#d6d2e3" stroke-width="1.8"/><path d="m10 10 12 12m0-12L10 22m-1-7h14m-7-7v16" fill="none" stroke="#d6d2e3" stroke-width="1.55" stroke-linecap="round"/></svg><span>Conectar</span>
+        </button>
+        <small id="settings-spotify-status" hidden>Verificando conexão…</small>
+        <small id="settings-gmail-status" hidden>Verificando autorização…</small>
+        <small id="settings-gemini-status" hidden>Verificando configuração…</small>
+        <small id="settings-ollama-status" hidden>Verificando serviço local…</small>
+        <small id="settings-obsidian-status" hidden>Não vinculado</small>
+        <small id="settings-notion-status" hidden>Não vinculado</small>
+        <small id="settings-claude-status" hidden>Não vinculado</small>
+        <small id="settings-openai-status" hidden>Não vinculado</small>
+      </section>
+    </aside>
+
+    <div id="prospeccao-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="prospeccao-drawer" class="profile-drawer prospeccao-drawer" role="dialog" aria-modal="true" aria-labelledby="prospeccao-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="prospeccao-back" type="button" class="profile-back" aria-label="Voltar" title="Voltar"></button>
+        <h2 id="prospeccao-title">Empresas</h2>
+        <button id="prospeccao-close" type="button" class="profile-close" aria-label="Fechar prospecção">×</button>
+      </header>
+      <div class="profile-form prospeccao-content">
+        <form id="prospeccao-search-form" class="profile-section">
+          <h3>Buscar no Maps</h3>
+          <label class="prospeccao-field">Empresa ou serviço<input id="prospeccao-nicho" maxlength="100" required></label>
+          <div class="prospeccao-location"><span>Cidade</span><strong id="prospeccao-localizacao">Carregando…</strong></div>
+          <a id="prospeccao-open-maps" class="profile-save prospeccao-maps-link" href="#" aria-disabled="true" tabindex="-1" target="_blank" rel="noopener noreferrer">Abrir Maps</a>
+          <p id="prospeccao-status" class="profile-message" role="status" aria-live="polite"></p>
+        </form>
+        <details class="profile-section prospeccao-add">
+          <summary>Adicionar empresa</summary>
+          <form id="prospeccao-lead-form">
+            <label class="prospeccao-field">Nome<input id="prospeccao-lead-name" maxlength="120" required></label>
+            <label class="prospeccao-field">Contato<input id="prospeccao-lead-contact" maxlength="180" required></label>
+            <label class="prospeccao-field">Observações<textarea id="prospeccao-lead-bio" rows="2" maxlength="1200"></textarea></label>
+            <button id="prospeccao-save-lead" type="submit" class="profile-save">Salvar</button>
+          </form>
+        </details>
+        <section class="profile-section">
+          <h3>Para revisar</h3>
+          <div id="prospeccao-leads" class="prospeccao-leads"><p class="profile-message">Carregando empresas…</p></div>
+        </section>
+      </div>
+    </aside>
+
+    <div id="dev-agent-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="dev-agent-drawer" class="profile-drawer dev-agent-drawer" role="dialog" aria-modal="true" aria-labelledby="dev-agent-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="dev-agent-back" type="button" class="profile-back" aria-label="Voltar" title="Voltar"></button>
+        <h2 id="dev-agent-title">Dev Agent</h2>
+        <button id="dev-agent-close" type="button" class="profile-close" aria-label="Fechar Dev Agent">×</button>
+      </header>
+      <div class="dev-agent-content">
+        <form id="dev-agent-form" class="dev-agent-form">
+          <label>Repositório (organização/projeto)<input id="dev-agent-repository" name="repositorio" placeholder="ex.: minha-equipe/meu-projeto" required maxlength="140" autocomplete="off"></label>
+          <label>Descrição da tarefa<textarea id="dev-agent-description" name="descricao" rows="4" minlength="10" maxlength="4000" required placeholder="Descreva o resultado esperado"></textarea></label>
+          <label>Provider<select id="dev-agent-provider" name="provider"><option value="gemini">Gemini</option><option value="ollama">Local (Ollama)</option></select></label>
+          <button id="dev-agent-create" type="submit" class="profile-save">Criar tarefa e plano</button>
+        </form>
+        <p id="dev-agent-message" class="dev-agent-message" role="status" aria-live="polite"></p>
+        <section class="dev-agent-task-section" aria-labelledby="dev-agent-list-title">
+          <header><h3 id="dev-agent-list-title">Tarefas</h3><button id="dev-agent-refresh" type="button" class="profile-cancel">Atualizar</button></header>
+          <div id="dev-agent-tasks" class="dev-agent-tasks" aria-live="polite"><p class="profile-message">Carregando tarefas…</p></div>
+        </section>
+      </div>
+    </aside>
+
+    <div id="spotify-backdrop" class="profile-backdrop" aria-hidden="true"></div>
+    <aside id="spotify-drawer" class="profile-drawer spotify-drawer" role="dialog" aria-modal="true" aria-labelledby="spotify-title" aria-hidden="true">
+      <header class="profile-drawer-header">
+        <button id="spotify-back" type="button" class="profile-back" aria-label="Voltar" title="Voltar"></button>
+        <h2 id="spotify-title">Spotify</h2>
+        <button id="spotify-close" type="button" class="profile-close" aria-label="Fechar Spotify">×</button>
+      </header>
+      <div class="profile-form spotify-content">
+        <section id="spotify-connect-panel" class="profile-section spotify-connect-panel">
+          <button id="spotify-connect" type="button" class="spotify-connect-icon" aria-label="Conectar ao Spotify" title="Conectar ao Spotify">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M6.7 9.1c3.9-1.15 8.2-.78 11.6 1.26M7.4 12.1c3.2-.9 6.7-.6 9.5 1.15M8.1 14.9c2.6-.7 5.3-.42 7.5.9" fill="none" stroke="#172018" stroke-width="1.55" stroke-linecap="round"/></svg>
+          </button>
+          <p id="spotify-status" class="profile-message" role="status" aria-live="polite">Sua conta ainda não está conectada.</p>
+        </section>
+        <section id="spotify-library-panel" class="profile-section spotify-library-panel" hidden>
+          <div class="spotify-account-row"><span id="spotify-account-label">Conta Spotify conectada</span><button id="spotify-disconnect" type="button" class="profile-cancel">Desconectar</button></div>
+          <article class="spotify-now-playing">
+            <img id="spotify-track-image" alt="Capa do álbum" hidden>
+            <div id="spotify-track-placeholder" class="spotify-track-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13M9 18c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2Zm12-2c0 1.1-1.3 2-3 2s-3-.9-3-2 1.3-2 3-2 3 .9 3 2ZM9 9l12-2"/></svg></div>
+            <div class="spotify-track-copy"><strong id="spotify-track-name">Nada tocando</strong><span id="spotify-track-artists">Escolha uma playlist para começar</span><small id="spotify-track-album"></small></div>
+          </article>
+          <div class="spotify-progress-row"><span id="spotify-progress-current">0:00</span><input id="spotify-progress" type="range" min="0" max="1000" value="0" aria-label="Posição da música"><span id="spotify-progress-total">0:00</span></div>
+          <div class="spotify-playback-controls"><button id="spotify-previous" type="button" aria-label="Faixa anterior">‹</button><button id="spotify-toggle" type="button" aria-label="Reproduzir ou pausar">Reproduzir</button><button id="spotify-next" type="button" aria-label="Próxima faixa">›</button><label>Volume<input id="spotify-volume" type="range" min="0" max="100" value="60" aria-label="Volume"></label></div>
+          <div class="spotify-playlist-heading"><h3>Suas playlists</h3><button id="spotify-refresh" type="button">Atualizar</button></div>
+          <div id="spotify-playlists" class="spotify-playlists"><p class="profile-message">Carregando playlists…</p></div>
+          <p class="spotify-note">O mini player da Urfilig cria um dispositivo Spotify no próprio app. O app Spotify não precisa ficar aberto. A reprodução depende do Premium e do suporte de áudio do dispositivo.</p>
+        </section>
+      </div>
+    </aside>
+
+    <canvas id="hud-canvas" aria-label="Urfilig e sua esfera neural. Arraste para girar e selecione memórias." tabindex="0"></canvas>
+    <canvas id="labels-canvas"></canvas>
+    <div id="sky-events" aria-hidden="true"></div>
+    <section id="routine-board" aria-label="Quadros de rotinas" hidden></section>
+    <section id="spotify-mini-player" class="spotify-mini-player" aria-label="Mini player Spotify" hidden>
+      <img id="spotify-mini-image" alt="" hidden>
+      <div class="spotify-mini-copy"><strong id="spotify-mini-name">Nada tocando</strong><span id="spotify-mini-artist">Conecte sua conta Spotify</span></div>
+      <button id="spotify-mini-toggle" type="button" aria-label="Reproduzir ou pausar">▶</button>
+      <button id="spotify-mini-open" type="button" aria-label="Abrir Spotify">···</button>
+    </section>
+    <section id="hud-clock-widget" aria-label="Relógio e clima">
+      <div class="hud-clock-time" id="hud-clock-time">--:--:--</div>
+      <div class="hud-clock-date" id="hud-clock-date">Carregando data…</div>
+      <div class="hud-clock-weather" id="hud-clock-weather">Clima indisponível</div>
+    </section>
+    <div id="hud-response" aria-live="polite"></div>
+    <div id="memory-tooltip" role="tooltip" hidden></div>
+    <div id="memory-accessibility" aria-label="Memórias da personalidade"></div>
+    <div id="hud-live-status" class="visually-hidden" aria-live="polite"></div>
+
+    <!-- PAINEL FLUTUANTE DO CALENDÁRIO -->
+    <div id="calendario-painel" class="sidebar-cerebro painel-calendario">
+      <div class="sidebar-cerebro-header">
+        <h3>Calendário</h3>
+        <button type="button" id="calendario-fechar" aria-label="Fechar" title="Fechar painel"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      </div>
+      <div id="calendario-conteudo" class="calendario-conteudo"></div>
+    </div>
+
+    <section id="email-painel" role="dialog" aria-modal="true" aria-label="E-mails" aria-hidden="true">
+      <div class="email-window-header">
+        <h2>E-mails</h2>
+        <button id="email-fechar" type="button" aria-label="Fechar e-mails" title="Fechar">×</button>
+      </div>
+      <iframe id="email-frame" src="./email.html" title="Caixa de e-mails"></iframe>
+    </section>
+
+    <div id="sidebar-notas" class="sidebar">
+      <div class="sidebar-header">
+        <div class="header-titulo">
+          <div class="ponto-glow"></div>
+          <h2>Notas</h2>
+        </div>
+        <button id="btn-fechar-sidebar" class="btn-texto">Fechar</button>
+      </div>
+      
+      <div class="criar-nota-container">
+        <input type="text" id="nota-titulo" placeholder="Título" />
+        <textarea id="nota-conteudo" placeholder="Escreva aqui..."></textarea>
+        
+        <div class="opcoes-container">
+          <button id="btn-salvar-nota" class="bolha-opcao principal">Salvar</button>
+          <button id="btn-limpar-nota" class="bolha-opcao secundaria">Limpar</button>
+        </div>
+      </div>
+
+      <div id="lista-notas" class="notas-list"></div>
+    </div>
+
+    <!-- CAIXA DO CHAT -->
+    <div id="chat-painel">
+      <div class="chat-historico-direita" id="chat-historico" style="display:none">
+        <div class="chat-historico-header">
+          <span id="chat-active-title">Conversa</span>
+          <div class="chat-header-actions">
+            <button id="chat-new-conversation" type="button" title="Nova conversa">Nova</button>
+          <button id="chat-minimizar" type="button" aria-label="Minimizar chat" title="Minimizar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          </div>
+        </div>
+        <div class="chat-conversation-workspace">
+          <aside class="chat-conversations-panel" aria-label="Conversas anteriores">
+            <div class="chat-conversations-heading">Conversas</div>
+            <div id="chat-conversation-list" role="list"></div>
+          </aside>
+          <section class="chat-current-conversation" aria-label="Mensagens da conversa">
+            <div id="chat-mensagens" aria-live="polite"></div>
+          </section>
+        </div>
+      </div>
+
+      <button id="chat-restaurar" type="button" aria-label="Abrir chat" title="Abrir Conversa">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      </button>
+
+      <form id="chat-form" class="chat-form-inferior">
+        <input id="chat-input" type="text" placeholder="Digite aqui" autocomplete="off" />
+        <button type="submit" class="chat-btn-enviar">Enviar</button>
+      </form>
+      <div id="chat-model-control" aria-label="Modelo de conversa">
+        <button id="chat-model-trigger" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Mudar modelo de conversa">
+          <span id="chat-model-label">Gemini</span>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>
+        </button>
+        <div id="chat-model-menu" role="menu" aria-label="Escolher modelo" hidden>
+          <button type="button" role="menuitemradio" data-chat-provider="gemini" aria-checked="true">Gemini</button>
+          <button type="button" role="menuitemradio" data-chat-provider="ollama" aria-checked="false">Local</button>
+        </div>
+        <select id="quick-chat-provider" class="visually-hidden" aria-hidden="true" tabindex="-1">
+          <option value="gemini">Gemini</option><option value="ollama">Local</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="cerebro-painel" class="sidebar-cerebro">
+      <div class="sidebar-cerebro-header">
+        <span id="cerebro-titulo">Notas</span>
+        <button id="cerebro-fechar" type="button" aria-label="Fechar" title="Fechar painel">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div id="cerebro-view-pastas" class="cerebro-view">
+        <div id="cerebro-lista-pastas" class="cerebro-lista"></div>
+        <form id="cerebro-form-pasta" class="cerebro-form-fixo">
+          <input type="text" id="cerebro-nova-pasta" placeholder="Nome da nova pasta..." required />
+          <button type="submit">Criar Pasta</button>
+        </form>
+      </div>
+
+      <div id="cerebro-view-notas" class="cerebro-view" hidden>
+        <div class="cerebro-voltar-container">
+          <button id="cerebro-btn-voltar" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            Voltar para Pastas
+          </button>
+        </div>
+        <div id="cerebro-lista-notas" class="cerebro-lista"></div>
+        <form id="cerebro-form-nota" class="cerebro-form-fixo">
+          <input type="text" id="cerebro-novo-titulo" placeholder="Título da nota..." required />
+          <textarea id="cerebro-novo-conteudo" placeholder="Assunto da nota..." required></textarea>
+          <button type="submit">Adicionar Nota</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="modal-backdrop"></div>
+    <div id="obsidian-modal">
+      <div class="obsidian-header">
+        <h2 class="obsidian-title" id="modal-titulo">Título</h2>
+        <button class="obsidian-close" id="modal-fechar">✕</button>
+      </div>
+      <div class="obsidian-content" id="modal-conteudo">
+        Carregando conteúdo...
+      </div>
+    </div>
+
+    <!-- MODAL DE INTELIGÊNCIA (ESTILO CÉREBRO) -->
+    <div id="intel-modal" class="intel-modal">
+      <div class="intel-modal-card">
+        <div class="intel-modal-header">
+          <h3 id="intel-modal-titulo">Análise do Sistema</h3>
+          <button id="intel-modal-fechar" type="button" aria-label="Fechar" title="Fechar">✕</button>
+        </div>
+        <div class="intel-modal-conteudo" id="intel-modal-corpo">
+          Carregando dados...
+        </div>
+      </div>
+    </div>
+
+    <div id="microfone-modal" class="microfone-modal" role="dialog" aria-modal="true" aria-labelledby="microfone-modal-titulo" hidden>
+      <div class="microfone-modal-card">
+        <div class="microfone-modal-header"><span class="microfone-modal-indicador" aria-hidden="true"></span><h2 id="microfone-modal-titulo">Permitir microfone do Urfilig</h2></div>
+        <p>O Urfilig usa o microfone para reconhecer sua fala e responder por voz. Você pode continuar usando o chat sem ativá-lo.</p>
+        <div class="microfone-modal-acoes"><button id="microfone-negar" type="button" class="microfone-btn-secundario">Agora não</button><button id="microfone-permitir" type="button" class="microfone-btn-principal">Permitir microfone</button></div>
+      </div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

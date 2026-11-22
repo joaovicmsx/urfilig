@@ -8,10 +8,6 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { PersonalitySphere } from './personalitySphere.js';
-import { carregarMascote } from './mascot/loader.js';
-import { MascotMotionController } from './mascot/float.js';
-import { encontrarMeshComMorphTargets, setExpression } from './mascot/expressions.js';
-import { MascotStateMachine } from './mascot/stateMachine.js';
 import { conectarSocket } from './socketClient.js';
 import { falar } from './voice/ttsManager.js';
 import { exigirLogin, validarSessao, sair, BACKEND_URL } from './authGuard.js';
@@ -23,8 +19,6 @@ import { iniciarSpotify } from './spotify.js';
 import { carregarCalendarioUI } from './calendario.js';
 import { iniciarModuloContatos } from './contatos.js';
 import { iniciarQuadrosRotina } from './routineBoards.js';
-import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
-import { emitTo, listen as listenTauri } from '@tauri-apps/api/event';
 import { adicionarMensagemChat, iniciarNovaConversaChat, inicializarConversasChat, lerHistoricoChat, mostrarIndicadorPensando, ocultarIndicadorPensando, renderizarListaConversasChat, restaurarHistoricoChat, rolarChatParaFim } from './chatHistory.js';
 
 // Camada final do chat: aplicada pelo JavaScript para não ser sobrescrita pelos temas globais.
@@ -34,7 +28,7 @@ function aplicarVisualFinalDoChat() {
   estilo.id = 'urfilig-chat-visual-final';
   estilo.textContent = `
     #chat-painel { z-index: 10040 !important; }
-    /* O canvas frontal é irmão do chat. Camadas globais devem ficar acima dele. */
+    /* Camadas globais permanecem acima dos diálogos e menus. */
     #menu-backdrop, .menu-backdrop, .profile-backdrop { z-index: 10049 !important; }
     #menu-lateral, .menu-lateral, .profile-drawer, .sidebar-cerebro, .sidebar,
     #email-painel, #routine-sidebar-list:not([hidden]) { z-index: 10050 !important; }
@@ -43,27 +37,27 @@ function aplicarVisualFinalDoChat() {
     .modal-overlay, .folder-move-backdrop, #modal-nota-detalhes, #modal-contato-form,
     #modal-evento-overlay, #urfilig-context-menu,
     body > div[style*="z-index: 10000"] { z-index: 10060 !important; }
-    /* Mesmo timing do menu lateral: o painel fica montado e a classe muda apenas seu estado visual. */
+    /* O histórico abre sobre a página sem criar um segundo contêiner visual. */
     #chat-historico.chat-historico-direita {
-      position: fixed !important; inset: auto !important; top: auto !important; bottom: 112px !important; left: 50vw !important;
+      position: fixed !important; inset: auto !important; top: 50vh !important; left: 50vw !important;
       width: min(920px, calc(100vw - var(--rail-width) - 72px)) !important;
-      height: min(360px, 35vh) !important; min-height: 240px !important;
+      height: min(610px, calc(100vh - 190px)) !important; min-height: 400px !important;
       margin: 0 !important; overflow: hidden !important;
-      padding-bottom: 0 !important; box-sizing: border-box !important;
+      padding-bottom: 82px !important; box-sizing: border-box !important;
       opacity: 0 !important; visibility: hidden !important; pointer-events: none !important;
-      transform: translate3d(calc(-50% + var(--chat-origem-x, 0px)), calc(100% + var(--chat-origem-y, 0px)), 0) scale(.24) !important;
-      transform-origin: center bottom !important;
+      transform: translate3d(calc(-50% + var(--chat-origem-x, 0px)), calc(-50% + var(--chat-origem-y, 0px)), 0) scale(.24) !important;
+      transform-origin: center center !important;
       transition: transform .26s cubic-bezier(.22, 1, .36, 1), opacity .16s ease, visibility 0s linear .26s, border-radius .26s cubic-bezier(.22, 1, .36, 1) !important;
       animation: none !important;
-      background: rgba(12,18,40,.045) !important;
+      background: transparent !important;
       border: 0 !important;
       border-radius: 30px !important;
-      box-shadow: 0 22px 58px rgba(0,0,0,.22) !important;
-      backdrop-filter: blur(20px) saturate(118%) !important; -webkit-backdrop-filter: blur(20px) saturate(118%) !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important; -webkit-backdrop-filter: none !important;
     }
     #chat-historico.chat-historico-direita.chat-aberto {
       opacity: 1 !important; visibility: visible !important; pointer-events: auto !important;
-      transform: translate3d(-50%, 0, 0) scale(1) !important;
+      transform: translate3d(-50%, -50%, 0) scale(1) !important;
       border-radius: 30px !important;
       transition: transform .26s cubic-bezier(.22, 1, .36, 1), opacity .16s ease, visibility 0s linear 0s, border-radius .26s cubic-bezier(.22, 1, .36, 1) !important;
     }
@@ -105,36 +99,28 @@ function aplicarVisualFinalDoChat() {
     #chat-historico .chat-resposta-acao:hover { color: #fff !important; transform: scale(1.12) !important; }
     #chat-historico .chat-resposta-acao.esta-ouvindo { color: #d8c7ff !important; animation: urfiligIconeOuvindo .85s ease-in-out infinite !important; }
     #chat-historico .chat-resposta-acao svg { width: 17px !important; height: 17px !important; pointer-events: none !important; }
-    /* A barra e seus controles são independentes da janela do histórico. */
-    #chat-restaurar {
-      display: none !important;
-      width: 52px !important; height: 52px !important; min-width: 52px !important; min-height: 52px !important;
-      padding: 0 !important; box-sizing: border-box !important; border-radius: 50% !important; overflow: hidden !important;
-      align-items: center !important; justify-content: center !important;
-      transform: none !important; isolation: isolate !important;
-    }
-    #chat-restaurar svg { display: block !important; width: 22px !important; height: 22px !important; flex: 0 0 22px !important; }
-    #chat-restaurar[hidden] { display: none !important; }
-    #chat-restaurar:hover { transform: translateY(-2px) !important; }
     /* Barra permanente: não pertence à janela do histórico, fica sempre no centro inferior. */
     #chat-composer {
-      position: fixed !important; z-index: 10042 !important; left: 50vw !important; top: calc(50% + 12px) !important; bottom: auto !important;
-      width: min(740px, calc(100vw - var(--rail-width) - 48px)) !important; transform: translate(-50%, -50%) !important;
-      display: flex !important; align-items: center !important; gap: 9px !important; pointer-events: auto !important;
+      position: fixed !important; z-index: 10042 !important; left: 50vw !important; top: auto !important; bottom: 22px !important;
+      width: min(740px, calc(100vw - var(--rail-width) - 48px)) !important; height: 76px !important; min-height: 76px !important; max-height: 76px !important;
+      transform: translateX(-50%) !important; display: block !important; pointer-events: auto !important;
     }
-    #chat-composer .chat-form-inferior {
+    #chat-composer .chat-form-inferior,
+    #chat-painel.chat-expanded #chat-composer .chat-form-inferior {
       position: relative !important; z-index: auto !important; left: auto !important; bottom: auto !important; top: auto !important;
-      flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; height: 132px !important; min-height: 132px !important; box-sizing: border-box !important;
-      display: grid !important; grid-template-columns: minmax(0,1fr) !important; grid-template-rows: 20px minmax(24px,1fr) 34px !important;
-      transform: none !important; padding: 14px 16px 12px !important; gap: 5px 8px !important; align-items: center !important;
-      border-radius: 30px !important; background: var(--composer-surface) !important;
+      flex: none !important; width: 100% !important; min-width: 0 !important; height: 76px !important; min-height: 76px !important; max-height: 76px !important; box-sizing: border-box !important;
+      display: grid !important; grid-template-columns: minmax(0,1fr) !important; grid-template-rows: 32px 34px !important;
+      transform: none !important; padding: 4px 9px !important; gap: 2px !important; align-items: center !important;
+      border-radius: 28px !important; background: var(--composer-surface) !important;
       border: 0 !important; box-shadow: none !important;
       backdrop-filter: blur(24px) saturate(120%) !important; -webkit-backdrop-filter: blur(24px) saturate(120%) !important;
     }
     #chat-composer .chat-form-inferior::before { content: none !important; }
-    #chat-composer #chat-input { grid-column: 1 / -1 !important; grid-row: 2 !important; align-self: start !important; height: 30px !important; padding: 0 !important; color: var(--text-primary) !important; background: transparent !important; border: 0 !important; box-shadow: none !important; font-size: .86rem !important; line-height: 1.2 !important; }
+    #chat-composer #chat-input { grid-column: 1 !important; grid-row: 1 !important; align-self: center !important; height: 32px !important; padding: 0 !important; color: var(--text-primary) !important; background: transparent !important; border: 0 !important; box-shadow: none !important; font-size: .86rem !important; line-height: 1.2 !important; }
     #chat-composer .chat-btn-enviar { min-height: 32px !important; margin-left: 2px !important; padding: 5px 14px !important; border-radius: 17px !important; font-size: .72rem !important; }
-    #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 3 !important; display: flex !important; align-items: center !important; gap: 2px !important; width: 100% !important; min-width: 0 !important; }
+    #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 2 !important; display: flex !important; align-items: center !important; gap: 2px !important; width: 100% !important; min-width: 0 !important; }
+    #chat-composer .chat-btn-microfone { flex: 0 0 32px !important; width: 32px !important; height: 32px !important; min-height: 32px !important; margin-left: auto !important; padding: 0 !important; display: grid !important; place-items: center !important; border-radius: 10px !important; color: var(--text-primary) !important; background: rgba(255,255,255,.07) !important; }
+    #chat-composer .chat-btn-microfone svg { display: block !important; width: 16px !important; height: 16px !important; fill: none !important; stroke: currentColor !important; stroke-width: 1.7 !important; stroke-linecap: round !important; stroke-linejoin: round !important; }
     /* Nova conversa: bolha independente, no fim do compositor, ao lado de Enviar. */
     #chat-composer #chat-new-conversation {
       position: relative !important; z-index: 10045 !important; flex: 0 0 32px !important;
@@ -152,17 +138,11 @@ function aplicarVisualFinalDoChat() {
     #chat-historico .chat-historico-header { pointer-events: none !important; }
     #chat-historico .chat-historico-header #chat-minimizar, #chat-composer #chat-new-conversation { pointer-events: auto !important; }
     #chat-composer .chat-form-inferior { overflow: visible !important; }
-    #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 22px !important; transform: translateX(-50%) !important; }
-    #chat-painel.chat-expanded #chat-composer .chat-form-inferior { height: 76px !important; min-height: 76px !important; grid-template-columns: minmax(0,1fr) !important; grid-template-rows: 32px 34px !important; padding: 4px 9px !important; gap: 2px !important; border-radius: 28px !important; }
-    #chat-painel.chat-expanded #chat-composer .chat-form-inferior::before { display: none !important; }
-    #chat-painel.chat-expanded #chat-composer #chat-input { grid-column: 1 !important; grid-row: 1 !important; align-self: center !important; height: 32px !important; }
-    #chat-painel.chat-expanded #chat-composer .chat-composer-actions { grid-column: 1 !important; grid-row: 2 !important; justify-content: flex-end !important; }
-    #chat-painel.chat-expanded #chat-composer #chat-new-conversation { margin-right: auto !important; }
-    @media (max-width: 720px) { #chat-composer { width: calc(100vw - 24px) !important; left: 50vw !important; top: calc(50% + 12px) !important; gap: 6px !important; } #chat-painel.chat-expanded #chat-composer { top: auto !important; bottom: 14px !important; } }
+    @media (max-width: 720px) { #chat-composer { width: calc(100vw - 24px) !important; left: 50vw !important; top: auto !important; bottom: 14px !important; } }
     #chat-historico .chat-menu-compartilhar { background: rgba(34,40,78,.42) !important; border-color: rgba(255,255,255,.24) !important; backdrop-filter: blur(18px) !important; -webkit-backdrop-filter: blur(18px) !important; }
     @keyframes urfiligIconeOuvindo { 50% { opacity: .42; transform: scale(1.18); } }
     @media (max-width: 720px) {
-      #chat-historico.chat-historico-direita { left: 50vw !important; bottom: 102px !important; width: calc(100vw - 24px) !important; height: min(360px, 35vh) !important; min-height: 220px !important; }
+      #chat-historico.chat-historico-direita { left: 50vw !important; width: calc(100vw - var(--rail-width) - 24px) !important; height: min(610px, calc(100vh - 150px)) !important; min-height: 350px !important; }
     }
   `;
   document.head.appendChild(estilo);
@@ -174,14 +154,13 @@ function aplicarVisualFinalDoChat() {
   };
   const reforcarVisual = () => {
     const historico = document.getElementById('chat-historico');
-    const telaEstreita = window.innerWidth <= 720;
     aplicar(historico, {
-      position: 'fixed', inset: 'auto', top: 'auto', left: '50vw', right: 'auto', bottom: telaEstreita ? '102px' : '112px',
-      width: telaEstreita ? 'calc(100vw - 24px)' : 'min(920px, calc(100vw - 72px))', height: 'min(360px, 35vh)',
-      'min-height': telaEstreita ? '220px' : '240px', margin: '0',
-      background: 'rgba(12,18,40,.045)', 'border-radius': '30px', border: '0',
-      'box-shadow': '0 22px 58px rgba(0,0,0,.22)',
-      'backdrop-filter': 'blur(20px) saturate(118%)', '-webkit-backdrop-filter': 'blur(20px) saturate(118%)'
+      position: 'fixed', inset: 'auto', top: '50vh', left: '50vw', right: 'auto', bottom: 'auto',
+      width: 'min(920px, calc(100vw - 72px))', height: 'min(610px, calc(100vh - 190px))',
+      'min-height': '400px', margin: '0',
+      background: 'transparent', 'border-radius': '30px', border: '0',
+      'box-shadow': 'none',
+      'backdrop-filter': 'none', '-webkit-backdrop-filter': 'none'
     });
     historico?.classList.toggle('chat-aberto', historico.style.display !== 'none' && !historico.classList.contains('is-chat-closing'));
     document.querySelectorAll('#chat-historico .chat-historico-header, #chat-historico .chat-conversation-workspace, #chat-historico .chat-current-conversation, #chat-historico #chat-mensagens').forEach((area) => aplicar(area, {
@@ -208,7 +187,6 @@ function aplicarVisualFinalDoChat() {
     botao.innerHTML = iconeOuvir;
   };
   reforcarVisual();
-  window.addEventListener('resize', reforcarVisual);
   document.querySelectorAll('#chat-historico .chat-acao-ouvir').forEach(corrigirBotaoOuvir);
   new MutationObserver(() => {
     reforcarVisual();
@@ -290,15 +268,15 @@ function redimensionarCanvasLabels() {
 window.addEventListener('resize', redimensionarCanvasLabels);
 redimensionarCanvasLabels();
 
-// --- Iluminação do Mascote Ampla e Clara ---
+// --- Iluminação da cena ---
 const luzAmbiente = new THREE.AmbientLight(0xffffff, 1.6);
 scene.add(luzAmbiente);
 
-const luzMascote = new THREE.DirectionalLight(0xffedd5, 1.8);
-luzMascote.position.set(-3.5, 2.0, 12);
-luzMascote.target.position.set(-4.5, -2, 8);
-scene.add(luzMascote);
-scene.add(luzMascote.target);
+const luzDirecional = new THREE.DirectionalLight(0xffedd5, 1.8);
+luzDirecional.position.set(-3.5, 2.0, 12);
+luzDirecional.target.position.set(-4.5, -2, 8);
+scene.add(luzDirecional);
+scene.add(luzDirecional.target);
 
 const renderTarget = new THREE.WebGLRenderTarget(
   (canvas?.getBoundingClientRect().width || window.innerWidth) * dpr,
@@ -321,102 +299,6 @@ const bloomPass = new UnrealBloomPass(
 composer.addPass(bloomPass);
 const smaaPass = new SMAAPass(window.innerWidth * dpr, window.innerHeight * dpr);
 composer.addPass(smaaPass);
-
-// A camada frontal é independente do painel, inclusive quando o chat está oculto.
-// Ela fica acima do histórico; o compositor e menus do chat são recortados abaixo.
-const cenaMascoteFrontal = new THREE.Scene();
-const canvasMascoteFrontal = document.createElement('canvas');
-canvasMascoteFrontal.id = 'mascote-frontal-canvas';
-canvasMascoteFrontal.setAttribute('aria-hidden', 'true');
-Object.assign(canvasMascoteFrontal.style, {
-  position: 'fixed', margin: '0', padding: '0', border: '0',
-  pointerEvents: 'none', zIndex: '10041',
-});
-document.body.appendChild(canvasMascoteFrontal);
-let rendererMascoteFrontal = null;
-let composerMascoteFallback = null;
-try {
-  rendererMascoteFrontal = new THREE.WebGLRenderer({
-    canvas: canvasMascoteFrontal, alpha: true, antialias: true, powerPreference: 'high-performance',
-  });
-  rendererMascoteFrontal.setClearColor(0x000000, 0);
-  rendererMascoteFrontal.setPixelRatio(dpr);
-  rendererMascoteFrontal.setSize(canvas?.getBoundingClientRect().width || window.innerWidth, window.innerHeight, false);
-  rendererMascoteFrontal.outputColorSpace = renderer.outputColorSpace;
-  rendererMascoteFrontal.toneMapping = renderer.toneMapping;
-  rendererMascoteFrontal.toneMappingExposure = renderer.toneMappingExposure;
-} catch (erro) {
-  // Se não houver segundo contexto WebGL, mantém o comportamento anterior
-  // em vez de interromper toda a interface.
-  rendererMascoteFrontal?.dispose();
-  rendererMascoteFrontal = null;
-  canvasMascoteFrontal.remove();
-  console.warn('[mascote] camada frontal indisponível; usando canvas original', erro);
-  composerMascoteFallback = new EffectComposer(renderer);
-  composerMascoteFallback.setPixelRatio(dpr);
-  composerMascoteFallback.setSize(canvas?.getBoundingClientRect().width || window.innerWidth, window.innerHeight);
-  const passMascoteFallback = new RenderPass(cenaMascoteFrontal, camera);
-  passMascoteFallback.clear = false;
-  passMascoteFallback.clearDepth = true;
-  composerMascoteFallback.addPass(passMascoteFallback);
-}
-
-// A projeção usa o retângulo real do canvas principal, inclusive a faixa lateral.
-function alinharCanvasMascoteFrontal() {
-  const rect = canvas.getBoundingClientRect();
-  canvasMascoteFrontal.style.left = `${rect.left}px`;
-  canvasMascoteFrontal.style.top = `${rect.top}px`;
-  canvasMascoteFrontal.style.width = `${rect.width}px`;
-  canvasMascoteFrontal.style.height = `${rect.height}px`;
-
-  // O compositor e os menus internos estão no contexto de empilhamento do chat.
-  // Recorta suas áreas sem movê-los, unindo sobreposições para a regra evenodd.
-  const menus = [];
-  document.querySelectorAll('#chat-composer, #chat-painel [role="menu"], #chat-painel .chat-conversation-menu').forEach((menu) => {
-    if (!menu.getClientRects().length || getComputedStyle(menu).visibility === 'hidden') return;
-    const r = menu.getBoundingClientRect();
-    const x1 = Math.max(0, r.left - rect.left), y1 = Math.max(0, r.top - rect.top);
-    const x2 = Math.min(rect.width, r.right - rect.left), y2 = Math.min(rect.height, r.bottom - rect.top);
-    if (x1 < x2 && y1 < y2) menus.push({ x1, y1, x2, y2 });
-  });
-  const recortes = [];
-  const limitesY = [...new Set(menus.flatMap(({ y1, y2 }) => [y1, y2]))].sort((a, b) => a - b);
-  for (let i = 0; i < limitesY.length - 1; i++) {
-    const y1 = limitesY[i], y2 = limitesY[i + 1];
-    const intervalos = menus.filter((r) => r.y1 < y2 && r.y2 > y1).sort((a, b) => a.x1 - b.x1);
-    let inicio = null, fim = null;
-    intervalos.forEach((r) => {
-      if (inicio === null) { inicio = r.x1; fim = r.x2; }
-      else if (r.x1 <= fim) fim = Math.max(fim, r.x2);
-      else { recortes.push(`M ${inicio} ${y1} H ${fim} V ${y2} H ${inicio} Z`); inicio = r.x1; fim = r.x2; }
-    });
-    if (inicio !== null) recortes.push(`M ${inicio} ${y1} H ${fim} V ${y2} H ${inicio} Z`);
-  }
-  canvasMascoteFrontal.style.clipPath = recortes.length
-    ? `path(evenodd, "M 0 0 H ${rect.width} V ${rect.height} H 0 Z ${recortes.join(' ')}")`
-    : 'none';
-}
-alinharCanvasMascoteFrontal();
-
-// O mascote é movido para esta cena na inicialização. Luzes pertencem à cena,
-// não ao renderer: sem esta cópia ele recebe só preto ao ser renderizado na
-// camada frontal, embora a cena principal esteja iluminada.
-const luzAmbienteMascoteFrontal = new THREE.AmbientLight(0xffffff, 2.15);
-const luzCeuMascoteFrontal = new THREE.HemisphereLight(0xddeaff, 0x483653, 1.25);
-const luzChaveMascoteFrontal = new THREE.DirectionalLight(0xfff1df, 2.4);
-luzChaveMascoteFrontal.position.set(-3.5, 3.5, 12);
-luzChaveMascoteFrontal.target.position.set(0, 0, 7);
-const luzRecorteMascoteFrontal = new THREE.DirectionalLight(0xaecbff, 1.15);
-luzRecorteMascoteFrontal.position.set(4, 1.5, 10);
-luzRecorteMascoteFrontal.target.position.set(0, .3, 7);
-cenaMascoteFrontal.add(
-  luzAmbienteMascoteFrontal,
-  luzCeuMascoteFrontal,
-  luzChaveMascoteFrontal,
-  luzChaveMascoteFrontal.target,
-  luzRecorteMascoteFrontal,
-  luzRecorteMascoteFrontal.target,
-);
 
 function criarFundoEtereo() {
   const geometria = new THREE.SphereGeometry(70, 32, 32);
@@ -458,15 +340,7 @@ function criarFundoEtereo() {
 }
 
 let lastPointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-let mixer = null;
-let mascotRef = null;
-let mascotStateMachine = null;
-let motionController = null;
-let faceMesh = null;
 let muted = false;
-let mascotePensando = false;
-let escalaBaseMascote = 1;
-let escalaAlvoMascote = 1;
 
 let nodeArrastado = null;
 const planoArrasto = new THREE.Plane();
@@ -513,9 +387,8 @@ const memorySphere = new PersonalitySphere(scene, {
     syncAccessibleParticles(particles);
   },
 });
-// A esfera de relações passa a ocupar a região inferior do painel inicial,
-// como uma pequena constelação, sem sair da cena nem perder os controles 3D.
-memorySphere.grupo.position.set(0, -3.35, 0);
+// Mantém a esfera de relações no centro da cena sem perder os controles 3D.
+memorySphere.grupo.position.set(0, 0, 0);
 memorySphere.grupo.scale.setScalar(0.38);
 function centralizarEsferaNaTela() {
   const rect = canvas?.getBoundingClientRect();
@@ -585,23 +458,7 @@ canvas.addEventListener('contextmenu', (event) => {
   }
 });
 
-const stateProxy = {
-  transitionTo: (state) => mascotStateMachine?.transitionTo(state),
-  setMode: (mode) => mascotStateMachine?.setMode(mode),
-};
-const motionProxy = {
-  setMode: (mode) => motionController?.setMode(mode),
-};
-
 const socket = conectarSocket({
-  stateMachine: stateProxy,
-  motionController: motionProxy,
-  onState: (state) => { if (isTauri()) void emitTo('mascote-overlay', 'mascot:state', { state }); },
-  onMode: (mode) => { if (isTauri()) void emitTo('mascote-overlay', 'mascot:mode', { mode }); },
-  onExpression: (shape, weight) => {
-    if (faceMesh) setExpression(faceMesh, shape, weight);
-    if (isTauri()) void emitTo('mascote-overlay', 'mascot:expression', { shape, weight });
-  },
   onParticles: (particles) => {
     if (Array.isArray(particles) && particles.length > 0) {
       atualizarBolinhasDaEsfera(particles);
@@ -609,8 +466,6 @@ const socket = conectarSocket({
   },
   onResponse: ({ text, emotion, audio }) => {
     ocultarIndicadorPensando();
-    mascotePensando = false;
-    escalaAlvoMascote = escalaBaseMascote;
     adicionarMensagemChat('Urfilig', text);
     if (audio) {
       const bytesRecebidos = typeof audio === 'string' ? Math.floor(audio.length * 3 / 4) : (audio.byteLength ?? audio.length ?? 0);
@@ -621,7 +476,7 @@ const socket = conectarSocket({
       });
     } else {
       console.warn('[voz] a resposta chegou sem áudio do Piper; usando síntese do sistema');
-      falar(text, { onEnd: concluirFalaMascote });
+      falar(text);
     }
     setLiveStatus('Resposta recebida' + (emotion ? '. Tom: ' + emotion + '.' : '.'));
 
@@ -630,10 +485,6 @@ const socket = conectarSocket({
     }
   },
   onWeather: (dados) => showWeather(dados),
-  onOutfit: (part, visible) => {
-    alternarPecaDoMascote(part, visible);
-    if (isTauri()) void emitTo('mascote-overlay', 'mascot:outfit', { part, visible });
-  },
 });
 
 iniciarMenuLateral(socket);
@@ -907,23 +758,10 @@ document.addEventListener('DOMContentLoaded', () => {
   localStorage.removeItem('urfilig_llm_provider');
   const chatHistorico = document.getElementById('chat-historico');
   const btnMinimizar = document.getElementById('chat-minimizar');
-  const btnRestaurar = document.getElementById('chat-restaurar');
   const chatForm = document.getElementById('chat-form');
   const chatPainel = document.getElementById('chat-painel');
   let fechamentoDoChat;
   const duracaoDaTransicaoDoChat = 280;
-  const atualizarOrigemDaAnimacaoDoChat = () => {
-    if (!chatHistorico || !btnRestaurar) return;
-    const origem = btnRestaurar.getBoundingClientRect();
-    const destino = chatHistorico.getBoundingClientRect();
-    if (!origem.width || !destino.width) return;
-    const origemX = origem.left + origem.width / 2;
-    const origemY = origem.top + origem.height / 2;
-    const destinoX = destino.left + destino.width / 2;
-    const destinoY = destino.top + destino.height / 2;
-    chatHistorico.style.setProperty('--chat-origem-x', `${origemX - destinoX}px`);
-    chatHistorico.style.setProperty('--chat-origem-y', `${origemY - destinoY}px`);
-  };
   const abrirChat = () => {
     if (chatHistorico) {
       window.clearTimeout(fechamentoDoChat);
@@ -931,15 +769,11 @@ document.addEventListener('DOMContentLoaded', () => {
       chatHistorico.style.display = 'flex';
       chatHistorico.classList.remove('is-chat-closing');
       if (!jaEstavaAberto) {
-        atualizarOrigemDaAnimacaoDoChat();
-        // O painel nasce visualmente do ícone e cresce até a posição final.
         void chatHistorico.offsetWidth;
         requestAnimationFrame(() => chatHistorico.classList.add('chat-aberto'));
       }
     }
     chatPainel?.classList.add('chat-expanded');
-    if (!chatHistorico?.classList.contains('chat-aberto')) window.setTimeout(() => { if (btnRestaurar) btnRestaurar.hidden = true; }, 60);
-    else if (btnRestaurar) btnRestaurar.hidden = true;
     document.querySelector('#nav-chats')?.setAttribute('aria-expanded', 'true');
     const sidebarHistory = document.querySelector('#chat-sidebar-history');
     if (sidebarHistory) sidebarHistory.hidden = false;
@@ -949,10 +783,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const minimizarChat = () => {
     if (chatHistorico) {
       window.clearTimeout(fechamentoDoChat);
-      if (btnRestaurar) {
-        btnRestaurar.hidden = false;
-        atualizarOrigemDaAnimacaoDoChat();
-      }
       chatHistorico.classList.add('is-chat-closing');
       chatHistorico.classList.remove('chat-aberto');
       fechamentoDoChat = window.setTimeout(() => {
@@ -966,19 +796,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sidebarHistory) sidebarHistory.hidden = true;
   };
 
-  if (btnMinimizar && chatHistorico && btnRestaurar) {
+  if (btnMinimizar && chatHistorico) {
     btnMinimizar.addEventListener('click', minimizarChat);
-    btnRestaurar.addEventListener('click', abrirChat);
   }
   document.querySelector('#nav-chats')?.addEventListener('click', abrirChat);
 
   if (chatForm) {
     const novoForm = chatForm.cloneNode(true);
     chatForm.parentNode.replaceChild(novoForm, chatForm);
-    // O formulário é separado do painel do histórico para manter o compositor fixo.
+    // Um único formulário permanece fixo na tela, com histórico aberto ou fechado.
     const composer = document.createElement('div');
     composer.id = 'chat-composer';
-    chatPainel?.appendChild(composer);
+    document.body.appendChild(composer);
     composer.appendChild(novoForm);
     const composerActions = document.createElement('div');
     composerActions.className = 'chat-composer-actions';
@@ -999,20 +828,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const botaoMicrofone = document.createElement('button');
     botaoMicrofone.type = 'button';
     botaoMicrofone.className = 'chat-btn-microfone';
-    botaoMicrofone.textContent = '🎙';
+    botaoMicrofone.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21m-4 0h8"></path></svg>';
     botaoMicrofone.title = 'Ativar microfone';
     botaoMicrofone.setAttribute('aria-label', 'Ativar microfone');
-    botaoMicrofone.style.cssText = 'min-height:32px;border:0;border-radius:50%;background:transparent;color:inherit;cursor:pointer;padding:0 9px';
+    botaoMicrofone.style.cssText = 'min-height:32px;width:32px;height:32px;border:0;border-radius:10px;background:rgba(255,255,255,.07);color:inherit;cursor:pointer;padding:0;display:grid;place-items:center;flex:0 0 32px';
     botaoMicrofone.addEventListener('click', () => {
       if (!microfoneAtivo) {
         void iniciarMicrofoneLocal().then(() => {
-          botaoMicrofone.textContent = microfoneAtivo ? '⏹' : '🎙';
+          botaoMicrofone.innerHTML = microfoneAtivo ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"></rect></svg>' : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21m-4 0h8"></path></svg>';
           botaoMicrofone.title = microfoneAtivo ? 'Desativar microfone' : 'Ativar microfone';
           botaoMicrofone.setAttribute('aria-label', botaoMicrofone.title);
         });
       } else {
         pararMicrofoneLocal();
-        botaoMicrofone.textContent = '🎙';
+        botaoMicrofone.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="12" rx="3"></rect><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21m-4 0h8"></path></svg>';
         botaoMicrofone.title = 'Ativar microfone';
         botaoMicrofone.setAttribute('aria-label', botaoMicrofone.title);
       }
@@ -1036,8 +865,6 @@ document.addEventListener('DOMContentLoaded', () => {
       abrirChat();
       adicionarMensagemChat('Você', texto);
       mostrarIndicadorPensando();
-      mascotePensando = true;
-      escalaAlvoMascote = escalaBaseMascote * 0.42;
       setLiveStatus('Pensando...');
 
       const btnEnviar = novoForm.querySelector('button[type="submit"]');
@@ -1046,14 +873,10 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         if (await processarComandoDevAgent?.(texto)) {
           ocultarIndicadorPensando();
-          mascotePensando = false;
-          escalaAlvoMascote = escalaBaseMascote;
           return;
         }
         if (await tentarAtalhoFerramentaChat(texto, { adicionarMensagem: adicionarMensagemChat })) {
           ocultarIndicadorPensando();
-          mascotePensando = false;
-          escalaAlvoMascote = escalaBaseMascote;
           return;
         }
         let preferencias = {};
@@ -1075,8 +898,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const dados = await resp.json();
         if (resp.ok && dados.resposta) {
           ocultarIndicadorPensando();
-          mascotePensando = false;
-          escalaAlvoMascote = escalaBaseMascote;
           const registroRotina = window.registrarPresencaRotina?.(texto);
           adicionarMensagemChat('Urfilig', dados.resposta);
           if (dados.audio) {
@@ -1085,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
               if (botaoAudio) botaoAudio.textContent = iniciou ? 'Ouvir novamente' : 'Ouvir resposta';
             });
           } else {
-            falar(dados.resposta, { onEnd: concluirFalaMascote });
+            falar(dados.resposta);
           }
           if (typeof registroRotina === 'string') adicionarMensagemChat('Rotina', registroRotina);
           if (dados.eventoCriado && typeof window.carregarCalendarioUI === 'function') {
@@ -1099,34 +920,16 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         } else {
           ocultarIndicadorPensando();
-          mascotePensando = false;
-          escalaAlvoMascote = escalaBaseMascote;
           adicionarMensagemChat('Urfilig', dados.detalhe || dados.erro || 'Não consegui responder agora. Confira se a IA própria do Urfilig está disponível.');
         }
       } catch (err) {
         ocultarIndicadorPensando();
-        mascotePensando = false;
-        escalaAlvoMascote = escalaBaseMascote;
         console.error('[chat] Erro ao enviar comando:', err);
         adicionarMensagemChat('Urfilig', 'Não consegui concluir agora. Tente novamente em instantes.');
       } finally {
         if (btnEnviar) btnEnviar.disabled = false;
         document.getElementById('chat-input')?.focus();
       }
-    });
-  }
-
-  if (isTauri()) {
-    void listenTauri('mascot:chat-send', (event) => {
-      const text = String(event.payload?.text || '').trim();
-      const input = document.getElementById('chat-input');
-      const form = document.getElementById('chat-form');
-      if (!text || !input || !form) return;
-      input.value = text;
-      form.dispatchEvent(new SubmitEvent('submit', { bubbles: true, cancelable: true }));
-    });
-    void listenTauri('mascot:chat-history-request', () => {
-      void emitTo('mascote-overlay', 'mascot:chat-history', lerHistoricoChat());
     });
   }
 
@@ -1224,100 +1027,10 @@ function pararMicrofoneLocal() {
   setLiveStatus('Microfone desativado.');
 }
 
-carregarMascote('/models/mascote.glb', scene)
-  .then(({ mascote, mixer: loadedMixer, clips }) => {
-    normalizarEscala(mascote, 1.6);
-
-    mascote.traverse((filho) => {
-      if (filho.isMesh && filho.material) {
-        const materiais = Array.isArray(filho.material) ? filho.material : [filho.material];
-        materiais.forEach((material) => {
-          // Mantém os materiais e as texturas originais do GLB. Forçar os
-          // parâmetros aqui removia a aparência própria do modelo e podia
-          // deixá-lo escuro na camada frontal.
-          material.needsUpdate = true;
-        });
-      }
-    });
-
-    mixer = loadedMixer;
-    mascotRef = mascote;
-    cenaMascoteFrontal.add(mascote);
-    escalaBaseMascote = mascote.scale.x;
-    escalaAlvoMascote = escalaBaseMascote;
-    mascotStateMachine = new MascotStateMachine(mixer, clips);
-    motionController = new MascotMotionController(mascote, {
-      modo: 'fixo',
-      // A posição é recalculada com base na barra do chat durante a renderização.
-      posicaoFixa: new THREE.Vector3(0, 0, 8.0),
-      pontoParaOlhar: new THREE.Vector3(0, 0, 20),
-    });
-    mascote.rotation.y = Math.PI / 2;
-    mascote.visible = !mascotOverlayActive;
-
-    faceMesh = encontrarMeshComMorphTargets(mascote);
-    setLiveStatus('Pronta.');
-  })
-  .catch(() => {
-    setLiveStatus('Modelo nao carregado.');
-  });
-
-function normalizarEscala(mascote, alturaAlvo) {
-  const box = new THREE.Box3().setFromObject(mascote);
-  const tamanho = box.getSize(new THREE.Vector3());
-  const fator = alturaAlvo / (tamanho.y || 1);
-  mascote.scale.setScalar(fator);
-}
-
-function posicionarMascoteSobreChat() {
-  if (!mascotRef || !motionController || mascotOverlayActive) return;
-  if (motionController.modo !== 'fixo') motionController.setMode?.('fixo');
-
-  const chatHistorico = document.getElementById('chat-historico');
-  const chatAberto = chatHistorico?.classList.contains('chat-aberto');
-  if (chatAberto || chatHistorico?.classList.contains('is-chat-closing')) {
-    mascotRef.visible = false;
-    return;
-  }
-
-  const composerDoChat = document.getElementById('chat-composer');
-  const canvasRect = canvas?.getBoundingClientRect();
-  const chatRect = (composerDoChat || document.getElementById('chat-form'))?.getBoundingClientRect();
-  if (!canvasRect?.width || !canvasRect.height || !chatRect?.width) return;
-
-  mascotRef.visible = true;
-  const depth = 7.45;
-  const distance = Math.max(.1, camera.position.z - depth);
-  const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
-  const visibleWidth = visibleHeight * camera.aspect;
-
-  // Mantém o mascote acima da barra quando o histórico está recolhido.
-  const alvoX = window.innerWidth / 2;
-  // O modelo cresce acima do ponto de ancoragem; deixá-lo 20 px acima do
-  // compositor mantém o relógio e a saudação livres e evita cobrir a barra.
-  const alvoY = chatRect.top - 20;
-  const ndcX = ((alvoX - canvasRect.left) / canvasRect.width) * 2 - 1;
-  const ndcY = 1 - ((alvoY - canvasRect.top) / canvasRect.height) * 2;
-  motionController.posicaoFixa.set(
-    ndcX * visibleWidth / 2,
-    camera.position.y + ndcY * visibleHeight / 2,
-    depth
-  );
-  motionController.pontoParaOlhar?.set(
-    motionController.posicaoFixa.x,
-    motionController.posicaoFixa.y - .12,
-    20
-  );
-  // O modo fixo não aplica alterações posteriores a posicaoFixa sozinho.
-  // Atualize a posição sem substituir a orientação frontal do modelo.
-  mascotRef.position.copy(motionController.posicaoFixa);
-}
 let audioPiperAtual = null;
 let urlAudioPiperTemporaria = null;
 let contextoAudioPiper = null;
 let fonteAudioPiper = null;
-function concluirFalaMascote() { socket.emit('mascot:playback-ended'); }
-
 // Libera o Web Audio dentro de um gesto real do usuário (política de autoplay do WebView2).
 function prepararAudioPiper() {
   try {
@@ -1334,7 +1047,7 @@ window.addEventListener('pointerdown', () => { void prepararAudioPiper(); }, { p
 window.addEventListener('keydown', () => { void prepararAudioPiper(); }, { passive: true });
 
 async function tocarAudioPiper(audioBase64, textoReserva = '') {
-  if (textoReserva && falar(textoReserva, { onEnd: concluirFalaMascote })) {
+  if (textoReserva && falar(textoReserva)) {
     console.info('[voz] reprodução natural selecionada pelo sistema.');
     return true;
   }
@@ -1371,7 +1084,6 @@ async function tocarAudioPiper(audioBase64, textoReserva = '') {
       const buffer = await contextoAudioPiper.decodeAudioData(bytes.buffer.slice(0));
       fonteAudioPiper = contextoAudioPiper.createBufferSource();
       fonteAudioPiper.buffer = buffer;
-      fonteAudioPiper.onended = concluirFalaMascote;
       fonteAudioPiper.connect(contextoAudioPiper.destination);
       fonteAudioPiper.start();
       console.info('[voz] reprodução do Piper iniciada pelo Web Audio');
@@ -1389,7 +1101,6 @@ async function tocarAudioPiper(audioBase64, textoReserva = '') {
       audioPiperAtual.muted = false;
       audioPiperAtual.volume = 1;
       audioPiperAtual.src = urlAudioPiperTemporaria;
-      audioPiperAtual.onended = concluirFalaMascote;
       await audioPiperAtual.play();
       console.info('[voz] reprodução do Piper iniciada pelo elemento de áudio');
       return true;
@@ -1399,7 +1110,7 @@ async function tocarAudioPiper(audioBase64, textoReserva = '') {
   }
 
   console.warn('[voz] usando síntese de voz do sistema como reserva. Áudio Piper recebido:', Boolean(audioBase64));
-  if (textoReserva) falar(textoReserva, { onEnd: concluirFalaMascote });
+  if (textoReserva) falar(textoReserva);
   return false;
 }
 
@@ -1430,7 +1141,7 @@ document.addEventListener('urfilig:ouvir-resposta', async (event) => {
   const botao = event.detail?.botao;
   if (!texto || !botao) return;
   definirEstadoBotaoOuvir(botao, true);
-  falar(texto, { onEnd: concluirFalaMascote });
+  falar(texto);
   window.setTimeout(() => definirEstadoBotaoOuvir(botao, false), 700);
 });
 
@@ -1462,86 +1173,6 @@ function atualizarRelogio() {
 }
 atualizarRelogio();
 setInterval(atualizarRelogio, 1000);
-
-const overlayToggle = document.querySelector('#mascot-overlay-toggle');
-let mascotOverlay = null;
-let mascotOverlayActive = false;
-let alterandoMascotOverlay = false;
-function atualizarEstadoMascotOverlay(ativo, titulo = ativo ? 'Desativar sobreposição do mascote' : 'Sobrepor mascote') {
-  mascotOverlayActive = ativo;
-  if (mascotRef) mascotRef.visible = !ativo;
-  overlayToggle.title = titulo;
-  overlayToggle.setAttribute('aria-label', titulo);
-  overlayToggle.setAttribute('aria-pressed', String(ativo));
-}
-overlayToggle?.addEventListener('click', async () => {
-  if (!isTauri()) {
-    overlayToggle.title = 'A sobreposição está disponível no aplicativo desktop';
-    overlayToggle.setAttribute('aria-label', 'A sobreposição está disponível no aplicativo desktop');
-    return;
-  }
-  if (alterandoMascotOverlay) return;
-  alterandoMascotOverlay = true;
-  const estavaAtivo = mascotOverlayActive;
-  try {
-    if (mascotOverlay) {
-      await mascotOverlay.close();
-      mascotOverlay = null;
-      atualizarEstadoMascotOverlay(false);
-      return;
-    }
-    let janela = await WebviewWindow.getByLabel('mascote-overlay');
-    if (!janela) {
-      janela = new WebviewWindow('mascote-overlay', {
-        url: 'mascote-overlay.html', title: 'Mascote Urfilig', width: 360, height: 520,
-        x: 88, y: Math.max(0, window.innerHeight - 540),
-        decorations: false, transparent: true, alwaysOnTop: true, focus: false, focusable: false,
-        resizable: false, skipTaskbar: true, shadow: false,
-      });
-      // A construção é assíncrona no Tauri: não esconda o mascote até
-      // receber a confirmação, e trate o erro que chega por evento.
-      await new Promise((resolve, reject) => {
-        let concluido = false;
-        const desinscrever = [];
-        const finalizar = (erro) => {
-          if (concluido) return;
-          concluido = true;
-          desinscrever.forEach((fn) => fn());
-          if (erro) reject(erro); else resolve();
-        };
-        const registrar = (evento, callback) => {
-          janela.once(evento, callback).then((fn) => {
-            if (concluido) fn(); else desinscrever.push(fn);
-          }, finalizar);
-        };
-        registrar('tauri://created', () => finalizar());
-        registrar('tauri://error', (event) => finalizar(event.payload || event));
-      });
-    }
-    mascotOverlay = janela;
-    let janelaDestruida = false;
-    await janela.once('tauri://destroyed', () => {
-      janelaDestruida = true;
-      if (mascotOverlay !== janela) return;
-      mascotOverlay = null;
-      atualizarEstadoMascotOverlay(false);
-    });
-    if (!janelaDestruida) atualizarEstadoMascotOverlay(true);
-  } catch (error) {
-    console.error('[mascote-overlay] falha:', error);
-    if (!estavaAtivo) mascotOverlay = null;
-    atualizarEstadoMascotOverlay(estavaAtivo, estavaAtivo ? 'Desativar sobreposição do mascote' : 'Não foi possível abrir o mascote');
-  } finally {
-    alterandoMascotOverlay = false;
-  }
-});
-
-function alternarPecaDoMascote(nomeDaParte, visivel) {
-  if (!mascotRef) return;
-  const peca = mascotRef.getObjectByName(nomeDaParte);
-  if (!peca) return;
-  peca.visible = visivel;
-}
 
 function showTooltip(particle) {
   if (!particle) {
@@ -1770,14 +1401,6 @@ window.addEventListener('resize', () => {
   renderer.setSize(width, window.innerHeight, false);
   composer.setPixelRatio(currentDpr);
   composer.setSize(width, window.innerHeight);
-  if (rendererMascoteFrontal) {
-    rendererMascoteFrontal.setPixelRatio(currentDpr);
-    rendererMascoteFrontal.setSize(width, window.innerHeight, false);
-    alinharCanvasMascoteFrontal();
-  } else {
-    composerMascoteFallback.setPixelRatio(currentDpr);
-    composerMascoteFallback.setSize(width, window.innerHeight);
-  }
   bloomPass.setSize(width, window.innerHeight);
   smaaPass.setSize(width * currentDpr, window.innerHeight * currentDpr);
   redimensionarCanvasLabels();
@@ -1860,12 +1483,6 @@ function renderizarRotulosObsidian() {
 const clock = new THREE.Clock();
 function animate() {
   const delta = Math.min(clock.getDelta(), 0.1);
-  const elapsed = clock.elapsedTime;
-  mixer?.update(delta);
-  if (mascotRef) mascotRef.scale.setScalar(THREE.MathUtils.lerp(mascotRef.scale.x, escalaAlvoMascote, Math.min(1, delta * 8)));
-  posicionarMascoteSobreChat();
-  motionController?.update(elapsed, delta);
-
   memorySphere.grupo.scale.setScalar(
     THREE.MathUtils.lerp(memorySphere.grupo.scale.x, targetSphereScale, 0.1)
   );
@@ -1873,14 +1490,6 @@ function animate() {
   memorySphere.update(delta);
   if (!reducedMotionQuery.matches) memorySphere.grupo.rotation.y += delta * 0.009;
   composer.render();
-  // A limpeza automática também remove a imagem ao ativar o overlay desktop.
-  if (rendererMascoteFrontal) {
-    alinharCanvasMascoteFrontal();
-    rendererMascoteFrontal.render(cenaMascoteFrontal, camera);
-  } else {
-    renderer.clearDepth();
-    composerMascoteFallback.render();
-  }
   renderizarRotulosObsidian();
   requestAnimationFrame(animate);
 }
